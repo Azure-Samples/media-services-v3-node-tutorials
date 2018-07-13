@@ -20,7 +20,7 @@
   "main": "./index.js",
   "license": "MIT",
   "dependencies": {
-    "azure-arm-mediaservices": "^2.0.0",
+    "azure-arm-mediaservices": "^3.0.0-preview",
     "azure-storage": "^2.8.0",
     "ms-rest": "^2.3.3",
     "ms-rest-azure": "^2.5.5"
