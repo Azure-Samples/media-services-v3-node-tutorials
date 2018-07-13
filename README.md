@@ -6,7 +6,9 @@ author: Juliako
 
 # Azure Media Services v3 Node samples
 
-This repository contains samples showing how to use [Azure Media Services v3](https://docs.microsoft.com/azure/media-services/latest/media-services-overview) API using node.js.  
+This repository contains samples showing how to use [Azure Media Services v3](https://docs.microsoft.com/azure/media-services/latest/media-services-overview) API using node.js. 
+
+To make sure you are using the latest package, check [azure-arm-mediaservices](https://www.npmjs.com/package/azure-arm-mediaservices).
 
 ## Prerequisites
 
