@@ -1,0 +1,36 @@
+{
+  "name": "media-services-node-sample",
+  "author": "Microsoft Corporation",
+  "contributors": [
+    "Xu, Willie <wilx@microsoft.com>"
+  ],
+  "version": "0.1.0",
+  "description": "A sample to demonstrate using the media services api using Nodejs",
+  "tags": [
+    "azure",
+    "microsoft",
+    "sdk",
+    "media"
+  ],
+  "keywords": [
+    "node",
+    "microsoft",
+    "azure"
+  ],
+  "main": "./index.js",
+  "license": "MIT",
+  "dependencies": {
+    "azure-arm-mediaservices": "^4.0.0",
+    "azure-storage": "^2.8.0",
+    "ms-rest": "^2.3.3",
+    "ms-rest-azure": "^2.5.5"
+  },
+  "homepage": "https://github.com/Azure-Samples/bing-search-node",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Azure-Samples/bing-search-node"
+  },
+  "bugs": {
+    "url": "https://github.com/azure/azures-sdk-for-node/issues"
+  }
+}
