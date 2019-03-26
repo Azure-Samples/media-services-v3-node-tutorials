@@ -20,7 +20,7 @@ Install [Node.js](https://nodejs.org/en/download/)
 
     To get the values, follow [Access APIs](https://docs.microsoft.com/azure/media-services/latest/access-api-cli-how-to).
 2. Create a folder where you want for the output files to go and update the value of the **outputFolder** variable in the **index.js** file.
-3. Open **command prompt**, browse to the sample's directory, and exectue the following commands.
+3. Open **command prompt**, browse to the sample's directory, and execute the following commands.
 
     ```
     npm install 
