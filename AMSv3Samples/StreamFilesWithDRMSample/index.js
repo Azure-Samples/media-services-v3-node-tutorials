@@ -22,6 +22,7 @@ const azureStorage = require('azure-storage');
 const setTimeoutPromise = util.promisify(setTimeout);
 
 // endpoint config
+// make sure your URL values end with '/'
 
 const armAadAudience = "https://management.core.windows.net/";
 const aadEndpoint = "https://login.microsoftonline.com/";
