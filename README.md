@@ -1,7 +1,10 @@
 ---
-services: media-services
-platforms: nodejs
-author: Juliako
+topic: sample
+languages:
+  - nodejs
+products:
+  - azure
+  - azure-media-services
 ---
 
 # Azure Media Services v3 Node samples
