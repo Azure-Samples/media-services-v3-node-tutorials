@@ -3,7 +3,6 @@ topic: sample
 languages:
   - nodejs
 products:
-  - azure
   - azure-media-services
 ---
 
