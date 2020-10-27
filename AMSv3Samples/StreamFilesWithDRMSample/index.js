@@ -29,7 +29,7 @@ const aadEndpoint = "https://login.microsoftonline.com/";
 const armEndpoint = "https://management.azure.com/";
 const subscriptionId = "00000000-0000-0000-0000-000000000000";
 const accountName ="amsaccount";
-const region ="West US 2";
+const location ="West US 2";
 const aadClientId = "00000000-0000-0000-0000-000000000000";
 const aadSecret ="00000000-0000-0000-0000-000000000000";
 const aadTenantId ="00000000-0000-0000-0000-000000000000";
@@ -258,7 +258,7 @@ async function ensureTransformExists(resourceGroup, accountName, transformName, 
   if (!transform) {
     transform = await azureMediaServicesClient.transforms.createOrUpdate(resourceGroup, accountName, transformName, {
       name: transformName,
-      location: region,
+        location: location,
       outputs: [{
         preset: preset
       }]
