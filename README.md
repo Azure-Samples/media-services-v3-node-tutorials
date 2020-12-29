@@ -15,6 +15,32 @@ This repository contains samples showing how to use [Azure Media Services v3](ht
 > [!NOTE]
 > To make sure you are using the latest package, check [azure-arm-mediaservices]( https://www.npmjs.com/package/@azure/arm-mediaservices).
 
+## This sample shows how to do the following operations of Storage Blob with Storage SDK
+
+- List blobs inside a container
+- Downloads a blob to a local file
+- Uploads to a blob from local file
+
+## Use latest Storage SDK
+
+The Storage SDK in this repo is **@azure/storage-blob**. It's strongly recommended that use the [latest](https://www.npmjs.com/package/@azure/storage-blob) version of the Storage Blob SDK package, please refer to the following examples:
+
+[iterators-blobs.js](https://github.com/Azure/azure-sdk-for-js/blob/master/sdk/storage/storage-blob/samples/javascript/iterators-blobs.js) - Examples for common Storage Blob tasks:
+- Create container client
+- Upload a blob
+- List blobs inside a container
+- Delete container
+
+[advanced.js](https://github.com/Azure/azure-sdk-for-js/blob/master/sdk/storage/storage-blob/samples/javascript/advanced.js) - Examples for common Storage Blob tasks:
+- Create a container
+- Create a blob
+- Uploads a local file to a blob
+- Uploads a Node.js Readable stream into block blob
+- Downloads a blob in parallel to a buffer
+- Sets the tier on a blob
+- Downloads a blob
+- Delete container
+
 ## Prerequisites
 
 Install [Node.js](https://nodejs.org/en/download/)

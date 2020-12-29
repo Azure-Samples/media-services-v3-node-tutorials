@@ -2,6 +2,8 @@
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for
  * license information.
+ * 
+ * This file uses an outdated library. Please see the readme to find the latest version.
  */
 'use strict';
 
@@ -17,6 +19,8 @@ const fs = require('fs');
 const MediaServices = require('azure-arm-mediaservices');
 const msRestAzure = require('ms-rest-azure');
 const msRest = require('ms-rest');
+
+// Deprecated Libraries
 const azureStorage = require('azure-storage');
 
 const setTimeoutPromise = util.promisify(setTimeout);
@@ -142,6 +146,8 @@ async function downloadResults(resourceGroup, accountName, assetName, resultsFol
 
   let containerSasUrl = assetContainerSas.assetContainerSasUrls[0] || null;
   let sasUri = url.parse(containerSasUrl);
+
+  // Deprecated Libraries
   let sharedBlobService = azureStorage.createBlobServiceWithSas(sasUri.host, sasUri.search);
   let containerName = sasUri.pathname.replace(/^\/+/g, '');
   let directory = path.join(resultsFolder, assetName);
@@ -153,6 +159,8 @@ async function downloadResults(resourceGroup, accountName, assetName, resultsFol
   console.log(`gathering blobs in container ${containerName}...`);
   function createBlobListPromise() {
     return new Promise(function (resolve, reject) {
+
+      // Deprecated Libraries
       return sharedBlobService.listBlobsSegmented(containerName, null, (err, result, response) => {
         if (err) { reject(err); }
         resolve(result);
@@ -164,6 +172,8 @@ async function downloadResults(resourceGroup, accountName, assetName, resultsFol
   for (let i = 0; i < blobs.entries.length; i++) {
     let blob = blobs.entries[i];
     if (blob.blobType == "BlockBlob") {
+
+      // Deprecated Libraries
       sharedBlobService.getBlobToLocalFile(containerName, blob.name, path.join(directory, blob.name), (error, result) => {
         if (error) console.log(error);
       });
@@ -239,6 +249,8 @@ async function createInputAsset(resourceGroup, accountName, assetName, fileToUpl
   let uploadSasUrl = response.assetContainerSasUrls[0] || null;
   let fileName = path.basename(fileToUpload);
   let sasUri = url.parse(uploadSasUrl);
+
+  // Deprecated Libraries
   let sharedBlobService = azureStorage.createBlobServiceWithSas(sasUri.host, sasUri.search);
   let containerName = sasUri.pathname.replace(/^\/+/g, '');
   let randomInt = Math.round(Math.random() * 100);
@@ -246,6 +258,8 @@ async function createInputAsset(resourceGroup, accountName, assetName, fileToUpl
   console.log("uploading to blob...");
   function createBlobPromise() {
     return new Promise(function (resolve, reject) {
+
+      // Deprecated Libraries
       sharedBlobService.createBlockBlobFromLocalFile(containerName, blobName, fileToUpload, resolve);
     });
   }
