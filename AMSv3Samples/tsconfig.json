@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    "target": "ES2015",
+    "module": "commonjs",
+    "outDir": "dist",
+    "declaration": true,
+    "declarationMap": true,
+    "inlineSources": true,
+    "sourceMap": true,
+    "importHelpers": true,
+    "strict": true,
+    "alwaysStrict": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "es5",
+      "es6",
+      "es7",
+      "esnext",
+      "esnext.asynciterable"
+    ],
+  },
+  "compileOnSave": true,
+  "exclude": [
+    "node_modules"
+  ],
+  "include": [
+    "HelloWorld-ListAssets/*.ts",
+    "StreamFilesSample/*.ts"
+  ]
+}
