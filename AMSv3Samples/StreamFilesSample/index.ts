@@ -32,12 +32,12 @@ let mediaServicesClient: AzureMediaServices;
 
 // Copy the samples.env file and rename it to .env first, then populate it's values with the values obtained 
 // from your Media Services account's API Access page in the Azure portal.
-const clientId = process.env.AZURE_CLIENT_ID as string;
-const secret = process.env.AZURE_CLIENT_SECRET as string;
-const tenantDomain = process.env.AAD_TENANT_DOMAIN as string;
-const subscriptionId = process.env.AZURE_SUBSCRIPTION_ID as string;
-const resourceGroup = process.env.AZURE_RESOURCE_GROUP as string;
-const accountName = process.env.AZURE_MEDIA_ACCOUNT_NAME as string;
+const clientId: string = process.env.AZURE_CLIENT_ID as string;
+const secret: string = process.env.AZURE_CLIENT_SECRET as string;
+const tenantDomain: string = process.env.AAD_TENANT_DOMAIN as string;
+const subscriptionId: string = process.env.AZURE_SUBSCRIPTION_ID as string;
+const resourceGroup: string = process.env.AZURE_RESOURCE_GROUP as string;
+const accountName: string = process.env.AZURE_MEDIA_ACCOUNT_NAME as string;
 
 // Credentials object used for Service Principal authentication to Azure Media Services and Storage account
 let credentials: msRestNodeAuth.ApplicationTokenCredentials;
@@ -46,18 +46,18 @@ let credentials: msRestNodeAuth.ApplicationTokenCredentials;
 // Just set the other one to null to have it select the right JobInput class type
 
 // const inputFile = "C:\\your\\local.mp4";
-const inputFile = null;
+let inputFile: string;
 // This is a hosted sample file to use
-const inputUrl = "https://amssamples.streaming.mediaservices.windows.net/2e91931e-0d29-482b-a42b-9aadc93eb825/AzurePromo.mp4";
+let inputUrl: string = "https://amssamples.streaming.mediaservices.windows.net/2e91931e-0d29-482b-a42b-9aadc93eb825/AzurePromo.mp4";
 
 // Timer values
-const timeoutSeconds = 60 * 10;
-const sleepInterval = 1000 * 2;
+const timeoutSeconds: number = 60 * 10;
+const sleepInterval: number = 1000 * 2;
 const setTimeoutPromise = util.promisify(setTimeout);
 
 // Args
-const outputFolder = "Temp";
-const namePrefix = "prefix";
+const outputFolder: string = "Temp";
+const namePrefix: string = "prefix";
 let inputExtension: string;
 let blobName: string;
 
@@ -66,7 +66,7 @@ let blobName: string;
 ///////////////////////////////////////////
 export async function main() {
   // Define the name to use for the encoding Transform that will be created
-  const encodingTransformName = "TransformWithAdaptiveStreamingPreset";
+  const encodingTransformName = "ContentAwareEncodingTransform";
 
   try {
     credentials = await msRestNodeAuth.loginWithServicePrincipalSecret(clientId, secret, tenantDomain);
@@ -99,21 +99,21 @@ export async function main() {
     console.log("Creating the output Asset to encode content into...");
     let outputAsset = await mediaServicesClient.assets.createOrUpdate(resourceGroup, accountName, outputAssetName, {});
 
-    console.log("Submitting the encoding job to the Transform's job queue...");
-    let job = await submitJob(encodingTransformName, jobName, input, outputAsset?.name);
+    if (outputAsset.name !== undefined) {
+      console.log("Submitting the encoding job to the Transform's job queue...");
+      let job = await submitJob(encodingTransformName, jobName, input, outputAsset.name);
 
-    console.log(`Waiting for Job - ${job.name} - to finish encoding`);
-    job = await waitForJobToFinish(encodingTransformName, jobName);
+      console.log(`Waiting for Job - ${job.name} - to finish encoding`);
+      job = await waitForJobToFinish(encodingTransformName, jobName);
 
-    if (job.state == "Finished") {
-      await downloadResults(outputAsset.name as string, outputFolder);
+      if (job.state == "Finished") {
+        await downloadResults(outputAsset.name as string, outputFolder);
+      }
+
+      let locator = await createStreamingLocator(outputAsset.name, locatorName);
+      let urls = await getStreamingUrls(locator.name);
+
     }
-
-    let locator = await createStreamingLocator(outputAsset.name, locatorName);
-    let urls = await getStreamingUrls(locator.name);
-
-
-
   } catch (err) {
     console.log(err);
   }
@@ -242,7 +242,7 @@ async function ensureTransformExists(transformName: string, presetDefinition: Az
 // Creates a new input Asset and uploads the local file to it before returning a JobInputAsset object
 // Returns a JobInputHttp object if inputFile is set to null, and the inputUrl is set to a valid URL
 async function getJobInputType(uniqueness: string): Promise<JobInputUnion> {
-  if (inputFile) {
+  if (inputFile !== undefined) {
     let assetName: string = namePrefix + "-input-" + uniqueness;
     await createInputAsset(assetName, inputFile);
     return {
@@ -261,7 +261,7 @@ async function getJobInputType(uniqueness: string): Promise<JobInputUnion> {
 // Uses the Storage Blob npm package to upload a local file into the container through the use 
 // of the SAS URL obtained from the new Asset object.  
 // This demonstrates how to upload local files up to the container without require additional storage credential.
-async function createInputAsset(assetName: string, fileToUpload: any) {
+async function createInputAsset(assetName: string, fileToUpload: string) {
   let uploadSasUrl: string;
   let fileName: string;
   let sasUri: url.URLRecord | null;
@@ -312,7 +312,7 @@ async function createInputAsset(assetName: string, fileToUpload: any) {
 }
 
 
-async function submitJob(transformName: string, jobName: string, jobInput: JobInputUnion, outputAssetName: string | undefined) {
+async function submitJob(transformName: string, jobName: string, jobInput: JobInputUnion, outputAssetName: string) {
   if (outputAssetName == undefined) {
     throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
   }
@@ -352,11 +352,11 @@ async function getStreamingUrls(locatorName: any) {
   let paths = await mediaServicesClient.streamingLocators.listPaths(resourceGroup, accountName, locatorName);
   if (paths.streamingPaths) {
     paths.streamingPaths.forEach(path => {
-        path.paths?.forEach(formatPath => {
-          let manifestPath = "https://" + streamingEndpoint.hostName + formatPath
-          console.log(manifestPath);
-          console.log (`Click to playback in AMP player: http://ampdemo.azureedge.net/?url=${manifestPath}`)
-        });
+      path.paths?.forEach(formatPath => {
+        let manifestPath = "https://" + streamingEndpoint.hostName + formatPath
+        console.log(manifestPath);
+        console.log(`Click to playback in AMP player: http://ampdemo.azureedge.net/?url=${manifestPath}`)
+      });
     });
   }
 
