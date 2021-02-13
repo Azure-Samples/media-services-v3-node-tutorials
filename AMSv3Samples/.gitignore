@@ -69,3 +69,6 @@ package-lock.json
 authfileWithCert.json
 authfileWithSecret.json
 spcert.pem
+
+#Ignore the Temp download folder
+Temp/

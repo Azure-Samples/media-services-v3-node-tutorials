@@ -21,13 +21,18 @@
     "@azure/ms-rest-js": "^2.1.0",
     "@azure/ms-rest-nodeauth": "^3.0.6",
     "@azure/storage-blob": "^12.4.0",
+    "crypto": "^1.0.1",
     "fs": "0.0.1-security",
+    "jsonwebtoken": "^8.5.1",
+    "moment": "^2.29.1",
+    "njwt": "^1.0.0",
     "path": "^0.12.7",
     "util": "^0.12.3",
     "uuid": "^8.3.2",
     "whatwg-url": "^8.4.0"
   },
   "devDependencies": {
+    "@types/jsonwebtoken": "^8.5.0",
     "@types/uuid": "^8.3.0",
     "@types/whatwg-url": "^8.0.0",
     "dotenv": "^8.0.0",

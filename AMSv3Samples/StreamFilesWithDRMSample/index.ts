@@ -14,7 +14,14 @@ import {
   AssetContainerPermission,
   JobOutputAsset,
   JobInputUnion,
-  JobsGetResponse
+  JobsGetResponse,
+  ContentKeyPoliciesGetResponse,
+  ContentKeyPoliciesCreateOrUpdateResponse,
+  ContentKeyPolicySymmetricTokenKey,
+  ContentKeyPolicyTokenClaim,
+  ContentKeyPolicyTokenRestriction,
+  ContentKeyPolicyOption,
+  ContentKeyPolicyPlayReadyConfiguration,
 } from "@azure/arm-mediaservices/esm/models";
 import { BlobServiceClient, AnonymousCredential, BlobDownloadResponseModel } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
@@ -25,6 +32,12 @@ import * as util from 'util';
 import * as fs from 'fs';
 // Load the .env file if it exists
 import * as dotenv from "dotenv";
+// jsonwebtoken package used for signing JWT test tokens in this sample
+import * as jsonWebToken from "jsonwebtoken";
+// moment used for manipulation of dates and times for JWT token expirations
+import moment from 'moment';
+moment().format();
+
 dotenv.config();
 
 // This is the main Media Services client object
@@ -61,12 +74,20 @@ const namePrefix: string = "prefix";
 let inputExtension: string;
 let blobName: string;
 
+// DRM Configuration Settings
+const issuer: string = "myIssuer";
+const audience: string = "myAudience";
+let tokenSigningKey: Int16Array = new Int16Array(40);
+const contentKeyPolicyName = "CommonEncryptionCencDrmContentKeyPolicy_2021_02_12_5";
+const symmetricKey: string = process.env.DRM_SYMMETRIC_KEY as string;
+
 ///////////////////////////////////////////
 //   Main entry point for sample script  //
 ///////////////////////////////////////////
 export async function main() {
   // Define the name to use for the encoding Transform that will be created
   const encodingTransformName = "ContentAwareEncodingTransform";
+
 
   try {
     credentials = await msRestNodeAuth.loginWithServicePrincipalSecret(clientId, secret, tenantDomain);
@@ -110,9 +131,38 @@ export async function main() {
         await downloadResults(outputAsset.name as string, outputFolder);
       }
 
-      let locator = await createStreamingLocator(outputAsset.name, locatorName);
+      // Set a token signing key that you want to use from the env file
+      let tokenSigningKey = new Uint8Array(Buffer.from(symmetricKey, 'base64'));
+
+      // Create the content key policy that configures how the content key is delivered to end clients
+      // via the Key Delivery component of Azure Media Services.
+      // We are using the ContentKeyIdentifierClaim in the ContentKeyPolicy which means that the token presented
+      // to the Key Delivery Component must have the identifier of the content key in it. 
+      await ensureContentKeyPolicyExists(contentKeyPolicyName, tokenSigningKey);
+
+      let locator = await createStreamingLocator(outputAsset.name, locatorName, contentKeyPolicyName);
+
+      let keyIdentifier: string;
+      // In order to generate our test token we must get the ContentKeyId from the streaming locator to put in the ContentKeyIdentifierClaim claim used when creating the JWT test token 
+
+      // We are using the ContentKeyIdentifierClaim in the ContentKeyPolicy which means that the token presented
+      // to the Key Delivery Component must have the identifier of the content key in it.  Since we didn't specify
+      // a content key when creating the StreamingLocator, the service created a random GUID for us.  In order to 
+      // generate our JWT test token we must get the ContentKeyId to put in the ContentKeyIdentifierClaim claim.
+
+      if (locator.contentKeys !== undefined) {
+        keyIdentifier = locator.contentKeys[0].id;
+        console.log(`The ContentKey for this streaming locator is : ${keyIdentifier}`);
+
+      } else throw new Error("Locator and content keys are undefined.")
+
+      let token: string = await getToken(issuer, audience, keyIdentifier, tokenSigningKey);
+
+      console.log(`The JWT token used is : ${token}`);
+      console.log("You can decode the token using a tool like https://www.jsonwebtoken.io/ with the symmetric encryption key to view the decoded results.");
+
       if (locator.name !== undefined) {
-        let urls = await getStreamingUrls(locator.name);
+        let urls = await getStreamingUrls(locator.name, token);
       } else throw new Error("Locator was not created or Locator.name is undefined");
 
     }
@@ -333,10 +383,91 @@ async function submitJob(transformName: string, jobName: string, jobInput: JobIn
 
 }
 
-async function createStreamingLocator(assetName: string, locatorName: string) {
+// Create a new Content Key Policy using Widevine DRM and Playready DRM configurations.
+
+async function ensureContentKeyPolicyExists(policyName: string, tokenSigningKey: Uint8Array) {
+  let contentKeyPoliciesGetResponse: ContentKeyPoliciesGetResponse;
+  let contentKeyPolicy: ContentKeyPoliciesCreateOrUpdateResponse;
+  contentKeyPoliciesGetResponse = await mediaServicesClient.contentKeyPolicies.get(resourceGroup, accountName, policyName);
+
+  if (!contentKeyPoliciesGetResponse.name) {
+
+    let primaryKey: ContentKeyPolicySymmetricTokenKey = {
+      odatatype: "#Microsoft.Media.ContentKeyPolicySymmetricTokenKey",
+      keyValue: tokenSigningKey,
+    }
+
+    let requiredClaims: ContentKeyPolicyTokenClaim[] = [
+      {
+        claimType: "urn:microsoft:azure:mediaservices:contentkeyidentifier" // contentKeyIdentifierClaim
+      }
+    ];
+
+    let restriction: ContentKeyPolicyTokenRestriction = {
+      odatatype: "#Microsoft.Media.ContentKeyPolicyTokenRestriction",
+      issuer: issuer,
+      audience: audience,
+      primaryVerificationKey: primaryKey,
+      restrictionTokenType: "Jwt",
+      alternateVerificationKeys: undefined,
+      requiredClaims: requiredClaims
+    }
+
+
+    //ContentKeyPolicyPlayReadyConfiguration playReadyConfig = ConfigurePlayReadyLicenseTemplate();
+
+    //   Creates a PlayReady License Template with the following settings
+    //    - sl2000
+    //    - license type = non-persistent
+    //    - content type = unspecified
+    //    - Uncompressed Digital Video OPL = 270
+    //    - Compressed Digital Video OPL  = 300
+    //    - Explicit Analog Television Protection =  best effort
+    let playreadyConfig: ContentKeyPolicyPlayReadyConfiguration = {
+      odatatype: "#Microsoft.Media.ContentKeyPolicyPlayReadyConfiguration",
+      licenses: [
+        {
+          allowTestDevices: true,
+          beginDate: moment().subtract(5, "minute").toDate(),
+          contentKeyLocation: {
+             odatatype: "#Microsoft.Media.ContentKeyPolicyPlayReadyContentEncryptionKeyFromHeader" 
+          },
+          playRight: {
+            allowPassingVideoContentToUnknownOutput: "Allowed",
+            imageConstraintForAnalogComponentVideoRestriction: true,
+            digitalVideoOnlyContentRestriction: false,
+            imageConstraintForAnalogComputerMonitorRestriction: false,
+            explicitAnalogTelevisionOutputRestriction: {
+              bestEffort: true,
+              configurationData: 2
+            }
+          },
+          licenseType: "Persistent",
+          contentType: "UltraVioletStreaming"
+        }
+      ],
+      responseCustomData: undefined
+    }
+
+    let options: ContentKeyPolicyOption[] = [
+      {
+        configuration: playreadyConfig,
+        restriction: restriction
+      }
+    ];
+
+    contentKeyPolicy = await mediaServicesClient.contentKeyPolicies.createOrUpdate(resourceGroup, accountName, policyName, {
+      description: "Content Key Policy Description",
+      options: options
+    });
+  }
+}
+
+async function createStreamingLocator(assetName: string, locatorName: string, contentKeyPolicyName: string) {
   let streamingLocator = {
     assetName: assetName,
-    streamingPolicyName: "Predefined_ClearStreamingOnly"  // no DRM or AES128 encryption protection on this asset. Clear means unencrypted.
+    streamingPolicyName: "Predefined_MultiDrmCencStreaming", // Uses the built in Policy for Multi DRM Common Encryption Streaming.
+    defaultContentKeyPolicyName: contentKeyPolicyName
   };
 
   let locator = await mediaServicesClient.streamingLocators.create(
@@ -348,7 +479,7 @@ async function createStreamingLocator(assetName: string, locatorName: string) {
   return locator;
 }
 
-async function getStreamingUrls(locatorName: string) {
+async function getStreamingUrls(locatorName: string, token: string) {
   // Make sure the streaming endpoint is in the "Running" state on your account
   let streamingEndpoint = await mediaServicesClient.streamingEndpoints.get(resourceGroup, accountName, "default");
 
@@ -358,9 +489,32 @@ async function getStreamingUrls(locatorName: string) {
       path.paths?.forEach(formatPath => {
         let manifestPath = "https://" + streamingEndpoint.hostName + formatPath
         console.log(manifestPath);
-        console.log(`Click to playback in AMP player: http://ampdemo.azureedge.net/?url=${manifestPath}`)
+        console.log("IMPORTANT!! For all DRM Samples to work, you must use an HTTPS hosted player page. This could drive you insane if you miss this point.");
+        console.log(`Click to playback in AMP player: https://ampdemo.azureedge.net/?url=${manifestPath}&playready=true&widevine=true&token=Bearer%20${token}`)
       });
     });
   }
+}
 
+async function getToken(issuer: string, audience: string, keyIdentifier: string, tokenSigningKey: Uint8Array): Promise<any> {
+  let startDate: number = moment().subtract(5, "minutes").unix()  // Get the current time and subtract 5 minutes, then return as a Unix timestamp
+  let endDate: number = moment().add(1, "day").unix() // Expire the token in 1 day, return Unix timestamp.
+
+  let claims = {
+    "urn:microsoft:azure:mediaservices:contentkeyidentifier": keyIdentifier,
+    "exp": endDate,
+    "nbf": startDate
+  }
+
+  let jwtToken = jsonWebToken.sign(  //something failing in here still
+    claims,
+    Buffer.from(tokenSigningKey),
+    {
+      algorithm: "HS256",
+      issuer  : issuer,
+      audience: audience,
+    }
+  );
+
+  return jwtToken;
 }
