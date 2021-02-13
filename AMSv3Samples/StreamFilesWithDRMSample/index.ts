@@ -78,7 +78,7 @@ let blobName: string;
 const issuer: string = "myIssuer";
 const audience: string = "myAudience";
 let tokenSigningKey: Int16Array = new Int16Array(40);
-const contentKeyPolicyName = "CommonEncryptionCencDrmContentKeyPolicy_2021_02_12_5";
+const contentKeyPolicyName = "CommonEncryptionCencDrmContentKeyPolicy_2021_02_12_7";
 const symmetricKey: string = process.env.DRM_SYMMETRIC_KEY as string;
 
 ///////////////////////////////////////////
@@ -132,6 +132,7 @@ export async function main() {
       }
 
       // Set a token signing key that you want to use from the env file
+      // WARNING: This is an important secret when moving to a production system and should be kept in a Key Vault.
       let tokenSigningKey = new Uint8Array(Buffer.from(symmetricKey, 'base64'));
 
       // Create the content key policy that configures how the content key is delivered to end clients
@@ -281,7 +282,7 @@ async function ensureTransformExists(transformName: string, presetDefinition: Az
       console.log("Returning new Transform.");
       return transformCreate;
     } catch (err) {
-      console.log(`Error creating the Transform. Status Code:${err.statusCode}  Body: ${err.Body}`);
+      console.log(`Error creating the Transform. Status Code:${err.statusCode}  Body: ${err.Body}, ${err}`);
     }
   }
   console.log("Found existing Transform.");
@@ -428,7 +429,6 @@ async function ensureContentKeyPolicyExists(policyName: string, tokenSigningKey:
       licenses: [
         {
           allowTestDevices: true,
-          beginDate: moment().subtract(5, "minute").toDate(),
           contentKeyLocation: {
              odatatype: "#Microsoft.Media.ContentKeyPolicyPlayReadyContentEncryptionKeyFromHeader" 
           },
@@ -436,14 +436,16 @@ async function ensureContentKeyPolicyExists(policyName: string, tokenSigningKey:
             allowPassingVideoContentToUnknownOutput: "Allowed",
             imageConstraintForAnalogComponentVideoRestriction: true,
             digitalVideoOnlyContentRestriction: false,
+            uncompressedDigitalVideoOpl: 270,
+            compressedDigitalVideoOpl : 400,
             imageConstraintForAnalogComputerMonitorRestriction: false,
             explicitAnalogTelevisionOutputRestriction: {
               bestEffort: true,
               configurationData: 2
             }
           },
-          licenseType: "Persistent",
-          contentType: "UltraVioletStreaming"
+          licenseType: "NonPersistent",
+          contentType: "Unspecified"
         }
       ],
       responseCustomData: undefined
