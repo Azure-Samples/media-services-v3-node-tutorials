@@ -508,7 +508,7 @@ async function getToken(issuer: string, audience: string, keyIdentifier: string,
     "nbf": startDate
   }
 
-  let jwtToken = jsonWebToken.sign(  //something failing in here still
+  let jwtToken = jsonWebToken.sign(  
     claims,
     Buffer.from(tokenSigningKey),
     {
