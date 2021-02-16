@@ -111,7 +111,6 @@ export async function main() {
     let encodingTransform = await ensureTransformExists(encodingTransformName, adaptiveStreamingTransform);
 
     let uniqueness = uuidv4();
-    //TODO: NEED TO allow for input from URL here - parse arguments?
     let input = await getJobInputType(uniqueness);
     let outputAssetName = namePrefix + '-output-' + uniqueness;
     let jobName = namePrefix + '-job-' + uniqueness;
@@ -204,7 +203,6 @@ async function downloadResults(assetName: string, resultsFolder: string) {
     // Get the blob container client using the container name on the SAS URL path
     // to access the blockBlobClient needed to use the uploadFile method
     let containerClient = blobClient.getContainerClient('');
-    //let blockBlobClient = containerClient.getBlockBlobClient(blobName);
 
     try {
       fs.mkdirSync(directory, { recursive: true });
