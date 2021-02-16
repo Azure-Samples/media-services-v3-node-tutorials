@@ -49,7 +49,6 @@ let credentials: msRestNodeAuth.ApplicationTokenCredentials;
 let inputFile: string;
 // This is a hosted sample file to use
 let inputUrl: string = "https://amssamples.streaming.mediaservices.windows.net/2e91931e-0d29-482b-a42b-9aadc93eb825/AzurePromo.mp4";
-const audioExtensions: string[] = [".mp4a", ".mp3", ".wav"];
 
 // Timer values
 const timeoutSeconds: number = 60 * 10;
@@ -105,26 +104,25 @@ export async function main() {
     let uniqueness = uuidv4();
     let input = await getJobInputType(uniqueness);
     let outputAssetName = namePrefix + '-output-' + uniqueness;
-    let jobNameBasicAudio = namePrefix + '-basic-audio-' + uniqueness;
-    let locatorName = "locator" + uniqueness;
+    let jobName = namePrefix + '-analyzer-job-' + uniqueness;
 
-
-    console.log("Creating the output Asset to encode content into...");
+    console.log("Creating the output Asset to analyze the content into...");
     let outputAsset = await mediaServicesClient.assets.createOrUpdate(resourceGroup, accountName, outputAssetName, {});
 
     if (outputAsset.name !== undefined) {
-      console.log("Submitting the basic job to the Transform's job queue...");
-
       
+
       // Choose which of the analyzer Transform names you would like to use here by changing the name of the Transform to be used
       // For the basic audio analyzer - pass in the audioAnalyzerTransformName
       // For the video Analyzer - change this code to pass in the videoAnalyzerTransformName
       let analysisTransformName = audioAnalyzerTransformName; // or change to videoAnalyzerTransformName to see those results
 
-      let job = await submitJob(analysisTransformName, jobNameBasicAudio, input, outputAsset.name);
+      console.log(`Submitting the analyzer job to the ${analysisTransformName} job queue...`);
+      
+      let job = await submitJob(analysisTransformName, jobName, input, outputAsset.name);
 
       console.log(`Waiting for Job - ${job.name} - to finish analyzing`);
-      job = await waitForJobToFinish(analysisTransformName, jobNameBasicAudio);
+      job = await waitForJobToFinish(analysisTransformName, jobName);
 
       if (job.state == "Finished") {
         await downloadResults(outputAsset.name as string, outputFolder);
@@ -311,7 +309,7 @@ async function createInputAsset(assetName: string, fileToUpload: string) {
     console.log(`Uploading file named ${fileName} to blob in the Asset's container...`);
 
     // Get the blob container client using the empty string to use the same container as the SAS URL points to.
-    // Otherwise, adding a name here creates a sub folder, which will break the encoder. 
+    // Otherwise, adding a name here creates a sub folder, which will break the analysis. 
     let containerClient = blobClient.getContainerClient('');
     // Next gets the blockBlobClient needed to use the uploadFile method
     let blockBlobClient = containerClient.getBlockBlobClient(fileName);
