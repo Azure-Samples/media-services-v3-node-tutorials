@@ -4,7 +4,7 @@
 import * as msRest from "@azure/ms-rest-js";
 import * as msRestAzure from "@azure/ms-rest-azure-js";
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
-import {AzureMediaServices, AzureMediaServicesModels, AzureMediaServicesMappers} from '@azure/arm-mediaservices';
+import {AzureMediaServices} from '@azure/arm-mediaservices';
 
 // Load the .env file if it exists
 import * as dotenv from "dotenv";

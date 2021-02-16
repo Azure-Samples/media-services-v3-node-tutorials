@@ -4,8 +4,7 @@
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 import {
   AzureMediaServices,
-  AzureMediaServicesModels,
-  AzureMediaServicesMappers
+  AzureMediaServicesModels
 } from '@azure/arm-mediaservices';
 import {
   BuiltInStandardEncoderPreset,

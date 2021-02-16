@@ -7,21 +7,14 @@ import {
   AzureMediaServicesModels
 } from '@azure/arm-mediaservices';
 import {
-  BuiltInStandardEncoderPreset,
   TransformsCreateOrUpdateResponse,
   TransformsGetResponse,
   AssetContainerPermission,
   JobOutputAsset,
   JobInputUnion,
   JobsGetResponse,
-  ContentKeyPoliciesGetResponse,
-  ContentKeyPoliciesCreateOrUpdateResponse,
-  ContentKeyPolicySymmetricTokenKey,
-  ContentKeyPolicyTokenClaim,
-  ContentKeyPolicyTokenRestriction,
-  ContentKeyPolicyOption,
-  ContentKeyPolicyPlayReadyConfiguration,
-  ContentKeyPolicyWidevineConfiguration,
+  AudioAnalyzerPreset,
+  VideoAnalyzerPreset
 } from "@azure/arm-mediaservices/esm/models";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
@@ -32,12 +25,6 @@ import * as util from 'util';
 import * as fs from 'fs';
 // Load the .env file if it exists
 import * as dotenv from "dotenv";
-// jsonwebtoken package used for signing JWT test tokens in this sample
-import * as jsonWebToken from "jsonwebtoken";
-// moment used for manipulation of dates and times for JWT token expirations
-import moment from 'moment';
-moment().format();
-
 dotenv.config();
 
 // This is the main Media Services client object
@@ -62,6 +49,7 @@ let credentials: msRestNodeAuth.ApplicationTokenCredentials;
 let inputFile: string;
 // This is a hosted sample file to use
 let inputUrl: string = "https://amssamples.streaming.mediaservices.windows.net/2e91931e-0d29-482b-a42b-9aadc93eb825/AzurePromo.mp4";
+const audioExtensions: string[] = [".mp4a", ".mp3", ".wav"];
 
 // Timer values
 const timeoutSeconds: number = 60 * 10;
@@ -74,20 +62,14 @@ const namePrefix: string = "prefix";
 let inputExtension: string;
 let blobName: string;
 
-// DRM Configuration Settings
-const issuer: string = "myIssuer";
-const audience: string = "myAudience";
-let tokenSigningKey: Int16Array = new Int16Array(40);
-const contentKeyPolicyName = "CommonEncryptionCencDrmContentKeyPolicy_2021_02_15_1";
-const symmetricKey: string = process.env.DRM_SYMMETRIC_KEY as string;
-
 ///////////////////////////////////////////
 //   Main entry point for sample script  //
 ///////////////////////////////////////////
 export async function main() {
-  // Define the name to use for the encoding Transform that will be created
-  const encodingTransformName = "ContentAwareEncodingTransform";
 
+  // These are the names used for creating and finding your transforms
+  const audioAnalyzerTransformName = "AudioAnalyzerTransform";
+  const videoAnalyzerTransformName = "VideoAnalyzerTransform";
 
   try {
     credentials = await msRestNodeAuth.loginWithServicePrincipalSecret(clientId, secret, tenantDomain);
@@ -97,75 +79,57 @@ export async function main() {
   }
 
   try {
-    // Ensure that you have the desired encoding Transform. This is really a one time setup operation.
-    console.log("Creating encoding transform...");
+    // Ensure that you have customized transforms for the AudioAnalyzer and VideoAnalyzer.  This is really a one time setup operation.
+    console.log("Creating Audio and Video analyzer transforms...");
 
-    // Create a new Transform using a preset name from the list of built in encoding presets. 
-    // To use a custom encoding preset, you can change this to be a StandardEncoderPreset, which has support for codecs, formats, and filter definitions.
-    // This sample uses the 'ContentAwareEncoding' preset which chooses the best output based on an analysis of the input video.
-    let adaptiveStreamingTransform: BuiltInStandardEncoderPreset = {
-      odatatype: "#Microsoft.Media.BuiltInStandardEncoderPreset",
-      presetName: "ContentAwareEncoding"
+    // Create a new Basic Audio Analyzer Transform Preset using the preset configuration
+    let audioAnalyzerBasicPreset: AudioAnalyzerPreset = {
+      odatatype: "#Microsoft.Media.AudioAnalyzerPreset",
+      audioLanguage: "en-us", // Be sure to modify this to your desired language code in BCP-47 format
+      mode: "Basic",  // Change this to Standard if you would like to use the more advanced audio analyzer
     };
 
-    let encodingTransform = await ensureTransformExists(encodingTransformName, adaptiveStreamingTransform);
+    // Create a new Video Analyzer Transform Preset using the preset configuration
+    let videoAnalyzerPreset: VideoAnalyzerPreset = {
+      odatatype: "#Microsoft.Media.VideoAnalyzerPreset",
+      audioLanguage: "en-us",  // Be sure to modify this to your desired language code in BCP-47 format
+      insightsToExtract : "AllInsights", // Video Analyzer can also run in Video only mode.
+      mode : "Standard" // Video analyzer can also process audio in basic or standard mode when using All Insights
+    };
+
+    console.log("Creating audio analyzer transform...");
+    let audioAnalyzerTransform = await ensureTransformExists(audioAnalyzerTransformName, audioAnalyzerBasicPreset);
+    console.log("Creating video analyzer transform...");
+    let videoAnalyzerTransform = await ensureTransformExists(videoAnalyzerTransformName, videoAnalyzerPreset);
 
     let uniqueness = uuidv4();
-    //TODO: NEED TO allow for input from URL here - parse arguments?
     let input = await getJobInputType(uniqueness);
     let outputAssetName = namePrefix + '-output-' + uniqueness;
-    let jobName = namePrefix + '-job-' + uniqueness;
+    let jobNameBasicAudio = namePrefix + '-basic-audio-' + uniqueness;
     let locatorName = "locator" + uniqueness;
+
 
     console.log("Creating the output Asset to encode content into...");
     let outputAsset = await mediaServicesClient.assets.createOrUpdate(resourceGroup, accountName, outputAssetName, {});
 
     if (outputAsset.name !== undefined) {
-      console.log("Submitting the encoding job to the Transform's job queue...");
-      let job = await submitJob(encodingTransformName, jobName, input, outputAsset.name);
+      console.log("Submitting the basic job to the Transform's job queue...");
 
-      console.log(`Waiting for Job - ${job.name} - to finish encoding`);
-      job = await waitForJobToFinish(encodingTransformName, jobName);
+      
+      // Choose which of the analyzer Transform names you would like to use here by changing the name of the Transform to be used
+      // For the basic audio analyzer - pass in the audioAnalyzerTransformName
+      // For the video Analyzer - change this code to pass in the videoAnalyzerTransformName
+      let analysisTransformName = audioAnalyzerTransformName; // or change to videoAnalyzerTransformName to see those results
+
+      let job = await submitJob(analysisTransformName, jobNameBasicAudio, input, outputAsset.name);
+
+      console.log(`Waiting for Job - ${job.name} - to finish analyzing`);
+      job = await waitForJobToFinish(analysisTransformName, jobNameBasicAudio);
 
       if (job.state == "Finished") {
         await downloadResults(outputAsset.name as string, outputFolder);
+        console.log ("Downloaded results to local folder. Please review the outputs from the analysis job.")
       }
-
-      // Set a token signing key that you want to use from the env file
-      // WARNING: This is an important secret when moving to a production system and should be kept in a Key Vault.
-      let tokenSigningKey = new Uint8Array(Buffer.from(symmetricKey, 'base64'));
-
-      // Create the content key policy that configures how the content key is delivered to end clients
-      // via the Key Delivery component of Azure Media Services.
-      // We are using the ContentKeyIdentifierClaim in the ContentKeyPolicy which means that the token presented
-      // to the Key Delivery Component must have the identifier of the content key in it. 
-      await ensureContentKeyPolicyExists(contentKeyPolicyName, tokenSigningKey);
-
-      let locator = await createStreamingLocator(outputAsset.name, locatorName, contentKeyPolicyName);
-
-      let keyIdentifier: string;
-      // In order to generate our test token we must get the ContentKeyId from the streaming locator to put in the ContentKeyIdentifierClaim claim used when creating the JWT test token 
-
-      // We are using the ContentKeyIdentifierClaim in the ContentKeyPolicy which means that the token presented
-      // to the Key Delivery Component must have the identifier of the content key in it.  Since we didn't specify
-      // a content key when creating the StreamingLocator, the service created a random GUID for us.  In order to 
-      // generate our JWT test token we must get the ContentKeyId to put in the ContentKeyIdentifierClaim claim.
-
-      if (locator.contentKeys !== undefined) {
-        keyIdentifier = locator.contentKeys[0].id;
-        console.log(`The ContentKey for this streaming locator is : ${keyIdentifier}`);
-
-      } else throw new Error("Locator and content keys are undefined.")
-
-      let token: string = await getToken(issuer, audience, keyIdentifier, tokenSigningKey);
-
-      console.log(`The JWT token used is : ${token}`);
-      console.log("You can decode the token using a tool like https://www.jsonwebtoken.io/ with the symmetric encryption key to view the decoded results.");
-
-      if (locator.name !== undefined) {
-        let urls = await getStreamingUrls(locator.name, token);
-      } else throw new Error("Locator was not created or Locator.name is undefined");
-
     }
 
   } catch (err) {
@@ -177,6 +141,7 @@ export async function main() {
 main().catch((err) => {
   console.error("Error running sample:", err.message);
 });
+
 
 async function downloadResults(assetName: string, resultsFolder: string) {
   let date = new Date();
@@ -248,7 +213,7 @@ async function waitForJobToFinish(transformName: string, jobName: string) {
 
       return job;
     } else if (new Date() > timeout) {
-      console.log(`Job ${job.name} timed out. Please retry or check the source file. Stop the debugger manually here.`);
+      console.log(`Job ${job.name} timed out. Please retry or check the source file.`);
       return job;
     } else {
       await setTimeoutPromise(sleepInterval, null);
@@ -285,7 +250,7 @@ async function ensureTransformExists(transformName: string, presetDefinition: Az
       console.log("Returning new Transform.");
       return transformCreate;
     } catch (err) {
-      console.log(`Error creating the Transform. Status Code:${err.statusCode}  Body: ${err.Body}, ${err}`);
+      console.log(`Error creating the Transform. Status Code:${err.statusCode}  Body: ${err.Body}`);
     }
   }
   console.log("Found existing Transform.");
@@ -387,177 +352,3 @@ async function submitJob(transformName: string, jobName: string, jobInput: JobIn
 
 }
 
-// Create a new Content Key Policy using Widevine DRM and Playready DRM configurations.
-
-async function ensureContentKeyPolicyExists(policyName: string, tokenSigningKey: Uint8Array) {
-  let contentKeyPoliciesGetResponse: ContentKeyPoliciesGetResponse;
-  let contentKeyPolicy: ContentKeyPoliciesCreateOrUpdateResponse;
-  contentKeyPoliciesGetResponse = await mediaServicesClient.contentKeyPolicies.get(resourceGroup, accountName, policyName);
-
-  if (!contentKeyPoliciesGetResponse.name) {
-
-    let primaryKey: ContentKeyPolicySymmetricTokenKey = {
-      odatatype: "#Microsoft.Media.ContentKeyPolicySymmetricTokenKey",
-      keyValue: tokenSigningKey,
-    }
-
-    let requiredClaims: ContentKeyPolicyTokenClaim[] = [
-      {
-        claimType: "urn:microsoft:azure:mediaservices:contentkeyidentifier" // contentKeyIdentifierClaim
-      }
-    ];
-
-    let restriction: ContentKeyPolicyTokenRestriction = {
-      odatatype: "#Microsoft.Media.ContentKeyPolicyTokenRestriction",
-      issuer: issuer,
-      audience: audience,
-      primaryVerificationKey: primaryKey,
-      restrictionTokenType: "Jwt",
-      alternateVerificationKeys: undefined,
-      requiredClaims: requiredClaims
-    }
-
-
-    //ContentKeyPolicyPlayReadyConfiguration playReadyConfig = ConfigurePlayReadyLicenseTemplate();
-
-    //   Creates a PlayReady License Template with the following settings
-    //    - sl2000
-    //    - license type = non-persistent
-    //    - content type = unspecified
-    //    - Uncompressed Digital Video OPL = 270
-    //    - Compressed Digital Video OPL  = 300
-    //    - Explicit Analog Television Protection =  best effort
-    let playreadyConfig: ContentKeyPolicyPlayReadyConfiguration = {
-      odatatype: "#Microsoft.Media.ContentKeyPolicyPlayReadyConfiguration",
-      licenses: [
-        {
-          allowTestDevices: true,
-          contentKeyLocation: {
-            odatatype: "#Microsoft.Media.ContentKeyPolicyPlayReadyContentEncryptionKeyFromHeader"
-          },
-          playRight: {
-            allowPassingVideoContentToUnknownOutput: "Allowed",
-            imageConstraintForAnalogComponentVideoRestriction: true,
-            digitalVideoOnlyContentRestriction: false,
-            uncompressedDigitalVideoOpl: 270,
-            compressedDigitalVideoOpl: 400,
-            imageConstraintForAnalogComputerMonitorRestriction: false,
-            explicitAnalogTelevisionOutputRestriction: {
-              bestEffort: true,
-              configurationData: 2
-            }
-          },
-          licenseType: "NonPersistent",
-          contentType: "Unspecified"
-        }
-      ],
-      responseCustomData: undefined
-    }
-
-    // Configure the WideVine license template in JSON
-    // See the latest documentation and Widevine docs by Google for details
-    // https://docs.microsoft.com/azure/media-services/latest/widevine-license-template-overview 
-    let wideVineConfig: ContentKeyPolicyWidevineConfiguration = {
-      odatatype: "#Microsoft.Media.ContentKeyPolicyWidevineConfiguration",
-      widevineTemplate: JSON.stringify({
-        allowed_track_types: "SD_HD",
-        content_key_specs: [
-          {
-            track_type: "SD",
-            security_level: 1,
-            required_output_protection: {
-              HDCP: "HDCP_NONE"
-            }
-          }
-        ],
-        policy_overrides: {
-          can_play: true,
-          can_persist: false,
-          can_renew: false,
-          rental_duration_seconds: 2592000,
-          playback_duration_seconds: 10800,
-          license_duration_seconds: 604800,
-          // Additional optional settings depending on the scenario
-          //renewal_recovery_duration_seconds: <renewal recovery duration in seconds>,
-          //renewal_server_url: "<renewal server url>",
-          //renewal_delay_seconds: <renewal delay>,
-          //renewal_retry_interval_seconds: <renewal retry interval>,
-          //renew_with_usage: <renew with usage>
-        }
-      })
-    }
-
-    // Add the two license type configurations for PlayReady and Widevine to the policy
-    let options: ContentKeyPolicyOption[] = [
-      {
-        configuration: playreadyConfig,
-        restriction: restriction
-      },
-      {
-        configuration: wideVineConfig,
-        restriction: restriction
-      },
-    ];
-
-    contentKeyPolicy = await mediaServicesClient.contentKeyPolicies.createOrUpdate(resourceGroup, accountName, policyName, {
-      description: "Content Key Policy Description",
-      options: options
-    });
-  }
-}
-
-async function createStreamingLocator(assetName: string, locatorName: string, contentKeyPolicyName: string) {
-  let streamingLocator = {
-    assetName: assetName,
-    streamingPolicyName: "Predefined_MultiDrmCencStreaming", // Uses the built in Policy for Multi DRM Common Encryption Streaming.
-    defaultContentKeyPolicyName: contentKeyPolicyName
-  };
-
-  let locator = await mediaServicesClient.streamingLocators.create(
-    resourceGroup,
-    accountName,
-    locatorName,
-    streamingLocator);
-
-  return locator;
-}
-
-async function getStreamingUrls(locatorName: string, token: string) {
-  // Make sure the streaming endpoint is in the "Running" state on your account
-  let streamingEndpoint = await mediaServicesClient.streamingEndpoints.get(resourceGroup, accountName, "default");
-
-  let paths = await mediaServicesClient.streamingLocators.listPaths(resourceGroup, accountName, locatorName);
-  if (paths.streamingPaths) {
-    paths.streamingPaths.forEach(path => {
-      path.paths?.forEach(formatPath => {
-        let manifestPath = "https://" + streamingEndpoint.hostName + formatPath
-        console.log(manifestPath);
-        console.log("IMPORTANT!! For all DRM Samples to work, you must use an HTTPS hosted player page. This could drive you insane if you miss this point.");
-        console.log(`Click to playback in AMP player: https://ampdemo.azureedge.net/?url=${manifestPath}&playready=true&widevine=true&token=Bearer%20${token}`)
-      });
-    });
-  }
-}
-
-async function getToken(issuer: string, audience: string, keyIdentifier: string, tokenSigningKey: Uint8Array): Promise<any> {
-  let startDate: number = moment().subtract(5, "minutes").unix()  // Get the current time and subtract 5 minutes, then return as a Unix timestamp
-  let endDate: number = moment().add(1, "day").unix() // Expire the token in 1 day, return Unix timestamp.
-
-  let claims = {
-    "urn:microsoft:azure:mediaservices:contentkeyidentifier": keyIdentifier,
-    "exp": endDate,
-    "nbf": startDate
-  }
-
-  let jwtToken = jsonWebToken.sign(
-    claims,
-    Buffer.from(tokenSigningKey),
-    {
-      algorithm: "HS256",
-      issuer: issuer,
-      audience: audience,
-    }
-  );
-
-  return jwtToken;
-}
