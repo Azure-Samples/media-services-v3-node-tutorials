@@ -531,6 +531,7 @@ async function getStreamingUrls(locatorName: string, token: string) {
         let manifestPath = "https://" + streamingEndpoint.hostName + formatPath
         console.log(manifestPath);
         console.log("IMPORTANT!! For all DRM Samples to work, you must use an HTTPS hosted player page. This could drive you insane if you miss this point.");
+        console.log("For Widevine testing, please open the link in the Chrome Browser.");
         console.log(`Click to playback in AMP player: https://ampdemo.azureedge.net/?url=${manifestPath}&playready=true&widevine=true&token=Bearer%20${token}`)
       });
     });
@@ -541,8 +542,13 @@ async function getToken(issuer: string, audience: string, keyIdentifier: string,
   let startDate: number = moment().subtract(5, "minutes").unix()  // Get the current time and subtract 5 minutes, then return as a Unix timestamp
   let endDate: number = moment().add(1, "day").unix() // Expire the token in 1 day, return Unix timestamp.
 
+  // To set a limit on how many times the same token can be used to request a key or a license.
+  // add  the "urn:microsoft:azure:mediaservices:maxuses" claim.
+  // For example, "urn:microsoft:azure:mediaservices:maxuses", 2));
+
   let claims = {
     "urn:microsoft:azure:mediaservices:contentkeyidentifier": keyIdentifier,
+    // "urn:microsoft:azure:mediaservices:maxuses": 2 // optional feature for token replay prevention
     "exp": endDate,
     "nbf": startDate
   }
