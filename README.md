@@ -2,6 +2,7 @@
 page_type: sample
 languages:
 - javascript
+- typescript
 products:
 - azure
 description: "This repository contains samples showing how to use Azure Media Services v3 API using node.js."
@@ -14,6 +15,19 @@ This repository contains samples showing how to use the [Azure Media Services v3
 
 > [!NOTE]
 > To make sure you are using the latest package, check [@azure/arm-mediaservices]( https://www.npmjs.com/package/@azure/arm-mediaservices).
+
+## Overview
+
+The projects in this repository were created using Visual Studio Code.
+
+|Project name|Use Case|
+|---|---|
+|HelloWorld-ListAssets/index.ts|Basic example on how to connect and list assets |
+|Live/index.ts| Basic live streaming example. **WARNING**, make sure to check that all resources are cleaned up and no longer billing in portal when using live|
+|StreamFilesSample/index.ts| Basic example for uploading a local file or encoding from a source URL. Sample shows how to use storage SDK to download content, and shows how to stream to a player |
+|StreamFilesWithDRMSample/index.ts| Demonstrates how to encode and stream using Widevine and PlayReady DRM |
+|VideoIndexerSample/index.ts| Example of using the Video and Audio Analyzer presets to generate metadata and insights from a video or audio file |
+
 
 ## Prerequisites
 1. Download and install [Visual Studio Code](https://code.visualstudio.com/Download)
@@ -55,5 +69,7 @@ To get the exact values, follow [Access APIs](https://docs.microsoft.com/azure/m
 The output from the HelloWorld-ListAssets may be empty if this is a new Media Services account with no new assets.  Just make sure that the script executes cleanly through on the first run without any errors, and you can then upload some content into the portal to see the results again on the second run.  If you have no errors and are ready to move on, move next to the StreamFilesSample for tutorial on how to upload a local file, encode it with "content aware encoding" and stream it with the Azure Media Player. 
 
 
+## Common Issues and Troubleshooting
 
+* Assets in Media Services have naming conventions that must be adhered to in order to avoid errors. For example the client.Assets.CreateOrUpdateAsync can fail with message "The resource type is invalid" if the name does not match the [naming conventions listed in this article](https://docs.microsoft.com/en-us/azure/media-services/latest/media-services-apis-overview#naming-conventions)
 
