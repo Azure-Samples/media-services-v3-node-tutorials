@@ -472,15 +472,15 @@ async function ensureContentKeyPolicyExists(policyName: string, tokenSigningKey:
           can_play: true,
           can_persist: false,
           can_renew: false,
-          rental_duration_seconds: 2592000,
-          playback_duration_seconds: 10800,
-          license_duration_seconds: 604800,
-          // Additional optional settings depending on the scenario
-          //renewal_recovery_duration_seconds: <renewal recovery duration in seconds>,
-          //renewal_server_url: "<renewal server url>",
-          //renewal_delay_seconds: <renewal delay>,
-          //renewal_retry_interval_seconds: <renewal retry interval>,
-          //renew_with_usage: <renew with usage>
+          // Additional OPTIONAL settings in Widevine template, depending on your use case scenario
+          // license_duration_seconds: 604800,
+          // rental_duration_seconds: 2592000,
+          // playback_duration_seconds: 10800,
+          // renewal_recovery_duration_seconds: <renewal recovery duration in seconds>,
+          // renewal_server_url: "<renewal server url>",
+          // renewal_delay_seconds: <renewal delay>,
+          // renewal_retry_interval_seconds: <renewal retry interval>,
+          // renew_with_usage: <renew with usage>
         }
       })
     }

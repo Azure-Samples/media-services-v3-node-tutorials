@@ -111,7 +111,6 @@ export async function main() {
 
     if (outputAsset.name !== undefined) {
       
-
       // Choose which of the analyzer Transform names you would like to use here by changing the name of the Transform to be used
       // For the basic audio analyzer - pass in the audioAnalyzerTransformName
       // For the video Analyzer - change this code to pass in the videoAnalyzerTransformName
