@@ -207,6 +207,7 @@ export async function main() {
         console.log("Live Event creation is an aysnc operation in Azure and timing can depend on resources available.")
         console.log();
 
+        let timeStart = process.hrtime();
         // When autostart is set to true, the Live Event will be started after creation. 
         // That means, the billing starts as soon as the Live Event starts running. 
         // You must explicitly call Stop on the Live Event resource to halt further billing.
@@ -230,7 +231,10 @@ export async function main() {
                 autoStart: false
             }
         );
-
+        let timeEnd = process.hrtime(timeStart);
+        console.info(`Execution time for create LiveEvent: %ds %dms`, timeEnd[0], timeEnd[1] /1000000);
+        console.log();
+        
         // Create an Asset for the LiveOutput to use. Think of this as the "tape" that will be recorded to. 
         // The asset entity points to a folder/container in your Azure Storage account. 
         console.log(`Creating an asset named: ${assetName}`);
@@ -248,6 +252,7 @@ export async function main() {
         // See the REST API for details on each of the settings on Live Output
         // https://docs.microsoft.com/rest/api/media/liveoutputs/create
 
+        timeStart = process.hrtime();
         let liveOutputCreate: LiveOutput;
         if (asset.name) {
             liveOutputCreate = {
@@ -268,13 +273,20 @@ export async function main() {
                 liveOutputName,
                 liveOutputCreate);
         }
+        timeEnd = process.hrtime(timeStart);
+        console.info(`Execution time for create Live Output: %ds %dms`, timeEnd[0], timeEnd[1] /1000000);
+        console.log();
 
+        timeStart = process.hrtime();
         // Start the Live Event - this will take some time...
         await mediaServicesClient.liveEvents.start(
             resourceGroup,
             accountName,
             liveEventName
         );
+        timeEnd = process.hrtime(timeStart);
+        console.info(`Execution time for start Live Event: %ds %dms`, timeEnd[0], timeEnd[1] /1000000);
+        console.log();
 
         // Refresh the liveEvent object's settings after starting it...
         liveEvent = await mediaServicesClient.liveEvents.get(
