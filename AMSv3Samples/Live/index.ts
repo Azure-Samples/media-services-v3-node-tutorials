@@ -1,6 +1,41 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
+////////////////////////////////////////////////////////////////////////////////////
+//  Azure Media Services Live streaming sample for Node.js
+//
+//  This sample assumes that you will use OBS Studio to broadcast RTMP
+//  to the ingest endpoint. Please install OBS Studio first. 
+//  Use the following settings in OBS:
+//      Encoder: NVIDIA NVENC (if avail) or x264
+//      Rate Control: CBR
+//      Bitrate: 2500 Kbps (or something reasonable for your laptop)
+//      Keyframe Interval : 2s, or 1s for low latency  
+//      Preset : Low-latency Quality or Performance (NVENC) or "veryfast" using x264
+//      Profile: high
+//      GPU: 0 (Auto)
+//      Max B-frames: 2
+//      
+//  The workflow for the sample and for the recommended use of the Live API:
+//  1) Create the client for AMS using AAD service principal or managed ID
+//  2) Set up your IP restriction allow objects for ingest and preview
+//  3) Configure the Live Event object with your settings. Choose pass-through
+//     or encoding channel type and size (720p or 1080p)
+//  4) Create the Live Event without starting it
+//  5) Create an Asset to be used for recording the live stream into
+//  6) Create a Live Output, which acts as the "recorder" to record into the
+//     Asset (which is like the tape in the recorder).
+//  7) Start the Live Event - this can take a little bit.
+//  8) Get the preview endpoint to monitor in a player for DASH or HLS.
+//  9) Get the ingest RTMP endpoint URL for use in OBS Studio.
+//     Set up OBS studio and start the broadcast.  Monitor the stream in 
+//     your DASH or HLS player of choice. 
+// 10) Create a new Streaming Locator on the recording Asset object from step 5.
+// 11) Get the Paths for the HLS and DASH manifest to share with your audience
+//     or CMS system. This can also be created earlier after step 5 if desired.
+////////////////////////////////////////////////////////////////////////////////////
+
+
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 import {
     AzureMediaServices,
@@ -10,6 +45,7 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 // Load the .env file if it exists
 import * as dotenv from "dotenv";
+import * as readlineSync from 'readline-sync';
 import { IPRange, LiveEvent, LiveEventInputAccessControl, LiveEventPreview, LiveOutput } from "@azure/arm-mediaservices/esm/models";
 dotenv.config();
 
@@ -54,6 +90,7 @@ export async function main() {
     }
 
     try {
+
 
         // Creating the LiveEvent - the primary object for live streaming in AMS. 
         // See the overview - https://docs.microsoft.com/azure/media-services/latest/live-streaming-overview
@@ -112,7 +149,7 @@ export async function main() {
             }
         }
 
-        // To get the same ingest URL for the same LiveEvent name every time...
+        // To get the same ingest URL for the same LiveEvent name every single time...
         // 1. Set useStaticHostname  to true so you have ingest like: 
         //        rtmps://liveevent-hevc12-eventgridmediaservice-usw22.channel.media.azure.net:2935/live/522f9b27dd2d4b26aeb9ef8ab96c5c77           
         // 2. Set accessToken to a desired GUID string (with or without hyphen)
@@ -174,48 +211,25 @@ export async function main() {
         // That means, the billing starts as soon as the Live Event starts running. 
         // You must explicitly call Stop on the Live Event resource to halt further billing.
         // The following operation can sometimes take awhile. Be patient.
+        // On optional workflow is to first call allocate() instead of create. 
+        // https://docs.microsoft.com/en-us/rest/api/media/liveevents/allocate 
+        // This allows you to allocate the resources and place the live event into a "Standby" mode until 
+        // you are ready to transition to "Running". This is useful when you want to pool resources in a warm "Standby" state at a reduced cost.
+        // The transition from Standby to "Running" is much faster than cold creation to "Running" using the autostart property.
         let liveEvent = await mediaServicesClient.liveEvents.create(
             resourceGroup,
             accountName,
             liveEventName,
             liveEventCreate,
-            // When autostart is set to true, the Live Event will be started after creation. 
+            // When autostart is set to true, you should "await" this method operation to complete. 
+            // The Live Event will be started after creation. 
             // You may choose not to do this, but create the object, and then start it using the standby state to 
             // keep the resources "warm" and billing at a lower cost until you are ready to go live. 
             // That increases the speed of startup when you are ready to go live. 
             {
-                autoStart: true
+                autoStart: false
             }
         );
-
-        // Get the RTMP ingest URL to configure in OBS Studio. 
-        if (liveEvent.input?.endpoints) {
-            let ingestUrl = liveEvent.input.endpoints[0].url;
-            console.log(`The RTMP ingest URL to enter into OBS Studio is:`);
-            console.log(`RTMP ingest : ${ingestUrl}`);
-            console.log(`Make sure to enter a Stream Key into the OBS studio settings. It can be any value or you can repeat the accessToken used in the ingest URL path.`);
-            console.log();
-        }
-
-        if (liveEvent.preview?.endpoints) {
-            // Use the previewEndpoint to preview and verify
-            // that the input from the encoder is actually being received
-            let previewEndpoint = liveEvent.preview.endpoints[0].url;
-            console.log("The preview url is:");
-            console.log(previewEndpoint);
-            console.log();
-            console.log("Open the live preview in your browser and use any DASH or HLS player to monitor the preview playback:");
-            console.log(`https://ampdemo.azureedge.net/?url=${previewEndpoint}&heuristicprofile=lowlatency`);
-            console.log("You will need to refresh the player page SEVERAL times until enough data has arrived to allow for manifest creation.");
-            console.log("In a production player, the player can inspect the manifest to see if it contains enough content for the player to load and auto reload.");
-            console.log();
-        }
-
-        console.log("Start the live stream now, sending the input to the ingest url and verify that it is arriving with the preview url.");
-        console.log("IMPORTANT TIP!: Make CERTAIN that the video is flowing to the Preview URL before continuing!");
-
-        // SET A BREAKPOINT HERE!
-        console.log("PAUSE here in the Debugger until you are ready to continue...");
 
         // Create an Asset for the LiveOutput to use. Think of this as the "tape" that will be recorded to. 
         // The asset entity points to a folder/container in your Azure Storage account. 
@@ -235,12 +249,11 @@ export async function main() {
         // https://docs.microsoft.com/rest/api/media/liveoutputs/create
 
         let liveOutputCreate: LiveOutput;
-        let liveOutput: LiveOutput;
         if (asset.name) {
             liveOutputCreate = {
                 description: "Optional description when using more than one live output",
                 assetName: asset.name,
-                manifestName: manifestName, // The HLS and DASH manifest file name. If not provided, the service will generate one automatically.
+                manifestName: manifestName, // The HLS and DASH manifest file name. This is recommended to set if you want a deterministic manifest path up front.
                 archiveWindowLength: "PT1H", // sets a one hour time-shift DVR window. Uses ISO 8601 format string.
                 hls: {
                     fragmentsPerTsSegment: 1 // Advanced setting when using HLS TS output only.
@@ -248,12 +261,64 @@ export async function main() {
             }
 
             // Create and await the live output
-            let liveOutput: LiveOutput = await mediaServicesClient.liveOutputs.create(
+            await mediaServicesClient.liveOutputs.create(
                 resourceGroup,
                 accountName,
                 liveEventName,
                 liveOutputName,
                 liveOutputCreate);
+        }
+
+        // Start the Live Event - this will take some time...
+        await mediaServicesClient.liveEvents.start(
+            resourceGroup,
+            accountName,
+            liveEventName
+        );
+
+        // Refresh the liveEvent object's settings after starting it...
+        liveEvent = await mediaServicesClient.liveEvents.get(
+            resourceGroup,
+            accountName,
+            liveEventName
+        )
+
+        // Get the RTMP ingest URL to configure in OBS Studio. 
+        // The endpoints is a collection of RTMP primary and secondary, and RTMPS primary and secondary URLs. 
+        // to get the primary secure RTMPS, it is usually going to be index 3, but you could add a  loop here to confirm...
+        if (liveEvent.input?.endpoints) {
+            let ingestUrl = liveEvent.input.endpoints[0].url;
+            console.log(`The RTMP ingest URL to enter into OBS Studio is:`);
+            console.log(`RTMP ingest : ${ingestUrl}`);
+            console.log(`Make sure to enter a Stream Key into the OBS studio settings. It can be any value or you can repeat the accessToken used in the ingest URL path.`);
+            console.log();
+        }
+
+        if (liveEvent.preview?.endpoints) {
+            // Use the previewEndpoint to preview and verify
+            // that the input from the encoder is actually being received
+            // The preview endpoint URL also support the addition of various format strings for HLS (format=m3u8-cmaf) and DASH (format=mpd-time-cmaf) for example.
+            // The default manifest is Smooth. 
+            let previewEndpoint = liveEvent.preview.endpoints[0].url;
+            console.log("The preview url is:");
+            console.log(previewEndpoint);
+            console.log();
+            console.log("Open the live preview in your browser and use any DASH or HLS player to monitor the preview playback:");
+            console.log(`https://ampdemo.azureedge.net/?url=${previewEndpoint}(format=mpd-time-cmaf)&heuristicprofile=lowlatency`);
+            console.log("You will need to refresh the player page SEVERAL times until enough data has arrived to allow for manifest creation.");
+            console.log("In a production player, the player can inspect the manifest to see if it contains enough content for the player to load and auto reload.");
+            console.log();
+        }
+
+        console.log("Start the live stream now, sending the input to the ingest url and verify that it is arriving with the preview url.");
+        console.log("IMPORTANT TIP!: Make CERTAIN that the video is flowing to the Preview URL before continuing!");
+
+        // SET A BREAKPOINT HERE!
+        console.log("PAUSE here in the Debugger until you are ready to continue...");
+        if (readlineSync.keyInYN("Do you want to continue?")){
+            //Yes
+        }else{
+            throw new Error("User canceled. Cleaning up...")
         }
 
         // Create the Streaming Locator URL for playback of the contents in the Live Output recording
@@ -277,68 +342,35 @@ export async function main() {
         let hostname = streamingEndpoint.hostName;
         let scheme = "https";
 
-        let streamingPaths = await mediaServicesClient.streamingLocators.listPaths(
-            resourceGroup,
-            accountName,
-            streamingLocatorName
-        );
-
-        let hlsManifest: string;
-        let dashManifest: string;
-
-        if (streamingPaths.streamingPaths && streamingPaths.streamingPaths.length > 0) {
-            streamingPaths.streamingPaths.forEach(path => {
-                if (path.streamingProtocol == "Hls") {
-                    if (path.paths) {
-                        path.paths.forEach(hlsFormat => {
-                            // Look for the CMAF HLS format URL. This is the most current HLS version supported
-                            if (hlsFormat.indexOf('m3u8-cmaf') > 0) {
-                                hlsManifest = `${scheme}://${hostname}${hlsFormat}`;
-                                console.log(`The HLS (MP4) manifest URL is : ${hlsManifest}`)
-                                console.log("Open the following URL to playback the live stream in an HLS compliant player (HLS.js, Shaka, ExoPlayer) or directly in an iOS device");
-                                console.log(`${hlsManifest}`)
-                                console.log();
-                            }
-                        });
-
-                    }
-                }
-                if (path.streamingProtocol == "Dash") {
-                    if (path.paths) {
-                        path.paths.forEach(dashFormat => {
-                            // Look for the CMAF DASH format URL. This is the most current DASH version supported
-                            if (dashFormat.indexOf('cmaf') > 0) {
-                                dashManifest = `${scheme}://${hostname}${dashFormat}`;
-                                console.log(`The DASH manifest URL is : ${dashManifest}`)
-
-                                console.log("Open the following URL to playback the live stream from the LiveOutput in the Azure Media Player");
-                                console.log(`https://ampdemo.azureedge.net/?url=${dashManifest}&heuristicprofile=lowlatency"`)
-                                console.log();
-                            }
-                        });
-
-                    }
-                }
-            });
-        } else {
-            console.error("No streaming paths found. Make sure that the encoder is sending data to the ingest point.")
-        }
+        // The next method "bulidManifestPaths" is a helper to list the streaming manifests for HLS and DASH. 
+        // The paths are only available after the live streaming source has connected. 
+        // If you wish to get the streaming manifest ahead of time, make sure to set the manifest name in the LiveOutput as done above.
+        // This allows you to have a deterministic manifest path. <streaming endpoint hostname>/<streaming locator ID>/manifestName.ism/manifest(<format string>)
+        //
+        // Uncomment this line to see how to list paths dynamically:
+        // await listStreamingPaths(streamingLocatorName, scheme, hostname);
+        // 
+        // Or use this line to build the paths statically. Which is highly recommended when you want to share the stream manifests
+        // to a player application or CMS system ahead of the live event.
+        await buildManifestPaths(scheme, hostname, locator.streamingLocatorId, manifestName);
 
         // SET A BREAKPOINT HERE!
         console.log("PAUSE here in the Debugger until you are ready to continue...");
-
-        console.error("WARNING: If you hit this message, double check the Portal to make sure you do not have any Running live events after using this Sample- or they will remain billing!");
-
+        if (readlineSync.keyInYN("Do you want to continue and clean up the sample?")){
+            //Yes
+        }
 
     } catch (err) {
         console.log(err);
+        console.error("WARNING: If you hit this message, double check the Portal to make sure you do not have any Running live events after using this Sample- or they will remain billing!");
     }
     finally {
         // Cleaning Up all resources
         //@ts-ignore - these will be set, so avoiding the compiler complaint for now. 
+        console.log("Cleaning up resources, stopping Live Event billing, and deleting live Event...")
+        console.log("CRITICAL WARNING ($$$$): - Wait here for the All Clear - this takes a few minutes sometimes to clean up. DO NOT STOP DEBUGGER yet or you will leak billable resources!")
         await cleanUpResources(liveEventName, liveOutputName);
-        console.error("WARNING: If you hit this message, double check the Portal to make sure you do not have any Running live events - or they will remain billing!");
-
+        console.log("All Clear, and all cleaned up. Please double check in the portal to make sure you have not leaked any Live Events, or left any Running still which would result in unwanted billing.")
     }
 }
 
@@ -347,6 +379,81 @@ main().catch((err) => {
     console.error("WARNING: If you hit this message, double check the Portal to make sure you do not have any Running live events - or they will remain billing!");
 });
 
+// This method builds the manifest URL from the static values used during creation of the Live Output.
+// This allows you to have a deterministic manifest path. <streaming endpoint hostname>/<streaming locator ID>/manifestName.ism/manifest(<format string>)
+async function buildManifestPaths(scheme: string, hostname: string | undefined, streamingLocatorId: string |undefined, manifestName: string) {
+    const hlsFormat: string = "format=m3u8-cmaf";
+    const dashFormat: string = "format=mpd-time-cmaf";
+
+    let manifestBase = `${scheme}://${hostname}/${streamingLocatorId}/${manifestName}.ism/manifest`
+    let hlsManifest = `${manifestBase}(${hlsFormat})`;
+    console.log(`The HLS (MP4) manifest URL is : ${hlsManifest}`);
+    console.log("Open the following URL to playback the live stream in an HLS compliant player (HLS.js, Shaka, ExoPlayer) or directly in an iOS device");
+    console.log(`${hlsManifest}`);
+    console.log();
+
+    let dashManifest = `${manifestBase}(${dashFormat})`;
+    console.log(`The DASH manifest URL is : ${dashManifest}`);
+    console.log("Open the following URL to playback the live stream from the LiveOutput in the Azure Media Player");
+    console.log(`https://ampdemo.azureedge.net/?url=${dashManifest}&heuristicprofile=lowlatency"`);
+    console.log();
+}
+
+// This method demonstrates using the listPaths method on Streaming locators to print out the DASH and HLS manifest links
+// Optionally you can just build the paths if you are setting the manifest name and would like to create the streaming 
+// manifest URls before you actually start streaming.
+// The paths in the function listPaths on streaming locators are not available until streaming has actually started.  
+// Keep in mind that this workflow is not great when you need to have the manifest URL up front for a CMS. 
+// It is just provided here for example of listing all the dynamic format paths available at runtime of the live event.
+async function listStreamingPaths(streamingLocatorName: string, scheme: string, hostname: string) {
+    let streamingPaths = await mediaServicesClient.streamingLocators.listPaths(
+        resourceGroup,
+        accountName,
+        streamingLocatorName
+    );
+
+    let hlsManifest: string;
+    let dashManifest: string;
+
+    // TODO : rewrite this to be more deterministic. 
+    if (streamingPaths.streamingPaths && streamingPaths.streamingPaths.length > 0) {
+        streamingPaths.streamingPaths.forEach(path => {
+            if (path.streamingProtocol == "Hls") {
+                if (path.paths) {
+                    path.paths.forEach(hlsFormat => {
+                        // Look for the CMAF HLS format URL. This is the most current HLS version supported
+                        if (hlsFormat.indexOf('m3u8-cmaf') > 0) {
+                            hlsManifest = `${scheme}://${hostname}${hlsFormat}`;
+                            console.log(`The HLS (MP4) manifest URL is : ${hlsManifest}`);
+                            console.log("Open the following URL to playback the live stream in an HLS compliant player (HLS.js, Shaka, ExoPlayer) or directly in an iOS device");
+                            console.log(`${hlsManifest}`);
+                            console.log();
+                        }
+                    });
+
+                }
+            }
+            if (path.streamingProtocol == "Dash") {
+                if (path.paths) {
+                    path.paths.forEach(dashFormat => {
+                        // Look for the CMAF DASH format URL. This is the most current DASH version supported
+                        if (dashFormat.indexOf('cmaf') > 0) {
+                            dashManifest = `${scheme}://${hostname}${dashFormat}`;
+                            console.log(`The DASH manifest URL is : ${dashManifest}`);
+
+                            console.log("Open the following URL to playback the live stream from the LiveOutput in the Azure Media Player");
+                            console.log(`https://ampdemo.azureedge.net/?url=${dashManifest}&heuristicprofile=lowlatency"`);
+                            console.log();
+                        }
+                    });
+
+                }
+            }
+        });
+    } else {
+        console.error("No streaming paths found. Make sure that the encoder is sending data to the ingest point.");
+    }
+}
 
 async function createStreamingLocator(assetName: string, locatorName: string) {
     let streamingLocator = {
