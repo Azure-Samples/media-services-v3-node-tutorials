@@ -11,7 +11,6 @@ import { v4 as uuidv4 } from 'uuid';
 // Load the .env file if it exists
 import * as dotenv from "dotenv";
 import { IPRange, LiveEvent, LiveEventInputAccessControl, LiveEventPreview, LiveOutput } from "@azure/arm-mediaservices/esm/models";
-import { getPathStringFromParameter } from "@azure/ms-rest-js/es/lib/operationParameter";
 dotenv.config();
 
 // This is the main Media Services client object
@@ -55,7 +54,6 @@ export async function main() {
     }
 
     try {
-
 
         // Creating the LiveEvent - the primary object for live streaming in AMS. 
         // See the overview - https://docs.microsoft.com/azure/media-services/latest/live-streaming-overview
@@ -195,7 +193,7 @@ export async function main() {
             let ingestUrl = liveEvent.input.endpoints[0].url;
             console.log(`The RTMP ingest URL to enter into OBS Studio is:`);
             console.log(`RTMP ingest : ${ingestUrl}`);
-            console.log(`Make sure to enter a Stream Key into the OBS studio settings. It can be any value or you can repeat the GUID used in the ingest URL path.`);
+            console.log(`Make sure to enter a Stream Key into the OBS studio settings. It can be any value or you can repeat the accessToken used in the ingest URL path.`);
             console.log();
         }
 
@@ -216,8 +214,8 @@ export async function main() {
         console.log("Start the live stream now, sending the input to the ingest url and verify that it is arriving with the preview url.");
         console.log("IMPORTANT TIP!: Make CERTAIN that the video is flowing to the Preview URL before continuing!");
 
-         // SET A BREAKPOINT HERE!
-         console.log("PAUSE here in the Debugger until you are ready to continue...");
+        // SET A BREAKPOINT HERE!
+        console.log("PAUSE here in the Debugger until you are ready to continue...");
 
         // Create an Asset for the LiveOutput to use. Think of this as the "tape" that will be recorded to. 
         // The asset entity points to a folder/container in your Azure Storage account. 
@@ -292,22 +290,33 @@ export async function main() {
             streamingPaths.streamingPaths.forEach(path => {
                 if (path.streamingProtocol == "Hls") {
                     if (path.paths) {
-                        hlsManifest = `${scheme}://${hostname}${path.paths[0]}`;
-                        console.log(`The HLS manifest URL is : ${hlsManifest}`)
+                        path.paths.forEach(hlsFormat => {
+                            // Look for the CMAF HLS format URL. This is the most current HLS version supported
+                            if (hlsFormat.indexOf('m3u8-cmaf') > 0) {
+                                hlsManifest = `${scheme}://${hostname}${hlsFormat}`;
+                                console.log(`The HLS (MP4) manifest URL is : ${hlsManifest}`)
+                                console.log("Open the following URL to playback the live stream in an HLS compliant player (HLS.js, Shaka, ExoPlayer) or directly in an iOS device");
+                                console.log(`${hlsManifest}`)
+                                console.log();
+                            }
+                        });
 
-                        console.log("Open the following URL to playback the live stream in an HLS compliant player (HLS.js, Shaka, ExoPlayer) or directly in an iOS device");
-                        console.log(`${hlsManifest}`)
-                        console.log();
                     }
                 }
                 if (path.streamingProtocol == "Dash") {
                     if (path.paths) {
-                        dashManifest = `${scheme}://${hostname}${path.paths[0]}`;
-                        console.log(`The DASH manifest URL is : ${dashManifest}`)
+                        path.paths.forEach(dashFormat => {
+                            // Look for the CMAF DASH format URL. This is the most current DASH version supported
+                            if (dashFormat.indexOf('cmaf') > 0) {
+                                dashManifest = `${scheme}://${hostname}${dashFormat}`;
+                                console.log(`The DASH manifest URL is : ${dashManifest}`)
 
-                        console.log("Open the following URL to playback the live stream from the LiveOutput in the Azure Media Player");
-                        console.log(`https://ampdemo.azureedge.net/?url=${dashManifest}&heuristicprofile=lowlatency"`)
-                        console.log();
+                                console.log("Open the following URL to playback the live stream from the LiveOutput in the Azure Media Player");
+                                console.log(`https://ampdemo.azureedge.net/?url=${dashManifest}&heuristicprofile=lowlatency"`)
+                                console.log();
+                            }
+                        });
+
                     }
                 }
             });
@@ -378,9 +387,15 @@ async function cleanUpResources(liveEventName: string, liveOutputName: string) {
         )
     };
 
+
     // OPTIONAL - If you want to immediately use the Asset for encoding, analysis, or other workflows, you can do so here.
     // This is the point at which you can immediately use the archived, recorded asset in storage for other tasks. 
     // You do not need to wait for the live event to clean up before continuing with other tasks on the recorded output.
+
+    // Once the above completes, you can refresh the player to see that the live stream has stopped and you are now viewing the recorded asset in on-demand mode. 
+
+    // Next we will clean up the live event by stopping it and then deleting it. 
+    // Stop can take some time, as it has to clean up resources async.
 
     let liveEventForCleanup = await mediaServicesClient.liveEvents.get(
         resourceGroup,
@@ -408,5 +423,7 @@ async function cleanUpResources(liveEventName: string, liveOutputName: string) {
             accountName,
             liveEventName
         )
+
+        // IMPORTANT! Open the portal again and make CERTAIN that the live event is stopped and deleted - and that you do not have any billing live events running still.
     }
 }
