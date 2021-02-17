@@ -13,7 +13,8 @@ import {
   AssetContainerPermission,
   JobOutputAsset,
   JobInputUnion,
-  JobsGetResponse
+  JobsGetResponse,
+  AzureMediaServicesOptions
 } from "@azure/arm-mediaservices/esm/models";
 import { BlobServiceClient, AnonymousCredential, BlobDownloadResponseModel } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
@@ -68,8 +69,12 @@ export async function main() {
   const encodingTransformName = "ContentAwareEncodingTransform";
 
   try {
+    let clientOptions: AzureMediaServicesOptions = {
+      longRunningOperationRetryTimeout: 5, // set the timeout for retries to 5 seconds.
+      noRetryPolicy: false // use the default retry policy.
+    }
     credentials = await msRestNodeAuth.loginWithServicePrincipalSecret(clientId, secret, tenantDomain);
-    mediaServicesClient = new AzureMediaServices(credentials, subscriptionId);
+    mediaServicesClient = new AzureMediaServices(credentials, subscriptionId, clientOptions);
   } catch (err) {
     console.log(`Error retrieving Media Services Client. Status Code:${err.statusCode}  Body: ${err.Body}`);
   }
@@ -151,7 +156,7 @@ async function downloadResults(assetName: string, resultsFolder: string) {
     // Get the blob container client using the container name on the SAS URL path
     // to access the blockBlobClient needed to use the uploadFile method
     let containerClient = blobClient.getContainerClient('');
-    
+
     try {
       fs.mkdirSync(directory, { recursive: true });
     } catch (err) {

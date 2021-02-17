@@ -22,6 +22,7 @@ import {
   ContentKeyPolicyOption,
   ContentKeyPolicyPlayReadyConfiguration,
   ContentKeyPolicyWidevineConfiguration,
+  AzureMediaServicesOptions,
 } from "@azure/arm-mediaservices/esm/models";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
@@ -90,8 +91,13 @@ export async function main() {
 
 
   try {
+    let clientOptions: AzureMediaServicesOptions = {
+      longRunningOperationRetryTimeout: 5, // set the timeout for retries to 5 seconds
+      noRetryPolicy: false // use the default retry policy.
+    }
+    
     credentials = await msRestNodeAuth.loginWithServicePrincipalSecret(clientId, secret, tenantDomain);
-    mediaServicesClient = new AzureMediaServices(credentials, subscriptionId);
+    mediaServicesClient = new AzureMediaServices(credentials, subscriptionId, clientOptions);
   } catch (err) {
     console.log(`Error retrieving Media Services Client. Status Code:${err.statusCode}  Body: ${err.Body}`);
   }
