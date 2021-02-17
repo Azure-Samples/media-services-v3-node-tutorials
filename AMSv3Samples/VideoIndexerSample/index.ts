@@ -73,8 +73,7 @@ export async function main() {
 
   try {
     let clientOptions: AzureMediaServicesOptions = {
-      longRunningOperationRetryTimeout: 5, // set the timeout for retries to 5 seconds
-      noRetryPolicy: false // use the default retry policy.
+      longRunningOperationRetryTimeout: 5 // set the timeout for retries to 5 seconds
     }
     
     credentials = await msRestNodeAuth.loginWithServicePrincipalSecret(clientId, secret, tenantDomain);

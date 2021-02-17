@@ -1,8 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-import * as msRest from "@azure/ms-rest-js";
-import * as msRestAzure from "@azure/ms-rest-azure-js";
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 import { AzureMediaServices } from '@azure/arm-mediaservices';
 import { AzureMediaServicesOptions } from "@azure/arm-mediaservices/esm/models";
@@ -21,10 +19,9 @@ export async function main() {
   const accountName = process.env.AZURE_MEDIA_ACCOUNT_NAME as string;
 
   let clientOptions: AzureMediaServicesOptions = {
-    longRunningOperationRetryTimeout: 5, // set the timeout for retries to 5 seconds
-    noRetryPolicy: false // use the default retry policy.
+    longRunningOperationRetryTimeout: 5 // set the timeout for retries to 5 seconds
   }
-  
+
   const creds = await msRestNodeAuth.loginWithServicePrincipalSecret(clientId, secret, tenantDomain);
   const mediaClient = new AzureMediaServices(creds, subscriptionId, clientOptions);
 

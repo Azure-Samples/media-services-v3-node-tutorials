@@ -82,8 +82,7 @@ export async function main() {
     let liveOutput: LiveOutput;
 
     let clientOptions :AzureMediaServicesOptions = {
-        longRunningOperationRetryTimeout: 2, // set the timeout for retries to be really fast for live events. 2 seconds in this case.
-        noRetryPolicy: false // use the default retry policy.
+        longRunningOperationRetryTimeout: 2 // set the timeout for retries to be really fast for live events. 2 seconds in this case.
     }
 
     console.error("Starting the Live Streaming sample for Azure Media Services");
