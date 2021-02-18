@@ -31,7 +31,7 @@
 //     Set up OBS studio and start the broadcast.  Monitor the stream in 
 //     your DASH or HLS player of choice. 
 // 10) Create a new Streaming Locator on the recording Asset object from step 5.
-// 11) Get the Paths for the HLS and DASH manifest to share with your audience
+// 11) Get the URLs for the HLS and DASH manifest to share with your audience
 //     or CMS system. This can also be created earlier after step 5 if desired.
 ////////////////////////////////////////////////////////////////////////////////////
 
@@ -82,7 +82,7 @@ export async function main() {
     let liveOutput: LiveOutput;
 
     let clientOptions :AzureMediaServicesOptions = {
-        longRunningOperationRetryTimeout: 2 // set the timeout for retries to be really fast for live events. 2 seconds in this case.
+        longRunningOperationRetryTimeout: 2 // set the timeout for retries to be really fast for live events. 2 seconds in this case. Default is 30s.
     }
 
     console.error("Starting the Live Streaming sample for Azure Media Services");
@@ -163,13 +163,15 @@ export async function main() {
         let liveEventCreate: LiveEvent = {
             location: location,
             description: "Sample Live Event from Node.js SDK sample",
-            useStaticHostname: false,
-            // `) Set up the input settings for the Live event...
+            // Set useStaticHostname to true to make the ingest and preview URL host name the same. 
+            // This can slow things down a bit. 
+            useStaticHostname: true,
+            // 1) Set up the input settings for the Live event...
             input: {
                 streamingProtocol: "RTMP", // options are RTMP or Smooth Streaming ingest format.
                 accessControl: liveEventInputAccess,  // controls the IP restriction for the source encoder. 
                 keyFrameIntervalDuration: "PT2S",  // Set this to match the ingest encoder's settings   
-                accessToken: "9eb1f703b149417c8448771867f48501" // Use this value when you want to make sure the ingest URL is always the same and not random.f omitted, the service will generate a unique value.
+                accessToken: "9eb1f703b149417c8448771867f48501" // Use this value when you want to make sure the ingest URL is static and always the same. If omitted, the service will generate a random GUID value.
             },
 
             // 2) Set the live event to use pass-through or cloud encoding modes...
@@ -192,7 +194,7 @@ export async function main() {
             ],
 
             // 5) Optionally enable live transcriptions if desired. 
-            // WARNING : This is extra cost, so please check pricing before enabling.
+            // WARNING : This is extra cost ($$$), so please check pricing before enabling.
             /* transcriptions : [
                 {
                     inputTrackSelection: [], // chose which track to transcribe on the source input.
@@ -207,7 +209,7 @@ export async function main() {
         }
 
         console.log("Creating the LiveEvent, please be patient as this can take time to complete async.")
-        console.log("Live Event creation is an aysnc operation in Azure and timing can depend on resources available.")
+        console.log("Live Event creation is an async operation in Azure and timing can depend on resources available.")
         console.log();
 
         let timeStart = process.hrtime();
