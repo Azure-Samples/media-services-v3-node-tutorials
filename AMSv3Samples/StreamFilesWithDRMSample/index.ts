@@ -117,9 +117,9 @@ export async function main() {
 
     let uniqueness = uuidv4();
     let input = await getJobInputType(uniqueness);
-    let outputAssetName = namePrefix + '-output-' + uniqueness;
-    let jobName = namePrefix + '-job-' + uniqueness;
-    let locatorName = "locator" + uniqueness;
+    let outputAssetName = `${namePrefix}-output-${uniqueness}`;
+    let jobName = `${namePrefix}-job-${uniqueness}`;
+    let locatorName = `locator${uniqueness}`;
 
     console.log("Creating the output Asset to encode content into...");
     let outputAsset = await mediaServicesClient.assets.createOrUpdate(resourceGroup, accountName, outputAssetName, {});

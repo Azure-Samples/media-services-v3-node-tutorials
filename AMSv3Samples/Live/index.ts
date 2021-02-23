@@ -71,10 +71,10 @@ let credentials: msRestNodeAuth.ApplicationTokenCredentials;
 ///////////////////////////////////////////
 export async function main() {
     let uniqueness = uuidv4().split('-')[0]; // Create a GUID for uniqueness 
-    let liveEventName = "liveEvent-" + uniqueness // WARNING: Be careful not to leak live events using this sample!
-    let assetName = "archiveAsset" + uniqueness;
-    let liveOutputName = "liveOutput" + uniqueness;
-    let streamingLocatorName = "liveStreamLocator" + uniqueness;
+    let liveEventName = `liveEvent-${uniqueness}`  // WARNING: Be careful not to leak live events using this sample!
+    let assetName = `archiveAsset${uniqueness}`;
+    let liveOutputName = `liveOutput${uniqueness}`;
+    let streamingLocatorName = `liveStreamLocator${uniqueness}`;
     let streamingEndpointName = "default"; // Change this to your specific streaming endpoint name if not using "default"
 
     // The primary live event and output objects for creating and cleaning up later. 
