@@ -54,13 +54,13 @@ let mediaServicesClient: AzureMediaServices;
 
 // Copy the samples.env file and rename it to .env first, then populate it's values with the values obtained 
 // from your Media Services account's API Access page in the Azure portal.
-const clientId: string = process.env.AZURE_CLIENT_ID as string;
-const secret: string = process.env.AZURE_CLIENT_SECRET as string;
-const tenantDomain: string = process.env.AAD_TENANT_DOMAIN as string;
-const subscriptionId: string = process.env.AZURE_SUBSCRIPTION_ID as string;
-const resourceGroup: string = process.env.AZURE_RESOURCE_GROUP as string;
-const accountName: string = process.env.AZURE_MEDIA_ACCOUNT_NAME as string;
-const location: string = process.env.AZURE_LOCATION as string;
+const clientId: string = process.env.AADCLIENTID as string;
+const secret: string = process.env.AADSECRET as string;
+const tenantDomain: string = process.env.AADTENANTDOMAIN as string;
+const subscriptionId: string = process.env.SUBSCRIPTIONID as string;
+const resourceGroup: string = process.env.RESOURCEGROUP as string;
+const accountName: string = process.env.ACCOUNTNAME as string;
+const location: string = process.env.LOCATION as string;
 
 // Credentials object used for Service Principal authentication to Azure Media Services and Storage account
 let credentials: msRestNodeAuth.ApplicationTokenCredentials;
