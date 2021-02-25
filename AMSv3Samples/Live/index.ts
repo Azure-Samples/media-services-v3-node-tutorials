@@ -166,6 +166,7 @@ export async function main() {
             // Set useStaticHostname to true to make the ingest and preview URL host name the same. 
             // This can slow things down a bit. 
             useStaticHostname: true,
+            //hostnamePrefix: "somethingstatic", /// When using Static host name true, you can control the host prefix name here if desired 
             // 1) Set up the input settings for the Live event...
             input: {
                 streamingProtocol: "RTMP", // options are RTMP or Smooth Streaming ingest format.
