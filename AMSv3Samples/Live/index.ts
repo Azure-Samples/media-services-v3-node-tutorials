@@ -171,7 +171,7 @@ export async function main() {
             input: {
                 streamingProtocol: "RTMP", // options are RTMP or Smooth Streaming ingest format.
                 accessControl: liveEventInputAccess,  // controls the IP restriction for the source encoder. 
-                keyFrameIntervalDuration: "PT2S",  // Set this to match the ingest encoder's settings   
+                // keyFrameIntervalDuration: "PT2S",  // Set this to match the ingest encoder's settings. This should not be used for encoding channels  
                 accessToken: "9eb1f703b149417c8448771867f48501" // Use this value when you want to make sure the ingest URL is static and always the same. If omitted, the service will generate a random GUID value.
             },
 
@@ -180,8 +180,13 @@ export async function main() {
                 // Set this to Standard or Premium1080P to use the cloud live encoder.
                 // See https://go.microsoft.com/fwlink/?linkid=2095101 for more information
                 // Otherwise, leave as "None" to use pass-through mode
-                encodingType: "None",// also known as pass-through mode. 
-                // OPTIONAL settings when using live cloud encoding type:
+                encodingType: "None",
+                // OPTIONS for encoding type you can use:
+                // encodingType: "None", // also known as pass-through mode. 
+                // encodingType: "Premium1080p",// premium 1080P live encoding with adaptive bitrate set
+                // encodingType: "Standard",// standard 720P live encoding with adaptive bitrate set
+                //
+                // OPTIONS using live cloud encoding type:
                 // keyFrameInterval: "PT2S", //If this value is not set for an encoding live event, the fragment duration defaults to 2 seconds. The value cannot be set for pass-through live events.
                 // presetName: null, // only used for custom defined presets. 
                 //stretchMode: "None" // can be used to determine stretch on encoder mode
@@ -298,6 +303,22 @@ export async function main() {
         console.info(`Execution time for create Live Output: %ds %dms`, timeEnd[0], timeEnd[1] /1000000);
         console.log();
 
+
+        // Lets patch something on the fly before starting, just to show whe can modify things in Stopped state. 
+        // With the Channel stopped I should be able to update a few things as needed...
+        // Lets just modify the accessToken on the ingest endpoint and the hostname prefix used. 
+        // These should be unique per channel in your account 
+        liveEventCreate.input.accessToken = "8257f1d1-8247-4318-b743-f541c20ea7a6";
+        liveEventCreate.hostnamePrefix = `${liveEventName}-updated`;
+        // Calling update 
+        let liveEventUpdateOperation = await mediaServicesClient.liveEvents.beginUpdate(
+            resourceGroup,
+            accountName,
+            liveEventName,
+            liveEventCreate
+        );
+        let updateresponse = await liveEventUpdateOperation.pollUntilFinished();
+
         console.log(`Starting the Live Event operation... please stand by`);
         timeStart = process.hrtime();
         // Start the Live Event - this will take some time...
@@ -310,7 +331,7 @@ export async function main() {
         //console.log(liveEventStartOperation.getInitialResponse().parsedBody);
 
         // Poll until this long running operation has finished.
-        await liveEventStartOperation.pollUntilFinished();
+        let response = await liveEventStartOperation.pollUntilFinished();
         timeEnd = process.hrtime(timeStart);
         console.info(`Execution time for start Live Event: %ds %dms`, timeEnd[0], timeEnd[1] /1000000);
         console.log();
