@@ -3,9 +3,12 @@ page_type: sample
 languages:
 - javascript
 - typescript
+- nodejs
 products:
 - azure
-description: "This repository contains samples showing how to use Azure Media Services v3 API using node.js."
+- azure-media-services
+name: Azure Media Services v3 Node.js Typescript Samples
+description: "This repository contains samples showing how to use Azure Media Services v3 API using Node.js and Typescript"
 urlFragment: media-services-v3-node-tutorials
 ---
 
