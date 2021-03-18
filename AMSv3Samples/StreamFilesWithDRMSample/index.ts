@@ -470,6 +470,9 @@ async function ensureContentKeyPolicyExists(policyName: string, tokenSigningKey:
             security_level: 1,
             required_output_protection: {
               HDCP: "HDCP_NONE"
+              // NOTE: the policy should be set to "HDCP_v1" (or greater) if you need to disable screen capture. The Widevine desktop
+              // browser CDM module only blocks screen capture when HDCP is enabled and the screen capture application is using
+              // Chromes screen capture APIs. 
             }
           }
         ],
