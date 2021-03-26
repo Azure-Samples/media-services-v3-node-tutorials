@@ -46,7 +46,7 @@ import { v4 as uuidv4 } from 'uuid';
 // Load the .env file if it exists
 import * as dotenv from "dotenv";
 import * as readlineSync from 'readline-sync';
-import { AzureMediaServicesOptions, IPRange, LiveEvent, LiveEventInputAccessControl, LiveEventPreview, LiveOutput } from "@azure/arm-mediaservices/esm/models";
+import { AzureMediaServicesOptions, IPRange, LiveEvent, LiveEventInputAccessControl, LiveEventPreview, LiveOutput, MediaservicesGetResponse } from "@azure/arm-mediaservices/esm/models";
 dotenv.config();
 
 // This is the main Media Services client object
@@ -60,7 +60,6 @@ const tenantDomain: string = process.env.AADTENANTDOMAIN as string;
 const subscriptionId: string = process.env.SUBSCRIPTIONID as string;
 const resourceGroup: string = process.env.RESOURCEGROUP as string;
 const accountName: string = process.env.ACCOUNTNAME as string;
-const location: string = process.env.LOCATION as string;
 
 // Credentials object used for Service Principal authentication to Azure Media Services and Storage account
 let credentials: msRestNodeAuth.ApplicationTokenCredentials;
@@ -76,6 +75,7 @@ export async function main() {
     let liveOutputName = `liveOutput${uniqueness}`;
     let streamingLocatorName = `liveStreamLocator${uniqueness}`;
     let streamingEndpointName = "default"; // Change this to your specific streaming endpoint name if not using "default"
+    let mediaAccount: MediaservicesGetResponse;
 
     // The primary live event and output objects for creating and cleaning up later. 
     let liveEvent: LiveEvent;
@@ -92,6 +92,9 @@ export async function main() {
     } catch (err) {
         console.log(`Error retrieving Media Services Client. Status Code:${err.statusCode}  Body: ${err.Body}`);
     }
+
+    // Get the media services account object for information on the current location. 
+    mediaAccount = await mediaServicesClient.mediaservices.get(resourceGroup,accountName);
 
     try {
 
@@ -161,7 +164,7 @@ export async function main() {
         // https://docs.microsoft.com/rest/api/media/liveevents/create 
 
         let liveEventCreate: LiveEvent = {
-            location: location,
+            location: mediaAccount.location,
             description: "Sample Live Event from Node.js SDK sample",
             // Set useStaticHostname to true to make the ingest and preview URL host name the same. 
             // This can slow things down a bit. 
