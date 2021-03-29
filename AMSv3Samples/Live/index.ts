@@ -246,13 +246,20 @@ export async function main() {
                 autoStart: false
             }
         );
-        let timeEnd = process.hrtime(timeStart);
-        console.info(`Execution time for create LiveEvent: %ds %dms`, timeEnd[0], timeEnd[1] /1000000);
+
         console.log(`HTTP Response Status: ${liveCreateOperation.getInitialResponse().status}`);
         console.log(liveCreateOperation.getInitialResponse().parsedBody);
+
+        // Make sure that the Live event is created
+        if (!liveCreateOperation.isFinished())
+        {
+            await liveCreateOperation.pollUntilFinished();
+        }
+        let timeEnd = process.hrtime(timeStart);
+        console.info(`Live Event Created - long running operation complete!`)
+        console.info(`Execution time for create LiveEvent: %ds %dms`, timeEnd[0], timeEnd[1] /1000000);
         console.log();
 
-        
         
         // Create an Asset for the LiveOutput to use. Think of this as the "tape" that will be recorded to. 
         // The asset entity points to a folder/container in your Azure Storage account. 
@@ -272,11 +279,7 @@ export async function main() {
         // https://docs.microsoft.com/rest/api/media/liveoutputs/create
 
         
-        // Make sure that the Live event is created
-        if (!liveCreateOperation.isFinished())
-        {
-            liveCreateOperation.pollUntilFinished();
-        }
+
 
         timeStart = process.hrtime();
         let liveOutputCreate: LiveOutput;
@@ -333,6 +336,8 @@ export async function main() {
         console.log(`Live Event Start - HTTP Response Status: ${liveEventStartOperation.getInitialResponse().status}`);
         //console.log(liveEventStartOperation.getInitialResponse().parsedBody);
 
+        console.log(`The Live Event is being allocated. If the service's hotpool is completely depleted in a region, this could delay here for up to 15-30 minutes while machines are allocated.`)
+        console.log(`If this is taking a very long time, wait for at least 30 minutes and check on the status. If the code times out, or is cancelled, be sure to clean up in the portal!`)
         // Poll until this long running operation has finished.
         let response = await liveEventStartOperation.pollUntilFinished();
         timeEnd = process.hrtime(timeStart);
