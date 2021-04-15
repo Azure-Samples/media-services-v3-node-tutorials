@@ -35,7 +35,7 @@
 //     or CMS system. This can also be created earlier after step 5 if desired.
 ////////////////////////////////////////////////////////////////////////////////////
 
-
+// <ImportMediaServices>
 import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
 import {
     AzureMediaServices,
@@ -47,6 +47,7 @@ import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from "dotenv";
 import * as readlineSync from 'readline-sync';
 import { AzureMediaServicesOptions, IPRange, LiveEvent, LiveEventInputAccessControl, LiveEventPreview, LiveOutput, MediaservicesGetResponse } from "@azure/arm-mediaservices/esm/models";
+// </ImportMediaServices>
 dotenv.config();
 
 // This is the main Media Services client object
@@ -81,9 +82,11 @@ export async function main() {
     let liveEvent: LiveEvent;
     let liveOutput: LiveOutput;
 
+    // <CreateMediaServicesClient>
     let clientOptions :AzureMediaServicesOptions = {
         longRunningOperationRetryTimeout: 2 // set the polling interval for long operations to be really fast for live events. 2 seconds in this case. Default is 30s.
     }
+   
 
     console.error("Starting the Live Streaming sample for Azure Media Services");
     try {
@@ -96,7 +99,12 @@ export async function main() {
     // Get the media services account object for information on the current location. 
     mediaAccount = await mediaServicesClient.mediaservices.get(resourceGroup,accountName);
 
+    // </CreateMediaServicesClient>
+
     try {
+
+
+        // <CreateLiveEvent>
 
         // Creating the LiveEvent - the primary object for live streaming in AMS. 
         // See the overview - https://docs.microsoft.com/azure/media-services/latest/live-streaming-overview
@@ -217,6 +225,8 @@ export async function main() {
             */
         }
 
+      
+
         console.log("Creating the LiveEvent, please be patient as this can take time to complete async.")
         console.log("Live Event creation is an async operation in Azure and timing can depend on resources available.")
         console.log();
@@ -247,6 +257,8 @@ export async function main() {
             }
         );
 
+        // </CreateLiveEvent>
+
         console.log(`HTTP Response Status: ${liveCreateOperation.getInitialResponse().status}`);
         console.log(liveCreateOperation.getInitialResponse().parsedBody);
 
@@ -261,6 +273,8 @@ export async function main() {
         console.log();
 
         
+        // <CreateAsset>
+
         // Create an Asset for the LiveOutput to use. Think of this as the "tape" that will be recorded to. 
         // The asset entity points to a folder/container in your Azure Storage account. 
         console.log(`Creating an asset named: ${assetName}`);
@@ -278,10 +292,11 @@ export async function main() {
         // See the REST API for details on each of the settings on Live Output
         // https://docs.microsoft.com/rest/api/media/liveoutputs/create
 
-        
-
+        // </CreateAsset>
 
         timeStart = process.hrtime();
+
+         // <CreateLiveOutput>    
         let liveOutputCreate: LiveOutput;
         if (asset.name) {
             liveOutputCreate = {
@@ -305,6 +320,8 @@ export async function main() {
             console.log(`Live Output Create - HTTP Response Status: ${liveOutputOperation.getInitialResponse().status}`);
             console.log(liveOutputOperation.getInitialResponse().parsedBody);
         }
+        // </CreateLiveOutput>
+        
         timeEnd = process.hrtime(timeStart);
         console.info(`Execution time for create Live Output: %ds %dms`, timeEnd[0], timeEnd[1] /1000000);
         console.log();
@@ -344,6 +361,8 @@ export async function main() {
         console.info(`Execution time for start Live Event: %ds %dms`, timeEnd[0], timeEnd[1] /1000000);
         console.log();
 
+        // <GetIngestURL>
+
         // Refresh the liveEvent object's settings after starting it...
         let liveEvent = await mediaServicesClient.liveEvents.get(
             resourceGroup,
@@ -362,6 +381,9 @@ export async function main() {
             console.log();
         }
 
+        // </GetIngestURL>
+        
+        // <GetPreviewURL>
         if (liveEvent.preview?.endpoints) {
             // Use the previewEndpoint to preview and verify
             // that the input from the encoder is actually being received
@@ -381,6 +403,8 @@ export async function main() {
         console.log("Start the live stream now, sending the input to the ingest url and verify that it is arriving with the preview url.");
         console.log("IMPORTANT TIP!: Make CERTAIN that the video is flowing to the Preview URL before continuing!");
 
+        // </GetPreviewURL>
+
         // SET A BREAKPOINT HERE!
         console.log("PAUSE here in the Debugger until you are ready to continue...");
         if (readlineSync.keyInYN("Do you want to continue?")){
@@ -389,10 +413,12 @@ export async function main() {
             throw new Error("User canceled. Cleaning up...")
         }
 
+
         // Create the Streaming Locator URL for playback of the contents in the Live Output recording
         console.log(`Creating a streaming locator named : ${streamingLocatorName}`);
         console.log();
         let locator = await createStreamingLocator(assetName, streamingLocatorName);
+
 
         // Get the default streaming endpoint on the account
         let streamingEndpoint = await mediaServicesClient.streamingEndpoints.get(resourceGroup, accountName, streamingEndpointName);
@@ -447,6 +473,9 @@ main().catch((err) => {
     console.error("WARNING: If you hit this message, double check the Portal to make sure you do not have any Running live events - or they will remain billing!");
 });
 
+
+// <BuildManifestPaths>
+
 // This method builds the manifest URL from the static values used during creation of the Live Output.
 // This allows you to have a deterministic manifest path. <streaming endpoint hostname>/<streaming locator ID>/manifestName.ism/manifest(<format string>)
 async function buildManifestPaths(scheme: string, hostname: string | undefined, streamingLocatorId: string |undefined, manifestName: string) {
@@ -466,6 +495,9 @@ async function buildManifestPaths(scheme: string, hostname: string | undefined, 
     console.log(`https://ampdemo.azureedge.net/?url=${dashManifest}&heuristicprofile=lowlatency"`);
     console.log();
 }
+
+// </BuildManifestPaths>
+
 
 // This method demonstrates using the listPaths method on Streaming locators to print out the DASH and HLS manifest links
 // Optionally you can just build the paths if you are setting the manifest name and would like to create the streaming 
@@ -523,6 +555,7 @@ async function listStreamingPaths(streamingLocatorName: string, scheme: string, 
     }
 }
 
+// <CreateStreamingLocator>
 async function createStreamingLocator(assetName: string, locatorName: string) {
     let streamingLocator = {
         assetName: assetName,
@@ -537,6 +570,7 @@ async function createStreamingLocator(assetName: string, locatorName: string) {
 
     return locator;
 }
+// </CreateStreamingLocator>
 
 // Stops and cleans up all resources used in the sample
 // Be sure to double check the portal to make sure you do not have any accidentally leaking resources that are in billable states.
