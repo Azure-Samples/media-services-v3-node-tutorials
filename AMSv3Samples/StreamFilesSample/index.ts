@@ -62,6 +62,10 @@ const namePrefix: string = "prefix";
 let inputExtension: string;
 let blobName: string;
 
+//<Create>
+let memessupjohnscode
+//</Create>
+
 ///////////////////////////////////////////
 //   Main entry point for sample script  //
 ///////////////////////////////////////////
