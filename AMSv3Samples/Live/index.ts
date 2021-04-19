@@ -572,6 +572,7 @@ async function createStreamingLocator(assetName: string, locatorName: string) {
 }
 // </CreateStreamingLocator>
 
+// <CleanUpResources>
 // Stops and cleans up all resources used in the sample
 // Be sure to double check the portal to make sure you do not have any accidentally leaking resources that are in billable states.
 async function cleanUpResources(liveEventName: string, liveOutputName: string) {
@@ -657,4 +658,5 @@ async function cleanUpResources(liveEventName: string, liveOutputName: string) {
 
         // IMPORTANT! Open the portal again and make CERTAIN that the live event is stopped and deleted - and that you do not have any billing live events running still.
     }
+    // </CleanUpResources>
 }
