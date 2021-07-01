@@ -25,12 +25,12 @@ The projects in this repository were created using Visual Studio Code.
 
 |Project name|Use Case|
 |---|---|
-| [Account/CreateAccount](/Account/CreateAccount)|The sample shows how to create a Media Services account and set the primary storage account, in addition to advanced configuration settings including Key Delivery IP allowlist, Managed Identity, storage auth, and bring your own encryption key.|
+|[Create an Account from code](/Account/CreateAccount)|The sample shows how to create a Media Services account and set the primary storage account, in addition to advanced configuration settings including Key Delivery IP allowlist, Managed Identity, storage auth, and bring your own encryption key.|
 |[Hello World - List Assets](/AMSv3Samples/HelloWorld-ListAssets/index.ts)|Basic example on how to connect and list assets |
 |[Live streaming](/AMSv3Samples/Live/index.ts)| Basic live streaming example. **WARNING**, make sure to check that all resources are cleaned up and no longer billing in portal when using live|
 |[Upload and Stream HLS and DASH](/AMSv3Samples/StreamFilesSample/index.ts)| Basic example for uploading a local file or encoding from a source URL. Sample shows how to use storage SDK to download content, and shows how to stream to a player |
 |[Upload and Stream HLS and DASH with Playready and Widevine DRM](/AMSv3Samples/StreamFilesWithDRMSample/index.ts)| Demonstrates how to encode and stream using Widevine and PlayReady DRM |
-|[Upload and use AI to index videos and audio](/AMSv3Samples/VideoIndexerSample/index.ts| Example of using the Video and Audio Analyzer presets to generate metadata and insights from a video or audio file |
+|[Upload and use AI to index videos and audio](/AMSv3Samples/VideoIndexerSample/index.ts)| Example of using the Video and Audio Analyzer presets to generate metadata and insights from a video or audio file |
 
 
 ## Prerequisites
