@@ -41,7 +41,7 @@ The projects in this repository were created using Visual Studio Code.
     ### Install Typescript via npm
     You can use npm to install TypeScript globally, this means you can use the tsc command anywhere in your terminal.
     
-    To do this, ```run npm install -g typescript```. This will install the latest version.
+    To do this, run ```npm install -g typescript```. This will install the latest version.
     
 
 ## Run samples
