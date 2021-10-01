@@ -88,7 +88,7 @@ export async function main() {
     }
    
 
-    console.error("Starting the Live Streaming sample for Azure Media Services");
+    console.log("Starting the Live Streaming sample for Azure Media Services");
     try {
         credentials = await msRestNodeAuth.loginWithServicePrincipalSecret(clientId, secret, tenantDomain);
         mediaServicesClient = new AzureMediaServices(credentials, subscriptionId, clientOptions);
@@ -356,8 +356,8 @@ export async function main() {
         console.log(`Live Event Start - HTTP Response Status: ${liveEventStartOperation.getInitialResponse().status}`);
         //console.log(liveEventStartOperation.getInitialResponse().parsedBody);
 
-        console.log(`The Live Event is being allocated. If the service's hotpool is completely depleted in a region, this could delay here for up to 15-30 minutes while machines are allocated.`)
-        console.log(`If this is taking a very long time, wait for at least 30 minutes and check on the status. If the code times out, or is cancelled, be sure to clean up in the portal!`)
+        console.log(`The Live Event is being allocated. If the service's hotpool is completely depleted in a region, this could delay here for up to 15-20 minutes while machines are allocated.`)
+        console.log(`If this is taking a very long time, wait for at least 20 minutes and check on the status. If the code times out, or is cancelled, be sure to clean up in the portal!`)
         // Poll until this long running operation has finished.
         let response = await liveEventStartOperation.pollUntilFinished();
         timeEnd = process.hrtime(timeStart);
