@@ -15,7 +15,7 @@
   "license": "MIT",
   "dependencies": {
     "@azure/abort-controller": "^1.0.2",
-    "@azure/arm-mediaservices": "^8.1.0",
+    "@azure/arm-mediaservices": "9.0.0",
     "@azure/ms-rest-azure-js": "^2.0.2",
     "@azure/ms-rest-js": "^2.1.0",
     "@azure/ms-rest-nodeauth": "^3.0.6",

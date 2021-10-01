@@ -14,7 +14,8 @@ import {
   JobOutputAsset,
   JobInputUnion,
   JobsGetResponse,
-  AzureMediaServicesOptions
+  AzureMediaServicesOptions,
+  ErrorResponse
 } from "@azure/arm-mediaservices/esm/models";
 import { BlobServiceClient, AnonymousCredential, BlobDownloadResponseModel } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
@@ -67,7 +68,7 @@ let blobName: string;
 ///////////////////////////////////////////
 export async function main() {
   // Define the name to use for the encoding Transform that will be created
-  const encodingTransformName = "ContentAwareEncodingTransform";
+  const encodingTransformName = "ContentAwareEncoding";
 
   try {
     let clientOptions: AzureMediaServicesOptions = {
@@ -91,7 +92,16 @@ export async function main() {
       presetName: "ContentAwareEncoding"
     };
 
-    let encodingTransform = await ensureTransformExists(encodingTransformName, adaptiveStreamingTransform);
+    let encodingTransform = await mediaServicesClient.transforms.createOrUpdate(resourceGroup, accountName, encodingTransformName, {
+      name: encodingTransformName,
+      outputs: [
+        {
+          preset: adaptiveStreamingTransform
+        }
+      ]
+    });
+    console.log("Transform Created (or updated if it existed already).");
+
 
     let uniqueness = uuidv4();
     let input = await getJobInputType(uniqueness);
@@ -207,40 +217,6 @@ async function waitForJobToFinish(transformName: string, jobName: string) {
   return await pollForJobStatus();
 }
 
-
-
-// Checks for the pre-existing Transform in the account and creates a new one if it does not exist
-// Returns the Transform.
-async function ensureTransformExists(transformName: string, presetDefinition: AzureMediaServicesModels.PresetUnion) {
-  let transform: TransformsGetResponse;
-  let transformCreate: TransformsCreateOrUpdateResponse;
-
-  console.log("Checking to see if the transform already exists first...");
-
-  transform = await mediaServicesClient.transforms.get(resourceGroup, accountName, transformName);
-
-  if (!transform.id) {
-    console.log("Looks like it is not created yet. Creating the new transform.");
-    try {
-      transformCreate = await mediaServicesClient.transforms.createOrUpdate(resourceGroup, accountName, transformName, {
-        name: transformName,
-        outputs: [
-          {
-            preset: presetDefinition
-          }
-        ]
-      });
-      console.log("Returning new Transform.");
-      return transformCreate;
-    } catch (err) {
-      console.log(`Error creating the Transform. Status Code:${err.statusCode}  Body: ${err.Body}`);
-    }
-  }
-  console.log("Found existing Transform.");
-
-  return transform;
-
-}
 
 // Selects the JobInput type to use based on the value of inputFile or inputUrl. 
 // Set inputFile to null to create a Job input that sources from an HTTP URL path
@@ -364,5 +340,4 @@ async function getStreamingUrls(locatorName: string) {
       });
     });
   }
-
 }

@@ -188,14 +188,15 @@ export async function main() {
 
             // 2) Set the live event to use pass-through or cloud encoding modes...
             encoding: {
-                // Set this to Standard or Premium1080P to use the cloud live encoder.
+                // Set this to Basic pass-through, Standard pass-through, Standard or Premium1080P to use the cloud live encoder.
                 // See https://go.microsoft.com/fwlink/?linkid=2095101 for more information
                 // Otherwise, leave as "None" to use pass-through mode
-                encodingType: "None",
+                encodingType: "PassthroughBasic",
                 // OPTIONS for encoding type you can use:
-                // encodingType: "None", // also known as pass-through mode. 
-                // encodingType: "Premium1080p",// premium 1080P live encoding with adaptive bitrate set
-                // encodingType: "Standard",// standard 720P live encoding with adaptive bitrate set
+                // encodingType: "PassthroughBasic", // Basic pass-through mode - the cheapest option!
+                // encodingType: "PassthroughStandard", // also known as standard pass-through mode (formerly "none")
+                // encodingType: "Premium1080p",// live transcoding up to 1080P 30fps with adaptive bitrate set
+                // encodingType: "Standard",// use live transcoding in the cloud for 720P 30fps with adaptive bitrate set
                 //
                 // OPTIONS using live cloud encoding type:
                 // keyFrameInterval: "PT2S", //If this value is not set for an encoding live event, the fragment duration defaults to 2 seconds. The value cannot be set for pass-through live events.
