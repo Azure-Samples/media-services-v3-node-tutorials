@@ -495,7 +495,7 @@ async function buildManifestPaths(scheme: string, hostname: string | undefined, 
     let dashManifest = `${manifestBase}(${dashFormat})`;
     console.log(`The DASH manifest URL is : ${dashManifest}`);
     console.log("Open the following URL to playback the live stream from the LiveOutput in the Azure Media Player");
-    console.log(`https://ampdemo.azureedge.net/?url=${dashManifest}&heuristicprofile=lowlatency"`);
+    console.log(`https://ampdemo.azureedge.net/?url=${dashManifest}&heuristicprofile=lowlatency`);
     console.log();
 }
 
