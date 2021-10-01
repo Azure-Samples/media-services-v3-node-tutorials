@@ -212,7 +212,9 @@ export async function main() {
             ],
 
             // 5) Optionally enable live transcriptions if desired. 
-            // WARNING : This is extra cost ($$$), so please check pricing before enabling.
+            // WARNING : This is extra cost ($$$), so please check pricing before enabling. Transcriptions are not supported on PassthroughBasic.
+            //           switch this sample to use encodingType: "PassthroughStandard" first before un-commenting the transcriptions object below. 
+                  
             /* transcriptions : [
                 {
                     inputTrackSelection: [], // chose which track to transcribe on the source input.
