@@ -365,6 +365,7 @@ export async function main() {
                 console.log(`Updated the Live Event accessToken for live event named: ${liveEvent.name}`);
             })
             .catch((reason) => {
+                // Check for ErrorResponse object
                 if (reason.error && reason.error.message) {
                     console.info(`Live Event Update failed: ${reason.message}`);
                 }
