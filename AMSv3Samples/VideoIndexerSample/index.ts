@@ -1,22 +1,16 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
+import { DefaultAzureCredential } from "@azure/identity";
 import {
   AzureMediaServices,
-  AzureMediaServicesModels
-} from '@azure/arm-mediaservices';
-import {
-  TransformsCreateOrUpdateResponse,
-  TransformsGetResponse,
   AssetContainerPermission,
   JobOutputAsset,
   JobInputUnion,
   JobsGetResponse,
   AudioAnalyzerPreset,
   VideoAnalyzerPreset,
-  AzureMediaServicesOptions
-} from "@azure/arm-mediaservices/esm/models";
+} from '@azure/arm-mediaservices';
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
@@ -40,8 +34,15 @@ const subscriptionId: string = process.env.SUBSCRIPTIONID as string;
 const resourceGroup: string = process.env.RESOURCEGROUP as string;
 const accountName: string = process.env.ACCOUNTNAME as string;
 
-// Credentials object used for Service Principal authentication to Azure Media Services and Storage account
-let credentials: msRestNodeAuth.ApplicationTokenCredentials;
+// This sample uses the default Azure Credential object, which relies on the environment variable settings.
+// If you wish to use User assigned managed identity, see the samples for v2 of @azure/identity
+// Managed identity authentication is supported via either the DefaultAzureCredential or the ManagedIdentityCredential classes
+// https://docs.microsoft.com/javascript/api/overview/azure/identity-readme?view=azure-node-latest
+// See the following examples for how ot authenticate in Azure with managed identity
+// https://github.com/Azure/azure-sdk-for-js/blob/@azure/identity_2.0.1/sdk/identity/identity/samples/AzureIdentityExamples.md#authenticating-in-azure-with-managed-identity 
+
+// const credential = new ManagedIdentityCredential("<USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID>");
+const credential = new DefaultAzureCredential();
 
 // You can either specify a local input file with the inputFile or an input Url with inputUrl. 
 // Just set the other one to null to have it select the right JobInput class type
@@ -71,93 +72,88 @@ export async function main() {
   const audioAnalyzerTransformName = "AudioAnalyzerTransform";
   const videoAnalyzerTransformName = "VideoAnalyzerTransform";
 
-  try {
-    let clientOptions: AzureMediaServicesOptions = {
-      longRunningOperationRetryTimeout: 5 // set the timeout for retries to 5 seconds
-    }
-    
-    credentials = await msRestNodeAuth.loginWithServicePrincipalSecret(clientId, secret, tenantDomain);
-    mediaServicesClient = new AzureMediaServices(credentials, subscriptionId, clientOptions);
-  } catch (err) {
-    console.log(`Error retrieving Media Services Client. Status Code:${err.statusCode}  Body: ${err.Body}`);
-  }
-
-  try {
-    // Ensure that you have customized transforms for the AudioAnalyzer and VideoAnalyzer.  This is really a one time setup operation.
-    console.log("Creating Audio and Video analyzer transforms...");
-
-    // Create a new Basic Audio Analyzer Transform Preset using the preset configuration
-    let audioAnalyzerBasicPreset: AudioAnalyzerPreset = {
-      odatatype: "#Microsoft.Media.AudioAnalyzerPreset",
-      audioLanguage: "en-us", // Be sure to modify this to your desired language code in BCP-47 format
-      mode: "Basic",  // Change this to Standard if you would like to use the more advanced audio analyzer
-    };
-
-    // Create a new Video Analyzer Transform Preset using the preset configuration
-    let videoAnalyzerPreset: VideoAnalyzerPreset = {
-      odatatype: "#Microsoft.Media.VideoAnalyzerPreset",
-      audioLanguage: "en-us",  // Be sure to modify this to your desired language code in BCP-47 format
-      insightsToExtract : "AllInsights", // Video Analyzer can also run in Video only mode.
-      mode : "Standard" // Video analyzer can also process audio in basic or standard mode when using All Insights
-    };
-
-    console.log("Creating audio analyzer transform...");
-    let audioAnalyzerTransform = await mediaServicesClient.transforms.createOrUpdate(resourceGroup, accountName, audioAnalyzerTransformName, {
-      name: audioAnalyzerTransformName,
-      outputs: [
-        {
-          preset: audioAnalyzerBasicPreset
-        }
-      ]
-    });
-    console.log("Transform Created (or updated if it existed already).");
+  mediaServicesClient = new AzureMediaServices(credential, subscriptionId);
 
 
-    console.log("Creating video analyzer transform...");
-    let videoAnalyzerTransform = await mediaServicesClient.transforms.createOrUpdate(resourceGroup, accountName, videoAnalyzerTransformName, {
-      name: videoAnalyzerTransformName,
-      outputs: [
-        {
-          preset: videoAnalyzerPreset
-        }
-      ]
-    });
-    console.log("Transform Created (or updated if it existed already).");
+  // Ensure that you have customized transforms for the AudioAnalyzer and VideoAnalyzer.  This is really a one time setup operation.
+  console.log("Creating Audio and Video analyzer transforms...");
 
+  // Create a new Basic Audio Analyzer Transform Preset using the preset configuration
+  let audioAnalyzerBasicPreset: AudioAnalyzerPreset = {
+    odataType: "#Microsoft.Media.AudioAnalyzerPreset",
+    audioLanguage: "en-US", // Be sure to modify this to your desired language code in BCP-47 format
+    mode: "Basic",  // Change this to Standard if you would like to use the more advanced audio analyzer
+  };
 
-    let uniqueness = uuidv4();
-    let input = await getJobInputType(uniqueness);
-    let outputAssetName = `${namePrefix}-output-${uniqueness}`;
-    let jobName = `${namePrefix}-job-${uniqueness}`;
+  // Create a new Video Analyzer Transform Preset using the preset configuration
+  let videoAnalyzerPreset: VideoAnalyzerPreset = {
+    odataType: "#Microsoft.Media.VideoAnalyzerPreset",
+    audioLanguage: "en-US",  // Be sure to modify this to your desired language code in BCP-47 format
+    insightsToExtract: "AllInsights", // Video Analyzer can also run in Video only mode.
+    mode: "Standard" // Video analyzer can also process audio in basic or standard mode when using All Insights
+  };
 
-    console.log("Creating the output Asset to analyze the content into...");
-    let outputAsset = await mediaServicesClient.assets.createOrUpdate(resourceGroup, accountName, outputAssetName, {});
+  console.log("Creating audio analyzer transform...");
 
-    if (outputAsset.name !== undefined) {
-      
-      // Choose which of the analyzer Transform names you would like to use here by changing the name of the Transform to be used
-      // For the basic audio analyzer - pass in the audioAnalyzerTransformName
-      // For the video Analyzer - change this code to pass in the videoAnalyzerTransformName
-      let analysisTransformName = audioAnalyzerTransformName; // or change to videoAnalyzerTransformName to see those results
-
-      console.log(`Submitting the analyzer job to the ${analysisTransformName} job queue...`);
-      
-      let job = await submitJob(analysisTransformName, jobName, input, outputAsset.name);
-
-      console.log(`Waiting for Job - ${job.name} - to finish analyzing`);
-      job = await waitForJobToFinish(analysisTransformName, jobName);
-
-      if (job.state == "Finished") {
-        await downloadResults(outputAsset.name as string, outputFolder);
-        console.log ("Downloaded results to local folder. Please review the outputs from the analysis job.")
+  await mediaServicesClient.transforms.createOrUpdate(resourceGroup, accountName, audioAnalyzerTransformName, {
+    name: audioAnalyzerTransformName,
+    outputs: [
+      {
+        preset: audioAnalyzerBasicPreset
       }
-    }
+    ]
+  })
+    .then((transform) => {
+      console.log(`Transform ${transform.name} created (or updated if it existed already).`);
+    })
+    .catch((reason) => {
+      console.log(`There was an error creating the audio analyzer transform. ${reason}`)
+    });
 
-  } catch (err) {
-    console.log(err);
+
+  console.log("Creating video analyzer transform...");
+  let videoAnalyzerTransform = await mediaServicesClient.transforms.createOrUpdate(resourceGroup, accountName, videoAnalyzerTransformName, {
+    name: videoAnalyzerTransformName,
+    outputs: [
+      {
+        preset: videoAnalyzerPreset
+      }
+    ]
+  })
+    .then((transform) => {
+      console.log(`Transform ${transform.name} created (or updated if it existed already).`);
+    })
+    .catch((reason) => {
+      console.log(`There was an error creating the video analyzer transform. ${reason}`)
+    });
+
+  let uniqueness = uuidv4();
+  let input = await getJobInputType(uniqueness);
+  let outputAssetName = `${namePrefix}-output-${uniqueness}`;
+  let jobName = `${namePrefix}-job-${uniqueness}`;
+
+  console.log("Creating the output Asset to analyze the content into...");
+
+  await mediaServicesClient.assets.createOrUpdate(resourceGroup, accountName, outputAssetName, {});
+
+  // Choose which of the analyzer Transform names you would like to use here by changing the name of the Transform to be used
+  // For the basic audio analyzer - pass in the audioAnalyzerTransformName
+  // For the video Analyzer - change this code to pass in the videoAnalyzerTransformName
+  let analysisTransformName = audioAnalyzerTransformName; // or change to videoAnalyzerTransformName to see those results
+
+  console.log(`Submitting the analyzer job to the ${analysisTransformName} job queue...`);
+
+  let job = await submitJob(analysisTransformName, jobName, input, outputAssetName);
+
+  console.log(`Waiting for Job - ${job.name} - to finish analyzing`);
+  job = await waitForJobToFinish(analysisTransformName, jobName);
+
+  if (job.state == "Finished") {
+    await downloadResults(outputAssetName as string, outputFolder);
+    console.log("Downloaded results to local folder. Please review the outputs from the analysis job.")
   }
-
 }
+
 
 main().catch((err) => {
   console.error("Error running sample:", err.message);
@@ -202,19 +198,17 @@ async function downloadResults(assetName: string, resultsFolder: string) {
     let i = 1;
     for await (const blob of containerClient.listBlobsFlat()) {
       console.log(`Blob ${i++}: ${blob.name}`);
-      try {
-        let blockBlobClient = containerClient.getBlockBlobClient(blob.name);
-        await blockBlobClient.downloadToFile(path.join(directory, blob.name), 0, undefined,
-          {
-            abortSignal: AbortController.timeout(30 * 60 * 1000),
-            maxRetryRequests: 2,
-            onProgress: (ev) => console.log(ev)
-          }).then(() => {
-            console.log(`Download file complete`);
-          });
-      } catch (err) {
-        console.log(`Download file Failed - ${err.details.requestId}, statusCode - ${err.statusCode}, errorCode - ${err.details.console.errorCode}`);
-      }
+
+      let blockBlobClient = containerClient.getBlockBlobClient(blob.name);
+      await blockBlobClient.downloadToFile(path.join(directory, blob.name), 0, undefined,
+        {
+          abortSignal: AbortController.timeout(30 * 60 * 1000),
+          maxRetryRequests: 2,
+          onProgress: (ev) => console.log(ev)
+        }).then(() => {
+          console.log(`Download file complete`);
+        });
+
     }
   }
 }
@@ -227,7 +221,9 @@ async function waitForJobToFinish(transformName: string, jobName: string) {
     let job = await mediaServicesClient.jobs.get(resourceGroup, accountName, transformName, jobName);
     // Note that you can report the progress for each Job output if you have more than one. In this case, we only have one output in the Transform
     // that we defined in this sample, so we can check that with the job.outputs[0].progress parameter.
-    console.log(`Job State is : ${job.state},  Progress: ${job.outputs[0].progress}%`);
+    if (job.outputs != undefined) {
+      console.log(`Job State is : ${job.state},  Progress: ${job.outputs[0].progress}%`);
+    }
 
     if (job.state == 'Finished' || job.state == 'Error' || job.state == 'Canceled') {
 
@@ -253,12 +249,12 @@ async function getJobInputType(uniqueness: string): Promise<JobInputUnion> {
     let assetName: string = namePrefix + "-input-" + uniqueness;
     await createInputAsset(assetName, inputFile);
     return {
-      odatatype: "#Microsoft.Media.JobInputAsset",
+      odataType: "#Microsoft.Media.JobInputAsset",
       assetName: assetName
     }
   } else {
     return {
-      odatatype: "#Microsoft.Media.JobInputHttp",
+      odataType: "#Microsoft.Media.JobInputHttp",
       files: [inputUrl]
     }
   }
@@ -304,15 +300,12 @@ async function createInputAsset(assetName: string, fileToUpload: string) {
 
     // Parallel uploading with BlockBlobClient.uploadFile() in Node.js runtime
     // BlockBlobClient.uploadFile() is only available in Node.js and not in Browser
-    try {
-      await blockBlobClient.uploadFile(fileToUpload, {
-        blockSize: 4 * 1024 * 1024, // 4MB Block size
-        concurrency: 20, // 20 concurrent
-        onProgress: (ev) => console.log(ev)
-      }).then();
-    } catch (err) {
-      console.log(`Upload failed, request id - ${err.details.requestId}, statusCode - ${err.statusCode}, errorCode - ${err.details.errorCode}`);
-    }
+    await blockBlobClient.uploadFile(fileToUpload, {
+      blockSize: 4 * 1024 * 1024, // 4MB Block size
+      concurrency: 20, // 20 concurrent
+      onProgress: (ev) => console.log(ev)
+    });
+
   }
 
   return asset;
@@ -325,7 +318,7 @@ async function submitJob(transformName: string, jobName: string, jobInput: JobIn
   }
   let jobOutputs: JobOutputAsset[] = [
     {
-      odatatype: "#Microsoft.Media.JobOutputAsset",
+      odataType: "#Microsoft.Media.JobOutputAsset",
       assetName: outputAssetName
     }
   ];
