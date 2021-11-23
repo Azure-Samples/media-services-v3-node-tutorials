@@ -266,7 +266,7 @@ export async function main() {
             // That increases the speed of startup when you are ready to go live. 
             {
                 autoStart: false,
-                updateIntervalInMs:longRunningOperationUpdateIntervalMs // This sets the polling interval for the long running ARM operation (LRO)
+                updateIntervalInMs: longRunningOperationUpdateIntervalMs // This sets the polling interval for the long running ARM operation (LRO)
             }
         ).then((liveEvent) => {
             let timeEnd = process.hrtime(timeStart);
@@ -274,7 +274,9 @@ export async function main() {
             console.info(`Execution time for create LiveEvent: %ds %dms`, timeEnd[0], timeEnd[1] / 1000000);
             console.log();
         }).catch((reason) => {
-            console.info(`Live Event creation failed: ${reason}`);
+            if (reason.error && reason.error.message) {
+                console.info(`Live Event creation failed: ${reason.message}`);
+            }
         })
 
         // </CreateLiveEvent>
@@ -326,7 +328,7 @@ export async function main() {
                 liveOutputName,
                 liveOutputCreate,
                 {
-                    updateIntervalInMs:longRunningOperationUpdateIntervalMs // Setting this adjusts the polling interval of the long running operation. 
+                    updateIntervalInMs: longRunningOperationUpdateIntervalMs // Setting this adjusts the polling interval of the long running operation. 
                 })
                 .then((liveOutput) => {
                     console.log(`Live Output Created: ${liveOutput.name}`);
@@ -335,7 +337,9 @@ export async function main() {
                     console.log();
                 })
                 .catch((reason) => {
-                    console.log(reason);
+                    if (reason.error && reason.error.message) {
+                        console.info(`Live Output creation failed: ${reason.message}`);
+                    }
                 });
 
 
@@ -355,10 +359,15 @@ export async function main() {
                 accountName,
                 liveEventName,
                 liveEventCreate
-            ).then ( (liveEvent)=>{  
+            ).then((liveEvent) => {
                 // ISSUE: This is not actually the full live Event object coming back in the promise value
                 //        It appears to be a smaller subset of the live event object, with only a GUID returned as the name, which does not match the actual name of the live event.
-                console.log(`Updated the Live Event accessToken for live event named: ${liveEvent.name}`);  
+                console.log(`Updated the Live Event accessToken for live event named: ${liveEvent.name}`);
+            })
+            .catch((reason) => {
+                if (reason.error && reason.error.message) {
+                    console.info(`Live Event Update failed: ${reason.message}`);
+                }
             });
         }
 
@@ -367,15 +376,15 @@ export async function main() {
         // Start the Live Event - this will take some time...
         console.log(`The Live Event is being allocated. If the service's hot pool is completely depleted in a region, this could delay here for up to 15-20 minutes while machines are allocated.`)
         console.log(`If this is taking a very long time, wait for at least 20 minutes and check on the status. If the code times out, or is cancelled, be sure to clean up in the portal!`)
-        
+
         await mediaServicesClient.liveEvents.beginStartAndWait(
             resourceGroup,
             accountName,
             liveEventName,
             {
-                updateIntervalInMs:longRunningOperationUpdateIntervalMs // Setting this adjusts the polling interval of the long running operation. 
+                updateIntervalInMs: longRunningOperationUpdateIntervalMs // Setting this adjusts the polling interval of the long running operation. 
             }
-        ).then ( () =>{
+        ).then(() => {
             console.log(`Live Event Started`);
             let timeEnd = process.hrtime(timeStart);
             console.info(`Execution time for start Live Event: %ds %dms`, timeEnd[0], timeEnd[1] / 1000000);
@@ -448,11 +457,11 @@ export async function main() {
         if (streamingEndpoint?.resourceState !== "Running") {
             console.log(`Streaming endpoint is stopped. Starting the endpoint named ${streamingEndpointName}`);
             await mediaServicesClient.streamingEndpoints.beginStartAndWait(resourceGroup, accountName, streamingEndpointName, {
-                updateIntervalInMs:longRunningOperationUpdateIntervalMs // Setting this adjusts the polling interval of the long running operation. 
+                updateIntervalInMs: longRunningOperationUpdateIntervalMs // Setting this adjusts the polling interval of the long running operation. 
             })
-            .then( ()=> {
-                console.log("Streaming Endpoint Started.");
-            })
+                .then(() => {
+                    console.log("Streaming Endpoint Started.");
+                })
 
         }
 
@@ -626,16 +635,16 @@ async function cleanUpResources(liveEventName: string, liveOutputName: string) {
             liveEventName,
             liveOutputName,
             {
-                updateIntervalInMs:longRunningOperationUpdateIntervalMs // Setting this adjusts the polling interval of the long running operation. 
+                updateIntervalInMs: longRunningOperationUpdateIntervalMs // Setting this adjusts the polling interval of the long running operation. 
             }
         )
-        .then( () => {
-            let timeEnd = process.hrtime(timeStart);
-            console.info(`Execution time for delete live output: %ds %dms`, timeEnd[0], timeEnd[1] / 1000000);
-            console.log();
-        });
+            .then(() => {
+                let timeEnd = process.hrtime(timeStart);
+                console.info(`Execution time for delete live output: %ds %dms`, timeEnd[0], timeEnd[1] / 1000000);
+                console.log();
+            });
     };
-   
+
     // OPTIONAL - If you want to immediately use the Asset for encoding, analysis, or other workflows, you can do so here.
     // This is the point at which you can immediately use the archived, recorded asset in storage for other tasks. 
     // You do not need to wait for the live event to clean up before continuing with other tasks on the recorded output.
@@ -665,16 +674,16 @@ async function cleanUpResources(liveEventName: string, liveOutputName: string) {
                     //removeOutputsOnStop :true // this is OPTIONAL, but recommend deleting them manually first. 
                 },
                 {
-                    updateIntervalInMs:longRunningOperationUpdateIntervalMs // Setting this adjusts the polling interval of the long running operation. 
+                    updateIntervalInMs: longRunningOperationUpdateIntervalMs // Setting this adjusts the polling interval of the long running operation. 
                 }
             )
-            .then( () => {
-                let timeEnd = process.hrtime(timeStart);
-                console.info(`Execution time for Stop Live Event: %ds %dms`, timeEnd[0], timeEnd[1] / 1000000);
-                console.log();
-            })
+                .then(() => {
+                    let timeEnd = process.hrtime(timeStart);
+                    console.info(`Execution time for Stop Live Event: %ds %dms`, timeEnd[0], timeEnd[1] / 1000000);
+                    console.log();
+                })
         }
-       
+
 
         timeStart = process.hrtime();
         // Delete the Live Event
@@ -684,16 +693,16 @@ async function cleanUpResources(liveEventName: string, liveOutputName: string) {
             accountName,
             liveEventName,
             {
-                updateIntervalInMs:longRunningOperationUpdateIntervalMs // Setting this adjusts the polling interval of the long running operation. 
+                updateIntervalInMs: longRunningOperationUpdateIntervalMs // Setting this adjusts the polling interval of the long running operation. 
             }
         )
-        .then( () => {
-                
-            let timeEnd = process.hrtime(timeStart);
-            console.info(`Execution time for Delete Live Event: %ds %dms`, timeEnd[0], timeEnd[1] / 1000000);
-            console.log();
-        })
-       
+            .then(() => {
+
+                let timeEnd = process.hrtime(timeStart);
+                console.info(`Execution time for Delete Live Event: %ds %dms`, timeEnd[0], timeEnd[1] / 1000000);
+                console.log();
+            })
+
         // IMPORTANT! Open the portal again and make CERTAIN that the live event is stopped and deleted - and that you do not have any billing live events running still.
     }
     // </CleanUpResources>
