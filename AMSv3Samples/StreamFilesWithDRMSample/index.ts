@@ -1,15 +1,10 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
+import { DefaultAzureCredential } from "@azure/identity";
 import {
   AzureMediaServices,
-  AzureMediaServicesModels
-} from '@azure/arm-mediaservices';
-import {
   BuiltInStandardEncoderPreset,
-  TransformsCreateOrUpdateResponse,
-  TransformsGetResponse,
   AssetContainerPermission,
   JobOutputAsset,
   JobInputUnion,
@@ -22,9 +17,11 @@ import {
   ContentKeyPolicyOption,
   ContentKeyPolicyPlayReadyConfiguration,
   ContentKeyPolicyWidevineConfiguration,
-  AzureMediaServicesOptions,
-} from "@azure/arm-mediaservices/esm/models";
-import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
+} from '@azure/arm-mediaservices';
+import {
+  BlobServiceClient,
+  AnonymousCredential
+} from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
 import * as path from "path";
@@ -53,8 +50,15 @@ const subscriptionId: string = process.env.SUBSCRIPTIONID as string;
 const resourceGroup: string = process.env.RESOURCEGROUP as string;
 const accountName: string = process.env.ACCOUNTNAME as string;
 
-// Credentials object used for Service Principal authentication to Azure Media Services and Storage account
-let credentials: msRestNodeAuth.ApplicationTokenCredentials;
+// This sample uses the default Azure Credential object, which relies on the environment variable settings.
+// If you wish to use User assigned managed identity, see the samples for v2 of @azure/identity
+// Managed identity authentication is supported via either the DefaultAzureCredential or the ManagedIdentityCredential classes
+// https://docs.microsoft.com/javascript/api/overview/azure/identity-readme?view=azure-node-latest
+// See the following examples for how ot authenticate in Azure with managed identity
+// https://github.com/Azure/azure-sdk-for-js/blob/@azure/identity_2.0.1/sdk/identity/identity/samples/AzureIdentityExamples.md#authenticating-in-azure-with-managed-identity 
+
+// const credential = new ManagedIdentityCredential("<USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID>");
+const credential = new DefaultAzureCredential();
 
 // You can either specify a local input file with the inputFile or an input Url with inputUrl. 
 // Just set the other one to null to have it select the right JobInput class type
@@ -79,7 +83,7 @@ let blobName: string;
 const issuer: string = "myIssuer";
 const audience: string = "myAudience";
 let tokenSigningKey: Int16Array = new Int16Array(40);
-const contentKeyPolicyName = "CommonEncryptionCencDrmContentKeyPolicy_2021_02_15_1";
+const contentKeyPolicyName = "CommonEncryptionCencDrmContentKeyPolicy_2021_11_23";
 const symmetricKey: string = process.env.DRMSYMMETRICKEY as string;
 
 ///////////////////////////////////////////
@@ -89,17 +93,7 @@ export async function main() {
   // Define the name to use for the encoding Transform that will be created
   const encodingTransformName = "ContentAwareEncodingTransform";
 
-
-  try {
-    let clientOptions: AzureMediaServicesOptions = {
-      longRunningOperationRetryTimeout: 5 // set the timeout for retries to 5 seconds
-    }
-    
-    credentials = await msRestNodeAuth.loginWithServicePrincipalSecret(clientId, secret, tenantDomain);
-    mediaServicesClient = new AzureMediaServices(credentials, subscriptionId, clientOptions);
-  } catch (err) {
-    console.log(`Error retrieving Media Services Client. Status Code:${err.statusCode}  Body: ${err.Body}`);
-  }
+  mediaServicesClient = new AzureMediaServices(credential, subscriptionId, {});
 
   try {
     // Ensure that you have the desired encoding Transform. This is really a one time setup operation.
@@ -109,7 +103,7 @@ export async function main() {
     // To use a custom encoding preset, you can change this to be a StandardEncoderPreset, which has support for codecs, formats, and filter definitions.
     // This sample uses the 'ContentAwareEncoding' preset which chooses the best output based on an analysis of the input video.
     let adaptiveStreamingTransform: BuiltInStandardEncoderPreset = {
-      odatatype: "#Microsoft.Media.BuiltInStandardEncoderPreset",
+      odataType: "#Microsoft.Media.BuiltInStandardEncoderPreset",
       presetName: "ContentAwareEncoding"
     };
 
@@ -151,7 +145,7 @@ export async function main() {
       // via the Key Delivery component of Azure Media Services.
       // We are using the ContentKeyIdentifierClaim in the ContentKeyPolicy which means that the token presented
       // to the Key Delivery Component must have the identifier of the content key in it. 
-      await ensureContentKeyPolicyExists(contentKeyPolicyName, tokenSigningKey);
+      await createOrUpdateContentKeyPolicy(contentKeyPolicyName, tokenSigningKey);
 
       let locator = await createStreamingLocator(outputAsset.name, locatorName, contentKeyPolicyName);
 
@@ -228,19 +222,17 @@ async function downloadResults(assetName: string, resultsFolder: string) {
     let i = 1;
     for await (const blob of containerClient.listBlobsFlat()) {
       console.log(`Blob ${i++}: ${blob.name}`);
-      try {
-        let blockBlobClient = containerClient.getBlockBlobClient(blob.name);
-        await blockBlobClient.downloadToFile(path.join(directory, blob.name), 0, undefined,
-          {
-            abortSignal: AbortController.timeout(30 * 60 * 1000),
-            maxRetryRequests: 2,
-            onProgress: (ev) => console.log(ev)
-          }).then(() => {
-            console.log(`Download file complete`);
-          });
-      } catch (err) {
-        console.log(`Download file Failed - ${err.details.requestId}, statusCode - ${err.statusCode}, errorCode - ${err.details.console.errorCode}`);
-      }
+
+      let blockBlobClient = containerClient.getBlockBlobClient(blob.name);
+      await blockBlobClient.downloadToFile(path.join(directory, blob.name), 0, undefined,
+        {
+          abortSignal: AbortController.timeout(30 * 60 * 1000),
+          maxRetryRequests: 2,
+          onProgress: (ev) => console.log(ev)
+        }).then(() => {
+          console.log(`Download file complete`);
+        });
+
     }
   }
 }
@@ -253,7 +245,9 @@ async function waitForJobToFinish(transformName: string, jobName: string) {
     let job = await mediaServicesClient.jobs.get(resourceGroup, accountName, transformName, jobName);
     // Note that you can report the progress for each Job output if you have more than one. In this case, we only have one output in the Transform
     // that we defined in this sample, so we can check that with the job.outputs[0].progress parameter.
-    console.log(`Job State is : ${job.state},  Progress: ${job.outputs[0].progress}%`);
+    if (job.outputs != undefined) {
+      console.log(`Job State is : ${job.state},  Progress: ${job.outputs[0].progress}%`);
+    }
 
     if (job.state == 'Finished' || job.state == 'Error' || job.state == 'Canceled') {
 
@@ -281,12 +275,12 @@ async function getJobInputType(uniqueness: string): Promise<JobInputUnion> {
     let assetName: string = namePrefix + "-input-" + uniqueness;
     await createInputAsset(assetName, inputFile);
     return {
-      odatatype: "#Microsoft.Media.JobInputAsset",
+      odataType: "#Microsoft.Media.JobInputAsset",
       assetName: assetName
     }
   } else {
     return {
-      odatatype: "#Microsoft.Media.JobInputHttp",
+      odataType: "#Microsoft.Media.JobInputHttp",
       files: [inputUrl]
     }
   }
@@ -332,15 +326,11 @@ async function createInputAsset(assetName: string, fileToUpload: string) {
 
     // Parallel uploading with BlockBlobClient.uploadFile() in Node.js runtime
     // BlockBlobClient.uploadFile() is only available in Node.js and not in Browser
-    try {
-      await blockBlobClient.uploadFile(fileToUpload, {
-        blockSize: 4 * 1024 * 1024, // 4MB Block size
-        concurrency: 20, // 20 concurrent
-        onProgress: (ev) => console.log(ev)
-      }).then();
-    } catch (err) {
-      console.log(`Upload failed, request id - ${err.details.requestId}, statusCode - ${err.statusCode}, errorCode - ${err.details.errorCode}`);
-    }
+    await blockBlobClient.uploadFile(fileToUpload, {
+      blockSize: 4 * 1024 * 1024, // 4MB Block size
+      concurrency: 20, // 20 concurrent
+      onProgress: (ev) => console.log(ev)
+    });
   }
 
   return asset;
@@ -353,7 +343,7 @@ async function submitJob(transformName: string, jobName: string, jobInput: JobIn
   }
   let jobOutputs: JobOutputAsset[] = [
     {
-      odatatype: "#Microsoft.Media.JobOutputAsset",
+      odataType: "#Microsoft.Media.JobOutputAsset",
       assetName: outputAssetName
     }
   ];
@@ -367,124 +357,123 @@ async function submitJob(transformName: string, jobName: string, jobInput: JobIn
 
 // Create a new Content Key Policy using Widevine DRM and Playready DRM configurations.
 
-async function ensureContentKeyPolicyExists(policyName: string, tokenSigningKey: Uint8Array) {
+async function createOrUpdateContentKeyPolicy(policyName: string, tokenSigningKey: Uint8Array) {
   let contentKeyPoliciesGetResponse: ContentKeyPoliciesGetResponse;
   let contentKeyPolicy: ContentKeyPoliciesCreateOrUpdateResponse;
-  contentKeyPoliciesGetResponse = await mediaServicesClient.contentKeyPolicies.get(resourceGroup, accountName, policyName);
+  let options: ContentKeyPolicyOption[] = [];
 
-  if (!contentKeyPoliciesGetResponse.name) {
+  let primaryKey: ContentKeyPolicySymmetricTokenKey = {
+    odataType: "#Microsoft.Media.ContentKeyPolicySymmetricTokenKey",
+    keyValue: tokenSigningKey,
+  }
 
-    let primaryKey: ContentKeyPolicySymmetricTokenKey = {
-      odatatype: "#Microsoft.Media.ContentKeyPolicySymmetricTokenKey",
-      keyValue: tokenSigningKey,
+  let requiredClaims: ContentKeyPolicyTokenClaim[] = [
+    {
+      claimType: "urn:microsoft:azure:mediaservices:contentkeyidentifier" // contentKeyIdentifierClaim
     }
+  ];
 
-    let requiredClaims: ContentKeyPolicyTokenClaim[] = [
+  let restriction: ContentKeyPolicyTokenRestriction = {
+    odataType: "#Microsoft.Media.ContentKeyPolicyTokenRestriction",
+    issuer: issuer,
+    audience: audience,
+    primaryVerificationKey: primaryKey,
+    restrictionTokenType: "Jwt",
+    alternateVerificationKeys: undefined,
+    requiredClaims: requiredClaims
+  }
+
+
+  //ContentKeyPolicyPlayReadyConfiguration playReadyConfig = ConfigurePlayReadyLicenseTemplate();
+
+  //   Creates a PlayReady License Template with the following settings
+  //    - sl2000
+  //    - license type = non-persistent
+  //    - content type = unspecified
+  //    - Uncompressed Digital Video OPL = 270
+  //    - Compressed Digital Video OPL  = 300
+  //    - Explicit Analog Television Protection =  best effort
+  let playreadyConfig: ContentKeyPolicyPlayReadyConfiguration = {
+    odataType: "#Microsoft.Media.ContentKeyPolicyPlayReadyConfiguration",
+    licenses: [
       {
-        claimType: "urn:microsoft:azure:mediaservices:contentkeyidentifier" // contentKeyIdentifierClaim
+        allowTestDevices: true,
+        contentKeyLocation: {
+          odataType: "#Microsoft.Media.ContentKeyPolicyPlayReadyContentEncryptionKeyFromHeader"
+        },
+        playRight: {
+          allowPassingVideoContentToUnknownOutput: "Allowed",
+          imageConstraintForAnalogComponentVideoRestriction: true,
+          digitalVideoOnlyContentRestriction: false,
+          uncompressedDigitalVideoOpl: 270,
+          compressedDigitalVideoOpl: 400,
+          imageConstraintForAnalogComputerMonitorRestriction: false,
+          explicitAnalogTelevisionOutputRestriction: {
+            bestEffort: true,
+            configurationData: 2
+          }
+        },
+        licenseType: "NonPersistent",
+        contentType: "Unspecified"
       }
-    ];
+    ],
+    responseCustomData: undefined
+  }
 
-    let restriction: ContentKeyPolicyTokenRestriction = {
-      odatatype: "#Microsoft.Media.ContentKeyPolicyTokenRestriction",
-      issuer: issuer,
-      audience: audience,
-      primaryVerificationKey: primaryKey,
-      restrictionTokenType: "Jwt",
-      alternateVerificationKeys: undefined,
-      requiredClaims: requiredClaims
-    }
-
-
-    //ContentKeyPolicyPlayReadyConfiguration playReadyConfig = ConfigurePlayReadyLicenseTemplate();
-
-    //   Creates a PlayReady License Template with the following settings
-    //    - sl2000
-    //    - license type = non-persistent
-    //    - content type = unspecified
-    //    - Uncompressed Digital Video OPL = 270
-    //    - Compressed Digital Video OPL  = 300
-    //    - Explicit Analog Television Protection =  best effort
-    let playreadyConfig: ContentKeyPolicyPlayReadyConfiguration = {
-      odatatype: "#Microsoft.Media.ContentKeyPolicyPlayReadyConfiguration",
-      licenses: [
+  // Configure the WideVine license template in JSON
+  // See the latest documentation and Widevine docs by Google for details
+  // https://docs.microsoft.com/azure/media-services/latest/widevine-license-template-overview 
+  let wideVineConfig: ContentKeyPolicyWidevineConfiguration = {
+    odataType: "#Microsoft.Media.ContentKeyPolicyWidevineConfiguration",
+    widevineTemplate: JSON.stringify({
+      allowed_track_types: "SD_HD",
+      content_key_specs: [
         {
-          allowTestDevices: true,
-          contentKeyLocation: {
-            odatatype: "#Microsoft.Media.ContentKeyPolicyPlayReadyContentEncryptionKeyFromHeader"
-          },
-          playRight: {
-            allowPassingVideoContentToUnknownOutput: "Allowed",
-            imageConstraintForAnalogComponentVideoRestriction: true,
-            digitalVideoOnlyContentRestriction: false,
-            uncompressedDigitalVideoOpl: 270,
-            compressedDigitalVideoOpl: 400,
-            imageConstraintForAnalogComputerMonitorRestriction: false,
-            explicitAnalogTelevisionOutputRestriction: {
-              bestEffort: true,
-              configurationData: 2
-            }
-          },
-          licenseType: "NonPersistent",
-          contentType: "Unspecified"
+          track_type: "SD",
+          security_level: 1,
+          required_output_protection: {
+            HDCP: "HDCP_NONE"
+            // NOTE: the policy should be set to "HDCP_v1" (or greater) if you need to disable screen capture. The Widevine desktop
+            // browser CDM module only blocks screen capture when HDCP is enabled and the screen capture application is using
+            // Chromes screen capture APIs. 
+          }
         }
       ],
-      responseCustomData: undefined
-    }
-
-    // Configure the WideVine license template in JSON
-    // See the latest documentation and Widevine docs by Google for details
-    // https://docs.microsoft.com/azure/media-services/latest/widevine-license-template-overview 
-    let wideVineConfig: ContentKeyPolicyWidevineConfiguration = {
-      odatatype: "#Microsoft.Media.ContentKeyPolicyWidevineConfiguration",
-      widevineTemplate: JSON.stringify({
-        allowed_track_types: "SD_HD",
-        content_key_specs: [
-          {
-            track_type: "SD",
-            security_level: 1,
-            required_output_protection: {
-              HDCP: "HDCP_NONE"
-              // NOTE: the policy should be set to "HDCP_v1" (or greater) if you need to disable screen capture. The Widevine desktop
-              // browser CDM module only blocks screen capture when HDCP is enabled and the screen capture application is using
-              // Chromes screen capture APIs. 
-            }
-          }
-        ],
-        policy_overrides: {
-          can_play: true,
-          can_persist: false,
-          can_renew: false,
-          // Additional OPTIONAL settings in Widevine template, depending on your use case scenario
-          // license_duration_seconds: 604800,
-          // rental_duration_seconds: 2592000,
-          // playback_duration_seconds: 10800,
-          // renewal_recovery_duration_seconds: <renewal recovery duration in seconds>,
-          // renewal_server_url: "<renewal server url>",
-          // renewal_delay_seconds: <renewal delay>,
-          // renewal_retry_interval_seconds: <renewal retry interval>,
-          // renew_with_usage: <renew with usage>
-        }
-      })
-    }
-
-    // Add the two license type configurations for PlayReady and Widevine to the policy
-    let options: ContentKeyPolicyOption[] = [
-      {
-        configuration: playreadyConfig,
-        restriction: restriction
-      },
-      {
-        configuration: wideVineConfig,
-        restriction: restriction
-      },
-    ];
-
-    contentKeyPolicy = await mediaServicesClient.contentKeyPolicies.createOrUpdate(resourceGroup, accountName, policyName, {
-      description: "Content Key Policy Description",
-      options: options
-    });
+      policy_overrides: {
+        can_play: true,
+        can_persist: false,
+        can_renew: false,
+        // Additional OPTIONAL settings in Widevine template, depending on your use case scenario
+        // license_duration_seconds: 604800,
+        // rental_duration_seconds: 2592000,
+        // playback_duration_seconds: 10800,
+        // renewal_recovery_duration_seconds: <renewal recovery duration in seconds>,
+        // renewal_server_url: "<renewal server url>",
+        // renewal_delay_seconds: <renewal delay>,
+        // renewal_retry_interval_seconds: <renewal retry interval>,
+        // renew_with_usage: <renew with usage>
+      }
+    })
   }
+
+  // Add the two license type configurations for PlayReady and Widevine to the policy
+  options = [
+    {
+      configuration: playreadyConfig,
+      restriction: restriction
+    },
+    {
+      configuration: wideVineConfig,
+      restriction: restriction
+    },
+  ];
+
+  await mediaServicesClient.contentKeyPolicies.createOrUpdate(resourceGroup, accountName, policyName, {
+    description: "Content Key Policy Description",
+    options: options
+  });
+
+
 }
 
 async function createStreamingLocator(assetName: string, locatorName: string, contentKeyPolicyName: string) {

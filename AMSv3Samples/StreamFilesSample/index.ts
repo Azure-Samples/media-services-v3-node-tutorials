@@ -1,23 +1,19 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
+import { DefaultAzureCredential } from "@azure/identity";
 import {
   AzureMediaServices,
-  AzureMediaServicesModels
-} from '@azure/arm-mediaservices';
-import {
   BuiltInStandardEncoderPreset,
-  TransformsCreateOrUpdateResponse,
-  TransformsGetResponse,
   AssetContainerPermission,
   JobOutputAsset,
   JobInputUnion,
-  JobsGetResponse,
-  AzureMediaServicesOptions,
-  ErrorResponse
-} from "@azure/arm-mediaservices/esm/models";
-import { BlobServiceClient, AnonymousCredential, BlobDownloadResponseModel } from "@azure/storage-blob";
+  JobsGetResponse
+} from '@azure/arm-mediaservices';
+import { 
+  BlobServiceClient, 
+  AnonymousCredential
+} from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
 import * as path from "path";
@@ -41,8 +37,15 @@ const resourceGroup: string = process.env.RESOURCEGROUP as string;
 const accountName: string = process.env.ACCOUNTNAME as string;
 
 
-// Credentials object used for Service Principal authentication to Azure Media Services and Storage account
-let credentials: msRestNodeAuth.ApplicationTokenCredentials;
+// This sample uses the default Azure Credential object, which relies on the environment variable settings.
+// If you wish to use User assigned managed identity, see the samples for v2 of @azure/identity
+// Managed identity authentication is supported via either the DefaultAzureCredential or the ManagedIdentityCredential classes
+// https://docs.microsoft.com/javascript/api/overview/azure/identity-readme?view=azure-node-latest
+// See the following examples for how ot authenticate in Azure with managed identity
+// https://github.com/Azure/azure-sdk-for-js/blob/@azure/identity_2.0.1/sdk/identity/identity/samples/AzureIdentityExamples.md#authenticating-in-azure-with-managed-identity 
+
+// const credential = new ManagedIdentityCredential("<USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID>");
+const credential = new DefaultAzureCredential();
 
 // You can either specify a local input file with the inputFile or an input Url with inputUrl. 
 // Just set the other one to null to have it select the right JobInput class type
@@ -70,15 +73,7 @@ export async function main() {
   // Define the name to use for the encoding Transform that will be created
   const encodingTransformName = "ContentAwareEncoding";
 
-  try {
-    let clientOptions: AzureMediaServicesOptions = {
-      longRunningOperationRetryTimeout: 5 // set the timeout for retries to 5 seconds.
-    }
-    credentials = await msRestNodeAuth.loginWithServicePrincipalSecret(clientId, secret, tenantDomain);
-    mediaServicesClient = new AzureMediaServices(credentials, subscriptionId, clientOptions);
-  } catch (err) {
-    console.log(`Error retrieving Media Services Client. Status Code:${err.statusCode}  Body: ${err.Body}`);
-  }
+  mediaServicesClient = new AzureMediaServices(credential, subscriptionId);
 
   try {
     // Ensure that you have the desired encoding Transform. This is really a one time setup operation.
@@ -88,7 +83,7 @@ export async function main() {
     // To use a custom encoding preset, you can change this to be a StandardEncoderPreset, which has support for codecs, formats, and filter definitions.
     // This sample uses the 'ContentAwareEncoding' preset which chooses the best output based on an analysis of the input video.
     let adaptiveStreamingTransform: BuiltInStandardEncoderPreset = {
-      odatatype: "#Microsoft.Media.BuiltInStandardEncoderPreset",
+      odataType:"#Microsoft.Media.BuiltInStandardEncoderPreset",
       presetName: "ContentAwareEncoding"
     };
 
@@ -154,7 +149,7 @@ async function downloadResults(assetName: string, resultsFolder: string) {
   if (listContainerSas.assetContainerSasUrls) {
     let containerSasUrl = listContainerSas.assetContainerSasUrls[0];
     let sasUri = url.parseURL(containerSasUrl);
-
+    
     // Get the Blob service client using the Asset's SAS URL and the Anonymous credential method on the Blob service client
     const anonymousCredential = new AnonymousCredential();
     let blobClient = new BlobServiceClient(containerSasUrl, anonymousCredential)
@@ -178,21 +173,19 @@ async function downloadResults(assetName: string, resultsFolder: string) {
     let i = 1;
     for await (const blob of containerClient.listBlobsFlat()) {
       console.log(`Blob ${i++}: ${blob.name}`);
-      try {
-        let blockBlobClient = containerClient.getBlockBlobClient(blob.name);
-        await blockBlobClient.downloadToFile(path.join(directory, blob.name), 0, undefined,
-          {
-            abortSignal: AbortController.timeout(30 * 60 * 1000),
-            maxRetryRequests: 2,
-            onProgress: (ev) => console.log(ev)
-          }).then(() => {
-            console.log(`Download file complete`);
-          });
-      } catch (err) {
-        console.log(`Download file Failed - ${err.details.requestId}, statusCode - ${err.statusCode}, errorCode - ${err.details.console.errorCode}`);
-      }
+     
+      let blockBlobClient = containerClient.getBlockBlobClient(blob.name);
+      await blockBlobClient.downloadToFile(path.join(directory, blob.name), 0, undefined,
+        {
+          abortSignal: AbortController.timeout(30 * 60 * 1000),
+          maxRetryRequests: 2,
+          onProgress: (ev) => console.log(ev)
+        }).then(() => {
+          console.log(`Download file complete`);
+        });
     }
   }
+  
 }
 
 async function waitForJobToFinish(transformName: string, jobName: string) {
@@ -227,12 +220,12 @@ async function getJobInputType(uniqueness: string): Promise<JobInputUnion> {
     let assetName: string = namePrefix + "-input-" + uniqueness;
     await createInputAsset(assetName, inputFile);
     return {
-      odatatype: "#Microsoft.Media.JobInputAsset",
+      odataType: "#Microsoft.Media.JobInputAsset",
       assetName: assetName
     }
   } else {
     return {
-      odatatype: "#Microsoft.Media.JobInputHttp",
+      odataType: "#Microsoft.Media.JobInputHttp",
       files: [inputUrl]
     }
   }
@@ -278,15 +271,11 @@ async function createInputAsset(assetName: string, fileToUpload: string) {
 
     // Parallel uploading with BlockBlobClient.uploadFile() in Node.js runtime
     // BlockBlobClient.uploadFile() is only available in Node.js and not in Browser
-    try {
-      await blockBlobClient.uploadFile(fileToUpload, {
-        blockSize: 4 * 1024 * 1024, // 4MB Block size
-        concurrency: 20, // 20 concurrent
-        onProgress: (ev) => console.log(ev)
-      }).then();
-    } catch (err) {
-      console.log(`Upload failed, request id - ${err.details.requestId}, statusCode - ${err.statusCode}, errorCode - ${err.details.errorCode}`);
-    }
+    await blockBlobClient.uploadFile(fileToUpload, {
+      blockSize: 4 * 1024 * 1024, // 4MB Block size
+      concurrency: 20, // 20 concurrent
+      onProgress: (ev) => console.log(ev)
+    })
   }
 
   return asset;
@@ -299,7 +288,7 @@ async function submitJob(transformName: string, jobName: string, jobInput: JobIn
   }
   let jobOutputs: JobOutputAsset[] = [
     {
-      odatatype: "#Microsoft.Media.JobOutputAsset",
+      odataType: "#Microsoft.Media.JobOutputAsset",
       assetName: outputAssetName
     }
   ];
