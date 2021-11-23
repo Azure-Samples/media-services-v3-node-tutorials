@@ -71,7 +71,14 @@ const subscriptionId: string = process.env.SUBSCRIPTIONID as string;
 const resourceGroup: string = process.env.RESOURCEGROUP as string;
 const accountName: string = process.env.ACCOUNTNAME as string;
 
+// This sample uses the default Azure Credential object, which relies on the environment variable settings.
+// If you wish to use User assigned managed identity, see the samples for v2 of @azure/identity
+// Managed identity authentication is supported via either the DefaultAzureCredential or the ManagedIdentityCredential classes
+// https://docs.microsoft.com/javascript/api/overview/azure/identity-readme?view=azure-node-latest
+// See the following examples for how ot authenticate in Azure with managed identity
+// https://github.com/Azure/azure-sdk-for-js/blob/@azure/identity_2.0.1/sdk/identity/identity/samples/AzureIdentityExamples.md#authenticating-in-azure-with-managed-identity 
 
+// const credential = new ManagedIdentityCredential("<USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID>");
 const credential = new DefaultAzureCredential();
 
 //////////////////////////////////////////
