@@ -33,10 +33,10 @@
     "node_modules"
   ],
   "include": [
-    "HelloWorld-ListAssets/*.ts",
-    "StreamFilesSample/*.ts",
-    "StreamFilesWithDRMSample/*.ts",
-    "VideoIndexerSample/*.ts",
+    //"HelloWorld-ListAssets/*.ts",
+    //"StreamFilesSample/*.ts",
+    //"StreamFilesWithDRMSample/*.ts",
+    //"VideoIndexerSample/*.ts",
     "Live/*.ts"
   ]
 }

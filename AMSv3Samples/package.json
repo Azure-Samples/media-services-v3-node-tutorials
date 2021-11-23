@@ -15,11 +15,10 @@
   "license": "MIT",
   "dependencies": {
     "@azure/abort-controller": "^1.0.2",
-    "@azure/arm-mediaservices": "9.0.0",
-    "@azure/ms-rest-azure-js": "^2.0.2",
-    "@azure/ms-rest-js": "^2.1.0",
-    "@azure/ms-rest-nodeauth": "^3.0.6",
-    "@azure/storage-blob": "^12.4.0",
+    "@azure/arm-mediaservices": "10.0.0-beta.1",
+    "@azure/arm-storage": "^17.0.0-beta.1",
+    "@azure/core-lro": "^2.2.1",
+    "@azure/identity": "^2.0.0",
     "fs": "0.0.1-security",
     "jsonwebtoken": "^8.5.1",
     "moment": "^2.29.1",
@@ -50,6 +49,6 @@
   },
   "scripts": {
     "build": "build:tsc",
-    "build:tsc": "tsc -p ../tsconfig.json"
+    "build:tsc": "tsc -p ./tsconfig.json"
   }
 }

@@ -36,18 +36,24 @@
 ////////////////////////////////////////////////////////////////////////////////////
 
 // <ImportMediaServices>
-import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
-import {
-    AzureMediaServices,
-    AzureMediaServicesModels,
-    Mediaservices
-} from '@azure/arm-mediaservices';
+
 import { v4 as uuidv4 } from 'uuid';
 // Load the .env file if it exists
 import * as dotenv from "dotenv";
 import * as readlineSync from 'readline-sync';
-import { AzureMediaServicesOptions, IPRange, LiveEvent, LiveEventInputAccessControl, LiveEventPreview, LiveOutput, MediaservicesGetResponse } from "@azure/arm-mediaservices/esm/models";
+import {
+    AzureMediaServices,
+    IPRange,
+    LiveEvent,
+    LiveEventInputAccessControl,
+    LiveEventPreview,
+    LiveOutput,
+    MediaservicesGetResponse,
+    ErrorResponse
+} from "@azure/arm-mediaservices";
+import { DefaultAzureCredential } from "@azure/identity";
 // </ImportMediaServices>
+
 dotenv.config();
 
 // This is the main Media Services client object
@@ -62,9 +68,8 @@ const subscriptionId: string = process.env.SUBSCRIPTIONID as string;
 const resourceGroup: string = process.env.RESOURCEGROUP as string;
 const accountName: string = process.env.ACCOUNTNAME as string;
 
-// Credentials object used for Service Principal authentication to Azure Media Services and Storage account
-let credentials: msRestNodeAuth.ApplicationTokenCredentials;
 
+const credential = new DefaultAzureCredential();
 
 //////////////////////////////////////////
 //   Main entry point for sample script  //
@@ -82,22 +87,19 @@ export async function main() {
     let liveEvent: LiveEvent;
     let liveOutput: LiveOutput;
 
-    // <CreateMediaServicesClient>
-    let clientOptions :AzureMediaServicesOptions = {
-        longRunningOperationRetryTimeout: 2 // set the polling interval for long operations to be really fast for live events. 2 seconds in this case. Default is 30s.
-    }
-   
-
     console.log("Starting the Live Streaming sample for Azure Media Services");
     try {
-        credentials = await msRestNodeAuth.loginWithServicePrincipalSecret(clientId, secret, tenantDomain);
-        mediaServicesClient = new AzureMediaServices(credentials, subscriptionId, clientOptions);
+        mediaServicesClient = new AzureMediaServices(credential, subscriptionId, {
+            retryOptions: {
+                maxRetryDelayInMs: 2000
+            }
+        });
     } catch (err) {
-        console.log(`Error retrieving Media Services Client. Status Code:${err.statusCode}  Body: ${err.Body}`);
+        console.log(`Error retrieving Media Services Client.`);
     }
 
     // Get the media services account object for information on the current location. 
-    mediaAccount = await mediaServicesClient.mediaservices.get(resourceGroup,accountName);
+    mediaAccount = await mediaServicesClient.mediaservices.get(resourceGroup, accountName);
 
     // </CreateMediaServicesClient>
 
@@ -191,7 +193,7 @@ export async function main() {
                 // Set this to Basic pass-through, Standard pass-through, Standard or Premium1080P to use the cloud live encoder.
                 // See https://go.microsoft.com/fwlink/?linkid=2095101 for more information
                 // Otherwise, leave as "None" to use pass-through mode
-                encodingType: "PassthroughBasic",
+                encodingType: "PassthroughStandard",
                 // OPTIONS for encoding type you can use:
                 // encodingType: "PassthroughBasic", // Basic pass-through mode - the cheapest option!
                 // encodingType: "PassthroughStandard", // also known as standard pass-through mode (formerly "none")
@@ -214,7 +216,7 @@ export async function main() {
             // 5) Optionally enable live transcriptions if desired. 
             // WARNING : This is extra cost ($$$), so please check pricing before enabling. Transcriptions are not supported on PassthroughBasic.
             //           switch this sample to use encodingType: "PassthroughStandard" first before un-commenting the transcriptions object below. 
-                  
+
             /* transcriptions : [
                 {
                     inputTrackSelection: [], // chose which track to transcribe on the source input.
@@ -228,7 +230,7 @@ export async function main() {
             */
         }
 
-      
+
 
         console.log("Creating the LiveEvent, please be patient as this can take time to complete async.")
         console.log("Live Event creation is an async operation in Azure and timing can depend on resources available.")
@@ -245,7 +247,7 @@ export async function main() {
         // you are ready to transition to "Running". This is useful when you want to pool resources in a warm "Standby" state at a reduced cost.
         // The transition from Standby to "Running" is much faster than cold creation to "Running" using the autostart property.
         // Returns a long running operation polling object that can be used to poll until completion.
-        let liveCreateOperation = await mediaServicesClient.liveEvents.beginCreate(
+        await mediaServicesClient.liveEvents.beginCreateAndWait(
             resourceGroup,
             accountName,
             liveEventName,
@@ -258,24 +260,20 @@ export async function main() {
             {
                 autoStart: false
             }
-        );
+        ).then(() => {
+            let timeEnd = process.hrtime(timeStart);
+            console.info(`Live Event Created - long running operation complete!`)
+            console.info(`Execution time for create LiveEvent: %ds %dms`, timeEnd[0], timeEnd[1] / 1000000);
+            console.log();
+        }).catch((reason) => {
+            console.info(`Live Event creation failed: ${reason}`);
+        })
 
         // </CreateLiveEvent>
 
-        console.log(`HTTP Response Status: ${liveCreateOperation.getInitialResponse().status}`);
-        console.log(liveCreateOperation.getInitialResponse().parsedBody);
 
-        // Make sure that the Live event is created
-        if (!liveCreateOperation.isFinished())
-        {
-            await liveCreateOperation.pollUntilFinished();
-        }
-        let timeEnd = process.hrtime(timeStart);
-        console.info(`Live Event Created - long running operation complete!`)
-        console.info(`Execution time for create LiveEvent: %ds %dms`, timeEnd[0], timeEnd[1] /1000000);
-        console.log();
 
-        
+
         // <CreateAsset>
 
         // Create an Asset for the LiveOutput to use. Think of this as the "tape" that will be recorded to. 
@@ -299,7 +297,7 @@ export async function main() {
 
         timeStart = process.hrtime();
 
-         // <CreateLiveOutput>    
+        // <CreateLiveOutput>    
         let liveOutputCreate: LiveOutput;
         if (asset.name) {
             liveOutputCreate = {
@@ -313,56 +311,61 @@ export async function main() {
             }
 
             // Create and await the live output
-            let liveOutputOperation = await mediaServicesClient.liveOutputs.beginCreate(
+            await mediaServicesClient.liveOutputs.beginCreateAndWait(
                 resourceGroup,
                 accountName,
                 liveEventName,
                 liveOutputName,
-                liveOutputCreate);
+                liveOutputCreate)
+                .then((liveOutput) => {
+                    console.log(`Live Output Created: ${liveOutput.name}`);
+                    let timeEnd = process.hrtime(timeStart);
+                    console.info(`Execution time for create Live Output: %ds %dms`, timeEnd[0], timeEnd[1] / 1000000);
+                    console.log();
+                })
+                .catch((reason) => {
+                    console.log(reason);
+                });
 
-            console.log(`Live Output Create - HTTP Response Status: ${liveOutputOperation.getInitialResponse().status}`);
-            console.log(liveOutputOperation.getInitialResponse().parsedBody);
+
         }
         // </CreateLiveOutput>
-        
-        timeEnd = process.hrtime(timeStart);
-        console.info(`Execution time for create Live Output: %ds %dms`, timeEnd[0], timeEnd[1] /1000000);
-        console.log();
-
 
         // Lets patch something on the fly before starting, just to show whe can modify things in Stopped state. 
         // With the Channel stopped I should be able to update a few things as needed...
         // Lets just modify the accessToken on the ingest endpoint and the hostname prefix used. 
         // These should be unique per channel in your account 
-        liveEventCreate.input.accessToken = "8257f1d1-8247-4318-b743-f541c20ea7a6";
-        liveEventCreate.hostnamePrefix = `${liveEventName}-updated`;
-        // Calling update 
-        let liveEventUpdateOperation = await mediaServicesClient.liveEvents.beginUpdate(
-            resourceGroup,
-            accountName,
-            liveEventName,
-            liveEventCreate
-        );
-        let updateresponse = await liveEventUpdateOperation.pollUntilFinished();
+        if (liveEventCreate.input != null) {
+            liveEventCreate.input.accessToken = "8257f1d1-8247-4318-b743-f541c20ea7a6";
+            liveEventCreate.hostnamePrefix = `${liveEventName}-updated`;
+            // Calling update 
+            await mediaServicesClient.liveEvents.beginUpdateAndWait(
+                resourceGroup,
+                accountName,
+                liveEventName,
+                liveEventCreate
+            ).then ( (liveEvent)=>{ // This is not actually the full live Event object coming back in the promise.
+                console.log(`Updated the Live Event: ${liveEvent.name}`);  
+            });
+        }
 
         console.log(`Starting the Live Event operation... please stand by`);
         timeStart = process.hrtime();
         // Start the Live Event - this will take some time...
-        let liveEventStartOperation = await mediaServicesClient.liveEvents.beginStart(
+        console.log(`The Live Event is being allocated. If the service's hot pool is completely depleted in a region, this could delay here for up to 15-20 minutes while machines are allocated.`)
+        console.log(`If this is taking a very long time, wait for at least 20 minutes and check on the status. If the code times out, or is cancelled, be sure to clean up in the portal!`)
+        
+        await mediaServicesClient.liveEvents.beginStartAndWait(
             resourceGroup,
             accountName,
             liveEventName
-        );
-        console.log(`Live Event Start - HTTP Response Status: ${liveEventStartOperation.getInitialResponse().status}`);
-        //console.log(liveEventStartOperation.getInitialResponse().parsedBody);
+        ).then ( () =>{
+            console.log(`Live Event Started`);
+            let timeEnd = process.hrtime(timeStart);
+            console.info(`Execution time for start Live Event: %ds %dms`, timeEnd[0], timeEnd[1] / 1000000);
+            console.log();
+        })
 
-        console.log(`The Live Event is being allocated. If the service's hotpool is completely depleted in a region, this could delay here for up to 15-20 minutes while machines are allocated.`)
-        console.log(`If this is taking a very long time, wait for at least 20 minutes and check on the status. If the code times out, or is cancelled, be sure to clean up in the portal!`)
-        // Poll until this long running operation has finished.
-        let response = await liveEventStartOperation.pollUntilFinished();
-        timeEnd = process.hrtime(timeStart);
-        console.info(`Execution time for start Live Event: %ds %dms`, timeEnd[0], timeEnd[1] /1000000);
-        console.log();
 
         // <GetIngestURL>
 
@@ -385,7 +388,7 @@ export async function main() {
         }
 
         // </GetIngestURL>
-        
+
         // <GetPreviewURL>
         if (liveEvent.preview?.endpoints) {
             // Use the previewEndpoint to preview and verify
@@ -410,9 +413,9 @@ export async function main() {
 
         // SET A BREAKPOINT HERE!
         console.log("PAUSE here in the Debugger until you are ready to continue...");
-        if (readlineSync.keyInYN("Do you want to continue?")){
+        if (readlineSync.keyInYN("Do you want to continue?")) {
             //Yes
-        }else{
+        } else {
             throw new Error("User canceled. Cleaning up...")
         }
 
@@ -428,7 +431,10 @@ export async function main() {
 
         if (streamingEndpoint?.resourceState !== "Running") {
             console.log(`Streaming endpoint is stopped. Starting the endpoint named ${streamingEndpointName}`);
-            await mediaServicesClient.streamingEndpoints.start(resourceGroup, accountName, streamingEndpointName);
+            await mediaServicesClient.streamingEndpoints.beginStartAndWait(resourceGroup, accountName, streamingEndpointName)
+            .then( ()=> {
+                console.log("Streaming Endpoint Started.");
+            })
 
         }
 
@@ -453,7 +459,7 @@ export async function main() {
 
         // SET A BREAKPOINT HERE!
         console.log("PAUSE here in the Debugger until you are ready to continue...");
-        if (readlineSync.keyInYN("Do you want to continue and clean up the sample?")){
+        if (readlineSync.keyInYN("Do you want to continue and clean up the sample?")) {
             //Yes
         }
 
@@ -481,7 +487,7 @@ main().catch((err) => {
 
 // This method builds the manifest URL from the static values used during creation of the Live Output.
 // This allows you to have a deterministic manifest path. <streaming endpoint hostname>/<streaming locator ID>/manifestName.ism/manifest(<format string>)
-async function buildManifestPaths(scheme: string, hostname: string | undefined, streamingLocatorId: string |undefined, manifestName: string) {
+async function buildManifestPaths(scheme: string, hostname: string | undefined, streamingLocatorId: string | undefined, manifestName: string) {
     const hlsFormat: string = "format=m3u8-cmaf";
     const dashFormat: string = "format=mpd-time-cmaf";
 
@@ -596,19 +602,19 @@ async function cleanUpResources(liveEventName: string, liveOutputName: string) {
     let timeStart = process.hrtime();
     // Wait for this to cleanup first and then continue...
     if (liveOutputForCleanup) {
-        let deleteOperation = await mediaServicesClient.liveOutputs.beginDeleteMethod(
+        await mediaServicesClient.liveOutputs.beginDeleteAndWait(
             resourceGroup,
             accountName,
             liveEventName,
             liveOutputName
         )
-
-        await deleteOperation.pollUntilFinished();
+        .then( () => {
+            let timeEnd = process.hrtime(timeStart);
+            console.info(`Execution time for delete live output: %ds %dms`, timeEnd[0], timeEnd[1] / 1000000);
+            console.log();
+        });
     };
-    let timeEnd = process.hrtime(timeStart);
-    console.info(`Execution time for delete live output: %ds %dms`, timeEnd[0], timeEnd[1] /1000000);
-    console.log();
-
+   
     // OPTIONAL - If you want to immediately use the Asset for encoding, analysis, or other workflows, you can do so here.
     // This is the point at which you can immediately use the archived, recorded asset in storage for other tasks. 
     // You do not need to wait for the live event to clean up before continuing with other tasks on the recorded output.
@@ -628,7 +634,7 @@ async function cleanUpResources(liveEventName: string, liveOutputName: string) {
     if (liveEventForCleanup) {
         timeStart = process.hrtime();
         if (liveEventForCleanup.resourceState == "Running") {
-            let stopOperation = await mediaServicesClient.liveEvents.beginStop(
+            await mediaServicesClient.liveEvents.beginStopAndWait(
                 resourceGroup,
                 accountName,
                 liveEventName,
@@ -637,28 +643,30 @@ async function cleanUpResources(liveEventName: string, liveOutputName: string) {
                     // if you have additional workflows on the archive to run. Speeds things up!
                     //removeOutputsOnStop :true // this is OPTIONAL, but recommend deleting them manually first. 
                 }
-            );
-
-            await stopOperation.pollUntilFinished();
+            )
+            .then( () => {
+                let timeEnd = process.hrtime(timeStart);
+                console.info(`Execution time for Stop Live Event: %ds %dms`, timeEnd[0], timeEnd[1] / 1000000);
+                console.log();
+            })
         }
-        timeEnd = process.hrtime(timeStart);
-        console.info(`Execution time for Stop Live Event: %ds %dms`, timeEnd[0], timeEnd[1] /1000000);
-        console.log();
+       
 
         timeStart = process.hrtime();
         // Delete the Live Event
         console.log("Deleting Live Event...");
-        let deleteLiveEventOperation = await mediaServicesClient.liveEvents.beginDeleteMethod(
+        let deleteLiveEventOperation = await mediaServicesClient.liveEvents.beginDeleteAndWait(
             resourceGroup,
             accountName,
             liveEventName
         )
-        await deleteLiveEventOperation.pollUntilFinished();
-
-        timeEnd = process.hrtime(timeStart);
-        console.info(`Execution time for Delete Live Event: %ds %dms`, timeEnd[0], timeEnd[1] /1000000);
-        console.log();
-
+        .then( () => {
+                
+            let timeEnd = process.hrtime(timeStart);
+            console.info(`Execution time for Delete Live Event: %ds %dms`, timeEnd[0], timeEnd[1] / 1000000);
+            console.log();
+        })
+       
         // IMPORTANT! Open the portal again and make CERTAIN that the live event is stopped and deleted - and that you do not have any billing live events running still.
     }
     // </CleanUpResources>
