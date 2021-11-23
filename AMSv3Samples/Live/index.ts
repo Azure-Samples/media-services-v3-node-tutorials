@@ -41,6 +41,7 @@ import { v4 as uuidv4 } from 'uuid';
 // Load the .env file if it exists
 import * as dotenv from "dotenv";
 import * as readlineSync from 'readline-sync';
+import { DefaultAzureCredential } from "@azure/identity";
 import {
     AzureMediaServices,
     IPRange,
@@ -51,7 +52,7 @@ import {
     MediaservicesGetResponse,
     ErrorResponse
 } from "@azure/arm-mediaservices";
-import { DefaultAzureCredential } from "@azure/identity";
+
 // </ImportMediaServices>
 
 dotenv.config();

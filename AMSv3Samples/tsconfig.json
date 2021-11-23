@@ -33,7 +33,7 @@
     "node_modules"
   ],
   "include": [
-    //"HelloWorld-ListAssets/*.ts",
+    "HelloWorld-ListAssets/*.ts",
     //"StreamFilesSample/*.ts",
     //"StreamFilesWithDRMSample/*.ts",
     //"VideoIndexerSample/*.ts",

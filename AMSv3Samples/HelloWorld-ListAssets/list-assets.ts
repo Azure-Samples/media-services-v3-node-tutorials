@@ -1,9 +1,10 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
+import { DefaultAzureCredential } from "@azure/identity";
+import {
+  AzureMediaServices
+} from '@azure/arm-mediaservices';
 
-import * as msRestNodeAuth from "@azure/ms-rest-nodeauth";
-import { AzureMediaServices } from '@azure/arm-mediaservices';
-import { AzureMediaServicesOptions } from "@azure/arm-mediaservices/esm/models";
 // Load the .env file if it exists
 import * as dotenv from "dotenv";
 dotenv.config();
@@ -18,25 +19,25 @@ export async function main() {
   const resourceGroup: string = process.env.RESOURCEGROUP as string;
   const accountName: string = process.env.ACCOUNTNAME as string;
 
-  let clientOptions: AzureMediaServicesOptions = {
-    longRunningOperationRetryTimeout: 5 // set the timeout for retries to 5 seconds
-  }
 
-  const creds = await msRestNodeAuth.loginWithServicePrincipalSecret(clientId, secret, tenantDomain);
-  const mediaClient = new AzureMediaServices(creds, subscriptionId, clientOptions);
+  // This sample uses the default Azure Credential object, which relies on the environment variable settings.
+  // If you wish to use User assigned managed identity, see the samples for v2 of @azure/identity
+  // Managed identity authentication is supported via either the DefaultAzureCredential or the ManagedIdentityCredential classes
+  // https://docs.microsoft.com/javascript/api/overview/azure/identity-readme?view=azure-node-latest
+  // See the following examples for how ot authenticate in Azure with managed identity
+  // https://github.com/Azure/azure-sdk-for-js/blob/@azure/identity_2.0.1/sdk/identity/identity/samples/AzureIdentityExamples.md#authenticating-in-azure-with-managed-identity 
+
+  // const credential = new ManagedIdentityCredential("<USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID>");
+  const credential = new DefaultAzureCredential();
+
+  let mediaServicesClient =  new AzureMediaServices(credential, subscriptionId)
 
   // List Assets in Account
-  console.log("Listing Assets Names in account:")
-  var assets = await mediaClient.assets.list(resourceGroup, accountName);
-
-  assets.forEach(asset => {
+  console.log("Listing assets in account:")
+  for await (const asset of mediaServicesClient.assets.list(resourceGroup, accountName, { top:1000 })){
     console.log(asset.name);
-  });
-
-  if (assets.odatanextLink) {
-    console.log("There are more than 1000 assets in this account, use the assets.listNext() method to continue listing more assets if needed")
-    console.log("For example:  assets = await mediaClient.assets.listNext(assets.odatanextLink)");
   }
+
 }
 
 main().catch((err) => {
