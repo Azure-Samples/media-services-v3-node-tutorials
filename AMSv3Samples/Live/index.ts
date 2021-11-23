@@ -59,6 +59,9 @@ dotenv.config();
 // This is the main Media Services client object
 let mediaServicesClient: AzureMediaServices;
 
+// Long running operation polling interval in milliseconds
+const longRunningOperationUpdateIntervalMs = 2000;
+
 // Copy the samples.env file and rename it to .env first, then populate it's values with the values obtained 
 // from your Media Services account's API Access page in the Azure portal.
 const clientId: string = process.env.AADCLIENTID as string;
@@ -89,11 +92,7 @@ export async function main() {
 
     console.log("Starting the Live Streaming sample for Azure Media Services");
     try {
-        mediaServicesClient = new AzureMediaServices(credential, subscriptionId, {
-            retryOptions: {
-                maxRetryDelayInMs: 2000
-            }
-        });
+        mediaServicesClient = new AzureMediaServices(credential, subscriptionId)
     } catch (err) {
         console.log(`Error retrieving Media Services Client.`);
     }
@@ -258,11 +257,12 @@ export async function main() {
             // keep the resources "warm" and billing at a lower cost until you are ready to go live. 
             // That increases the speed of startup when you are ready to go live. 
             {
-                autoStart: false
+                autoStart: false,
+                updateIntervalInMs:longRunningOperationUpdateIntervalMs // This sets the polling interval for the long running ARM operation (LRO)
             }
-        ).then(() => {
+        ).then((liveEvent) => {
             let timeEnd = process.hrtime(timeStart);
-            console.info(`Live Event Created - long running operation complete!`)
+            console.info(`Live Event Created - long running operation complete! Name: ${liveEvent.name}`)
             console.info(`Execution time for create LiveEvent: %ds %dms`, timeEnd[0], timeEnd[1] / 1000000);
             console.log();
         }).catch((reason) => {
@@ -316,7 +316,10 @@ export async function main() {
                 accountName,
                 liveEventName,
                 liveOutputName,
-                liveOutputCreate)
+                liveOutputCreate,
+                {
+                    updateIntervalInMs:longRunningOperationUpdateIntervalMs // Setting this adjusts the polling interval of the long running operation. 
+                })
                 .then((liveOutput) => {
                     console.log(`Live Output Created: ${liveOutput.name}`);
                     let timeEnd = process.hrtime(timeStart);
@@ -344,8 +347,10 @@ export async function main() {
                 accountName,
                 liveEventName,
                 liveEventCreate
-            ).then ( (liveEvent)=>{ // This is not actually the full live Event object coming back in the promise.
-                console.log(`Updated the Live Event: ${liveEvent.name}`);  
+            ).then ( (liveEvent)=>{  
+                // ISSUE: This is not actually the full live Event object coming back in the promise value
+                //        It appears to be a smaller subset of the live event object, with only a GUID returned as the name, which does not match the actual name of the live event.
+                console.log(`Updated the Live Event accessToken for live event named: ${liveEvent.name}`);  
             });
         }
 
@@ -358,7 +363,10 @@ export async function main() {
         await mediaServicesClient.liveEvents.beginStartAndWait(
             resourceGroup,
             accountName,
-            liveEventName
+            liveEventName,
+            {
+                updateIntervalInMs:longRunningOperationUpdateIntervalMs // Setting this adjusts the polling interval of the long running operation. 
+            }
         ).then ( () =>{
             console.log(`Live Event Started`);
             let timeEnd = process.hrtime(timeStart);
@@ -431,7 +439,9 @@ export async function main() {
 
         if (streamingEndpoint?.resourceState !== "Running") {
             console.log(`Streaming endpoint is stopped. Starting the endpoint named ${streamingEndpointName}`);
-            await mediaServicesClient.streamingEndpoints.beginStartAndWait(resourceGroup, accountName, streamingEndpointName)
+            await mediaServicesClient.streamingEndpoints.beginStartAndWait(resourceGroup, accountName, streamingEndpointName, {
+                updateIntervalInMs:longRunningOperationUpdateIntervalMs // Setting this adjusts the polling interval of the long running operation. 
+            })
             .then( ()=> {
                 console.log("Streaming Endpoint Started.");
             })
@@ -606,7 +616,10 @@ async function cleanUpResources(liveEventName: string, liveOutputName: string) {
             resourceGroup,
             accountName,
             liveEventName,
-            liveOutputName
+            liveOutputName,
+            {
+                updateIntervalInMs:longRunningOperationUpdateIntervalMs // Setting this adjusts the polling interval of the long running operation. 
+            }
         )
         .then( () => {
             let timeEnd = process.hrtime(timeStart);
@@ -642,6 +655,9 @@ async function cleanUpResources(liveEventName: string, liveOutputName: string) {
                     // It can be faster to delete all live outputs first, and then delete the live event. 
                     // if you have additional workflows on the archive to run. Speeds things up!
                     //removeOutputsOnStop :true // this is OPTIONAL, but recommend deleting them manually first. 
+                },
+                {
+                    updateIntervalInMs:longRunningOperationUpdateIntervalMs // Setting this adjusts the polling interval of the long running operation. 
                 }
             )
             .then( () => {
@@ -658,7 +674,10 @@ async function cleanUpResources(liveEventName: string, liveOutputName: string) {
         let deleteLiveEventOperation = await mediaServicesClient.liveEvents.beginDeleteAndWait(
             resourceGroup,
             accountName,
-            liveEventName
+            liveEventName,
+            {
+                updateIntervalInMs:longRunningOperationUpdateIntervalMs // Setting this adjusts the polling interval of the long running operation. 
+            }
         )
         .then( () => {
                 
