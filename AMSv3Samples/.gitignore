@@ -72,3 +72,4 @@ spcert.pem
 
 #Ignore the Temp download folder
 Temp/
+Output/

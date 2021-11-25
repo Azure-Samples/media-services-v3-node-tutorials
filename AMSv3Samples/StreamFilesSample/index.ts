@@ -61,8 +61,8 @@ const sleepInterval: number = 1000 * 2;
 const setTimeoutPromise = util.promisify(setTimeout);
 
 // Args
-const outputFolder: string = "Temp";
-const namePrefix: string = "prefix";
+const outputFolder: string = "./Temp";
+const namePrefix: string = "stream";
 let inputExtension: string;
 let blobName: string;
 
