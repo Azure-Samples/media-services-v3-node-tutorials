@@ -31,12 +31,13 @@ The projects in this repository were created using Visual Studio Code.
 |Project name|Description|
 |---|---|
 |[Create an account from code](/Account/CreateAccount)|The sample shows how to create a Media Services account and set the primary storage account, in addition to advanced configuration settings including Key Delivery IP allowlist, Managed Identity, storage auth, and bring your own encryption key.|
-|[Hello World - list assets](/AMSv3Samples/HelloWorld-ListAssets/index.ts)|Basic example on how to connect and list assets |
-|[Live streaming](/AMSv3Samples/Live/index.ts)| Basic live streaming example. **WARNING**, make sure to check that all resources are cleaned up and no longer billing in portal when using live|
-|[Upload and stream HLS and DASH](/AMSv3Samples/StreamFilesSample/index.ts)| Basic example for uploading a local file or encoding from a source URL. Sample shows how to use storage SDK to download content, and shows how to stream to a player |
-|[Upload and stream HLS and DASH with Playready and Widevine DRM](/AMSv3Samples/StreamFilesWithDRMSample/index.ts)| Demonstrates how to encode and stream using Widevine and PlayReady DRM |
-|[Upload and use AI to index videos and audio](/AMSv3Samples/VideoIndexerSample/index.ts)| Example of using the Video and Audio Analyzer presets to generate metadata and insights from a video or audio file |
-
+|[Hello World - list assets](/HelloWorld-ListAssets/index.ts)|Basic example on how to connect and list assets |
+|[Live streaming](/Live/index.ts)| Basic live streaming example. **WARNING**, make sure to check that all resources are cleaned up and no longer billing in portal when using live|
+|[Upload and stream HLS and DASH](/StreamFilesSample/index.ts)| Basic example for uploading a local file or encoding from a source URL. Sample shows how to use storage SDK to download content, and shows how to stream to a player |
+|[Upload and stream HLS and DASH with Playready and Widevine DRM](/StreamFilesWithDRMSample/index.ts)| Demonstrates how to encode and stream using Widevine and PlayReady DRM |
+|[Upload and use AI to index videos and audio](/VideoIndexerSample/index.ts)| Example of using the Video and Audio Analyzer presets to generate metadata and insights from a video or audio file |
+|[Basic Encoding with H264](/VideoEncoding/Encoding_H264/index.ts)| Shows how to use the standard encoder to encode a source file into H264 format with thumbnails |
+|[Content Aware encoding with H264](/VideoEncoding/Encoding_H264_ContentAware/index.ts)| Example of using the standard encoder with Content Aware encoding to automatically generate the best quality adaptive bitrate streaming set based on an analysis of the source files contents|
 
 ## Prerequisites
 1. Download and install [Visual Studio Code](https://code.visualstudio.com/Download)
@@ -55,11 +56,7 @@ The projects in this repository were created using Visual Studio Code.
 
     ```git clone https://github.com/Azure-Samples/media-services-v3-node-tutorials.git ```
 
-2. Navigate into the AMSv3Samples folder
-
-    ```cd AMSV3Samples```
-
-3. Open Visual Studio Code
+2. Open Visual Studio Code
 
     ``` code . ```
 
@@ -67,7 +64,7 @@ The projects in this repository were created using Visual Studio Code.
 If you plan to use the DRM sample, you will need to generate a random base64 "DRM_SYMMETRIC_KEY" to use in the .env file as well. 
 To get the exact values, follow [Access APIs](https://docs.microsoft.com/azure/media-services/latest/access-api-cli-how-to).
 
-5. Open **Terminal** in VS Code (Ctrl+Shift+`), make sure you are in the "AMSV3Samples" folder and execute the following command to download all the required npm packages.
+5. Open **Terminal** in VS Code (Ctrl+Shift+`), make sure you are in the root folder with the package.json file and execute the following command to download all the required npm packages.
 
     ```
     npm install 
@@ -77,8 +74,6 @@ To get the exact values, follow [Access APIs](https://docs.microsoft.com/azure/m
 
 The output from the HelloWorld-ListAssets may be empty if this is a new Media Services account with no new assets.  Just make sure that the script executes cleanly through on the first run without any errors, and you can then upload some content into the portal to see the results again on the second run.  If you have no errors and are ready to move on, move next to the StreamFilesSample for tutorial on how to upload a local file, encode it with "content aware encoding" and stream it with the Azure Media Player.
 
-
 ## Common Issues and Troubleshooting
 
 * Assets in Media Services have naming conventions that must be adhered to in order to avoid errors. For example the client.Assets.CreateOrUpdateAsync can fail with message "The resource type is invalid" if the name does not match the [naming conventions listed in this article](https://docs.microsoft.com/en-us/azure/media-services/latest/media-services-apis-overview#naming-conventions)
-

@@ -90,7 +90,10 @@ export async function main() {
     odataType: "#Microsoft.Media.VideoAnalyzerPreset",
     audioLanguage: "en-US",  // Be sure to modify this to your desired language code in BCP-47 format
     insightsToExtract: "AllInsights", // Video Analyzer can also run in Video only mode.
-    mode: "Standard" // Video analyzer can also process audio in basic or standard mode when using All Insights
+    mode: "Standard", // Video analyzer can also process audio in basic or standard mode when using All Insights
+    experimentalOptions : { // Optional settings for preview or experimental features
+       // "SpeechProfanityFilterMode": "None" // Disables the speech-to-text profanity filtering
+    }
   };
 
   console.log("Creating audio analyzer transform...");
