@@ -8,12 +8,15 @@ import {
     JobOutputAsset,
     JobInputUnion,
     JobsGetResponse,
-    BuiltInStandardEncoderPreset,
     TransformOutput,
     KnownAacAudioProfile,
     KnownOnErrorType,
     KnownPriority,
-    Transform
+    Transform,
+    H264Video,
+    H264Layer,
+    KnownComplexity,
+    KnownH264Complexity
 } from '@azure/arm-mediaservices';
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
@@ -83,6 +86,7 @@ export async function main() {
 
     // Create a new Basic Audio Analyzer Transform Preset using the preset configuration
 
+  
     // First we create a TransformOutput
     let transformOutput: TransformOutput[] = [{
         preset: {
@@ -100,6 +104,7 @@ export async function main() {
                     // Next, add a H264Video for the video encoding
                     odataType: "#Microsoft.Media.H264Video",
                     keyFrameInterval: "PT2S", //ISO 8601 format supported
+                    complexity: KnownH264Complexity.Balanced,
                     layers: [
                         {
                             odataType: "#Microsoft.Media.H264Layer",

@@ -12,7 +12,8 @@ import {
     KnownAacAudioProfile,
     KnownOnErrorType,
     KnownPriority,
-    Transform
+    Transform,
+    KnownH265Complexity
 } from '@azure/arm-mediaservices';
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
@@ -97,6 +98,7 @@ export async function main() {
                     // Next, add a H265Video for the video encoding
                     odataType: "#Microsoft.Media.H265Video",
                     keyFrameInterval: "PT2S", //ISO 8601 format supported
+                    complexity: KnownH265Complexity.Balanced,
                     layers: [
                         {
                             odataType: "#Microsoft.Media.H265Layer",
