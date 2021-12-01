@@ -65,7 +65,7 @@ const setTimeoutPromise = util.promisify(setTimeout);
 
 // Args
 const outputFolder: string = "./Output";
-const namePrefix: string = "contentAware264";
+const namePrefix: string = "contentAware265";
 let inputExtension: string;
 let blobName: string;
 
@@ -75,11 +75,11 @@ let blobName: string;
 export async function main() {
 
     // These are the names used for creating and finding your transforms
-    const transformName = "H264EncodingContentAware";
+    const transformName = "H265EncodingContentAware";
 
     mediaServicesClient = new AzureMediaServices(credential, subscriptionId);
 
-    // Create a new Standard encoding Transform for H264
+    // Create a new Standard encoding Transform for H265 Content Aware
     console.log(`Creating Standard Encoding transform named: ${transformName}`);
 
     // Create a new Basic Audio Analyzer Transform Preset using the preset configuration
@@ -88,9 +88,9 @@ export async function main() {
     let transformOutput: TransformOutput[] = [{
         preset: {
             odataType: "#Microsoft.Media.BuiltInStandardEncoderPreset",
-            presetName: KnownEncoderNamedPreset.ContentAwareEncoding,
+            presetName: KnownEncoderNamedPreset.H265ContentAwareEncoding,
             // Configurations can be used to control values used by the Content Aware Encoding Preset.
-            // See the next sample for Encoding_H264_ContentAware_Constrained for an example of using this property
+            // See the next sample for Encoding_H265_ContentAware_Constrained for an example of using this property
             configurations: {}
         },
         // What should we do with the job if there is an error?
@@ -104,7 +104,7 @@ export async function main() {
 
     let transform: Transform = {
         name: transformName,
-        description: "H264 content aware encoding built-in preset",
+        description: "HEVC (H.265) content aware encoding built-in preset",
         outputs: transformOutput
     }
 
