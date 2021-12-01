@@ -38,6 +38,8 @@ The projects in this repository were created using Visual Studio Code.
 |[Upload and use AI to index videos and audio](/VideoIndexerSample/index.ts)| Example of using the Video and Audio Analyzer presets to generate metadata and insights from a video or audio file |
 |[Basic Encoding with H264](/VideoEncoding/Encoding_H264/index.ts)| Shows how to use the standard encoder to encode a source file into H264 format with thumbnails |
 |[Content Aware encoding with H264](/VideoEncoding/Encoding_H264_ContentAware/index.ts)| Example of using the standard encoder with Content Aware encoding to automatically generate the best quality adaptive bitrate streaming set based on an analysis of the source files contents|
+|[Content Aware encoding Constrained with H264](/VideoEncoding/Encoding_H264_ContentAware_Constrained/index.ts)| Demonstrates how to control the output settings of the Content Aware encoding preset to make the outputs more deterministic to your encoding needs and costs. This will still auto generate the best quality adaptive bitrate streaming set based on an analysis of the source files contents, but constrain the output to your desired ranges.|
+|[Content Aware encoding with HEVC](/VideoEncoding/Encoding_HEVC_ContentAware/index.ts)| Example of using the standard encoder with Content Aware encoding to automatically generate the best quality HEVC (H.265) adaptive bitrate streaming set based on an analysis of the source files contents|
 
 ## Prerequisites
 1. Download and install [Visual Studio Code](https://code.visualstudio.com/Download)

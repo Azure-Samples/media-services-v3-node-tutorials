@@ -8,13 +8,15 @@ import {
     JobOutputAsset,
     JobInputUnion,
     JobsGetResponse,
-    BuiltInStandardEncoderPreset,
     TransformOutput,
-    KnownAacAudioProfile,
     KnownOnErrorType,
     KnownPriority,
     Transform,
-    KnownEncoderNamedPreset
+    KnownEncoderNamedPreset,
+    PresetConfigurations,
+    Preset,
+    KnownComplexity,
+    KnownInterleaveOutput
 } from '@azure/arm-mediaservices';
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
@@ -65,7 +67,7 @@ const setTimeoutPromise = util.promisify(setTimeout);
 
 // Args
 const outputFolder: string = "./Output";
-const namePrefix: string = "contentAware265";
+const namePrefix: string = "contentAware264Constrained";
 let inputExtension: string;
 let blobName: string;
 
@@ -75,36 +77,56 @@ let blobName: string;
 export async function main() {
 
     // These are the names used for creating and finding your transforms
-    const transformName = "H265EncodingContentAware";
+    const transformName = "H264EncodingContentAwareConstrained";
 
     mediaServicesClient = new AzureMediaServices(credential, subscriptionId);
 
-    // Create a new Standard encoding Transform for H265 Content Aware
+    // Create a new Standard encoding Transform for H264
     console.log(`Creating Standard Encoding transform named: ${transformName}`);
 
-    // Create a new Basic Audio Analyzer Transform Preset using the preset configuration
 
-    // First we create a TransformOutput
+    // This sample uses constraints on the CAE encoding preset to reduce the number of tracks output and resolutions to a specific range. 
+    // First we will create a PresetConfigurations object to define the constraints that we want to use
+    // This allows you to configure the encoder settings to control the balance between speed and quality. Example: set Complexity as Speed for faster encoding but less compression efficiency.
+
+    let presetConfig : PresetConfigurations = {
+        complexity: KnownComplexity.Speed,
+        // The output includes both audio and video.
+        interleaveOutput: KnownInterleaveOutput.InterleavedOutput,
+        // The key frame interval in seconds. Example: set as 2 to reduce the playback buffering for some players.
+        keyFrameIntervalInSeconds: 2,
+        // The maximum bitrate in bits per second (threshold for the top video layer). Example: set MaxBitrateBps as 6000000 to avoid producing very high bitrate outputs for contents with high complexity.
+        maxBitrateBps: 6000000,
+        // The minimum bitrate in bits per second (threshold for the bottom video layer). Example: set MinBitrateBps as 200000 to have a bottom layer that covers users with low network bandwidth.
+        minBitrateBps: 200000,
+        maxHeight: 720,
+        // The minimum height of output video layers. Example: set MinHeight as 360 to avoid output layers of smaller resolutions like 180P.
+        minHeight: 270,
+        // The maximum number of output video layers. Example: set MaxLayers as 4 to make sure at most 4 output layers are produced to control the overall cost of the encoding job.
+        maxLayers: 3
+    }
+
+    // Create a new Content Aware Encoding Preset using the preset configuration
     let transformOutput: TransformOutput[] = [{
-        preset: {
-            odataType: "#Microsoft.Media.BuiltInStandardEncoderPreset",
-            presetName: KnownEncoderNamedPreset.H265ContentAwareEncoding,
-            // Configurations can be used to control values used by the Content Aware Encoding Preset.
-            // See the next sample for Encoding_H265_ContentAware_Constrained for an example of using this property
-            configurations: {}
-        },
         // What should we do with the job if there is an error?
         onError: KnownOnErrorType.StopProcessingJob,
         // What is the relative priority of this job to others? Normal, high or low?
-        relativePriority: KnownPriority.Normal
-    }
+        relativePriority: KnownPriority.Normal,
+        preset: {
+            odataType: "#Microsoft.Media.BuiltInStandardEncoderPreset",
+            presetName: KnownEncoderNamedPreset.ContentAwareEncoding,
+            // Configurations can be used to control values used by the Content Aware Encoding Preset.
+            // See the next sample for Encoding_H264_ContentAware_Constrained for an example of using this property
+            configurations: presetConfig
+            }
+        }
     ];
 
     console.log("Creating encoding transform...");
 
     let transform: Transform = {
         name: transformName,
-        description: "HEVC (H.265) content aware encoding built-in preset",
+        description: "H264 content aware encoding with configuration settings",
         outputs: transformOutput
     }
 
