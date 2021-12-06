@@ -360,8 +360,7 @@ export async function main() {
                 liveEventName,
                 liveEventCreate
             ).then((liveEvent) => {
-                // ISSUE: This is not actually the full live Event object coming back in the promise value
-                //        It appears to be a smaller subset of the live event object, with only a GUID returned as the name, which does not match the actual name of the live event.
+                // The liveEvent returned here contains all of the updated properties you made above, and you can use the details in here to log or adjust your code. 
                 console.log(`Updated the Live Event accessToken for live event named: ${liveEvent.name}`);
             })
             .catch((reason) => {

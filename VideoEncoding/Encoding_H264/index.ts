@@ -85,7 +85,6 @@ export async function main() {
     console.log(`Creating Standard Encoding transform named: ${transformName}`);
 
     // Create a new Basic Audio Analyzer Transform Preset using the preset configuration
-
   
     // First we create a TransformOutput
     let transformOutput: TransformOutput[] = [{
