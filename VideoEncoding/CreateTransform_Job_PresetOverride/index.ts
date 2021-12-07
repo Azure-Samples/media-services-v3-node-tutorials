@@ -108,6 +108,7 @@ export async function main() {
     // Some customers need the flexibility to submit custom Jobs. 
 
     // First we create an mostly empty TransformOutput with a very basic H264 preset that we override later.
+    // If a Job were submitted to this base Transform, the output would be a single MP4 video track at 1 Mbps. 
     let transformOutput: TransformOutput[] = [{
         preset: {
             odataType: "#Microsoft.Media.StandardEncoderPreset",
@@ -116,7 +117,7 @@ export async function main() {
                     odataType: "#Microsoft.Media.H264Video",
                     layers:[{
                         odataType: "#Microsoft.Media.H264Layer",
-                        bitrate: 100000
+                        bitrate: 1000000, // Units are in bits per second and not kbps or Mbps - 1 Mbps or 1,000 kbps
                     }]
                 }
             ],
@@ -256,12 +257,13 @@ export async function main() {
     job = await waitForJobToFinish(transformName, jobName);
     job2 =await waitForJobToFinish(transformName, jobName);
 
+    // Wait for the first H264 job to finish and then download the output
     if (job.state == "Finished") {
         await downloadResults(outputAssetName as string, outputFolder);
         console.log("Downloaded H264 custom job to local folder. Please review the outputs from the encoding job.")
     }
 
-    
+    // check on the status of the second HEVC encoding job and then download the output
     if (job2.state == "Finished") {
         await downloadResults(outputAssetNameHEVC as string, outputFolder);
         console.log("Downloaded HEVC custom job to local folder.")
