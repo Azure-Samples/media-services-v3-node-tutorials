@@ -7,8 +7,8 @@ languages:
 products:
 - azure
 - azure-media-services
-name: Azure Media Services v3 Node.js Typescript Samples
-description: "This repository contains samples showing how to use Azure Media Services v3 API using Node.js and Typescript"
+name: Azure Media Services v3 Node.js TypeScript Samples
+description: "This repository contains samples showing how to use Azure Media Services v3 API using Node.js and TypeScript"
 urlFragment: media-services-v3-node-tutorials
 ---
 
@@ -42,9 +42,9 @@ The projects in this repository were created using Visual Studio Code.
 ## Prerequisites
 1. Download and install [Visual Studio Code](https://code.visualstudio.com/Download)
 2. Install [Node.js](https://nodejs.org/en/download/)
-3. Download and install [Typescript](https://www.typescriptlang.org/download)
+3. Download and install [TypeScript](https://www.typescriptlang.org/download)
 
-    ### Install Typescript via npm
+    ### Install TypeScript via npm
     You can use npm to install TypeScript globally, this means you can use the tsc command anywhere in your terminal.
     
     To do this, run ```npm install -g typescript```. This will install the latest version.
@@ -74,7 +74,7 @@ To get the exact values, follow [Access APIs](https://docs.microsoft.com/azure/m
     npm install 
     ```
 
-6. Next, in the Explorer view, open the "HelloWorld-ListAssets" folder, open the list-assets.ts file and press F5 to begin compiling the Typescript and launch the Debugger. Each project in this sample collection contains a single typescript file that can be launched by opening it and pressing the F5 key to enter the debugger. You can now set breakpoints, and walk through the code to learn how to implement basic Media Services scenarios in Node.js
+6. Next, in the Explorer view, open the "HelloWorld-ListAssets" folder, open the list-assets.ts file and press F5 to begin compiling the TypeScript and launch the Debugger. Each project in this sample collection contains a single typescript file that can be launched by opening it and pressing the F5 key to enter the debugger. You can now set breakpoints, and walk through the code to learn how to implement basic Media Services scenarios in Node.js
 
 The output from the HelloWorld-ListAssets may be empty if this is a new Media Services account with no new assets.  Just make sure that the script executes cleanly through on the first run without any errors, and you can then upload some content into the portal to see the results again on the second run.  If you have no errors and are ready to move on, move next to the StreamFilesSample for tutorial on how to upload a local file, encode it with "content aware encoding" and stream it with the Azure Media Player. 
 
