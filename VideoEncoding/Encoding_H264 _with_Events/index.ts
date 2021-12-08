@@ -30,6 +30,7 @@ import {
     KnownH264Complexity
 } from '@azure/arm-mediaservices';
 import { EventHubConsumerClient, earliestEventPosition } from "@azure/event-hubs";
+import {EventProcessor} from "../../Common/EventHub/eventProcessor";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
@@ -99,37 +100,6 @@ export async function main() {
     mediaServicesClient = new AzureMediaServices(credential, subscriptionId);
 
     const consumerClient = new EventHubConsumerClient(consumerGroup, connectionString, eventHubName);
-
-    // Subscribe to events in the partition
-    const subscription = consumerClient.subscribe(
-        {
-            // The callback where you add your code to process incoming events
-            processEvents: async (events) => {
-                // Note: It is possible for `events` to be an empty array.
-                // This can happen if there were no new events to receive
-                // in the `maxWaitTimeInSeconds`, which is defaulted to
-                // 60 seconds.
-                // The `maxWaitTimeInSeconds` can be changed by setting
-                // it in the `options` passed to `subscribe()`.
-                for (const event of events) {
-                    if (event.body[0] !== undefined) {
-                        console.log(
-                            `Received event: '${event.body[0].eventType}'  `
-                        );
-                        // Log the JSON full JSON message body - uncomment the following line if you want to see the full body of the event message
-                        // console.log(JSON.stringify(event.body[0]));
-
-                        // TODO : Need to add code here to filter out the events by subject and type
-                        //        Right now this will get ALL events from the account, which could be ALL the things happening. 
-                    }
-                }
-            },
-            processError: async (err, context) => {
-                console.log(`Error on partition "${context.partitionId}": ${err}`);
-            }
-        },
-        { startPosition: earliestEventPosition }
-    );
 
     // Create a new Standard encoding Transform for H264
     console.log(`Creating Standard Encoding transform named: ${transformName}`);
@@ -241,6 +211,21 @@ export async function main() {
     await mediaServicesClient.assets.createOrUpdate(resourceGroup, accountName, outputAssetName, {});
 
     console.log(`Submitting the encoding job to the ${transformName} job queue...`);
+
+    // Create an EventProcessor to monitor this Job 
+    const eventProcessor = new EventProcessor(jobName);
+    
+    // Subscribe to events in the partition
+    const subscription = consumerClient.subscribe(
+        {
+            // The callback where you add your code to process incoming events
+            processEvents: async (events) => eventProcessor.processEvents(events),
+            processError: async (err, context) => {
+                console.log(`Error on partition "${context.partitionId}": ${err}`);
+            }
+        },
+        { startPosition: earliestEventPosition }
+    );
 
     let job = await submitJob(transformName, jobName, input, outputAssetName);
 
