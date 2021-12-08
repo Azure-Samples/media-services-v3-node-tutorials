@@ -145,7 +145,8 @@ export async function main() {
 
     console.log(`Submitting the encoding job to the ${transformName} job queue...`);
 
-    let job = await submitJob(transformName, jobName, input, outputAssetName);
+    // Submit the job, passing in a custom correlation data object for tracking purposes. You can catch this data on the job output or in Event Grid Events. 
+    let job = await submitJob(transformName, jobName, input, outputAssetName, { myTenant:"myCustomTenantName", myId:"1234" });
 
     console.log(`Waiting for encoding Job - ${job.name} - to finish...`);
     job = await waitForJobToFinish(transformName, jobName);
@@ -314,7 +315,7 @@ async function createInputAsset(assetName: string, fileToUpload: string) {
 }
 
 
-async function submitJob(transformName: string, jobName: string, jobInput: JobInputUnion, outputAssetName: string) {
+async function submitJob(transformName: string, jobName: string, jobInput: JobInputUnion, outputAssetName: string, correlationData:any) {
     if (outputAssetName == undefined) {
         throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
     }
@@ -327,7 +328,9 @@ async function submitJob(transformName: string, jobName: string, jobInput: JobIn
 
     return await mediaServicesClient.jobs.create(resourceGroup, accountName, transformName, jobName, {
         input: jobInput,
-        outputs: jobOutputs
+        outputs: jobOutputs,
+        // Pass in custom correlation data to match up to your customer tenants, or any custom job tracking information you wish to log in the event grid events
+        correlationData: correlationData
     });
 
 }
