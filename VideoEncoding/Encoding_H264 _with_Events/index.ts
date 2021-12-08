@@ -118,6 +118,9 @@ export async function main() {
                         );
                         // Log the JSON full JSON message body - uncomment the following line if you want to see the full body of the event message
                         // console.log(JSON.stringify(event.body[0]));
+
+                        // TODO : Need to add code here to filter out the events by subject and type
+                        //        Right now this will get ALL events from the account, which could be ALL the things happening. 
                     }
                 }
             },
