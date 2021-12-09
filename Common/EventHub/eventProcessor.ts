@@ -243,9 +243,23 @@ export class EventProcessor {
                             {
                                 let liveEventData = e.data as MediaLiveEventIngestHeartbeatEventData;
                                 console.log(`LiveEvent ingest heart beat. TrackType: ${liveEventData.trackType} State: ${liveEventData.state} isHealthy: ${liveEventData.healthy}`);
-                                //TODO: show more properties from the heartbeat here:
+                                console.log(`      ingestDriftValue: ${liveEventData.ingestDriftValue}`);
+                                console.log(`      bitrate: ${liveEventData.bitrate}`);
+                                console.log(`      discontinuityCount: ${liveEventData.discontinuityCount}`);
+                                console.log(`      healthy: ${liveEventData.healthy}`);
+                                console.log(`      incomingBitrate: ${liveEventData.incomingBitrate}`);
+                                console.log(`      lastFragmentArrivalTime: ${liveEventData.lastFragmentArrivalTime}`);
+                                console.log(`      lastTimestamp: ${liveEventData.lastTimestamp}`);
+                                console.log(`      nonincreasingCount: ${liveEventData.nonincreasingCount}`);
+                                console.log(`      overlapCount: ${liveEventData.overlapCount}`);
+                                console.log(`      state: ${liveEventData.state}`);
+                                console.log(`      timescale: ${liveEventData.timescale}`);
+                                console.log(`      trackName: ${liveEventData.trackName}`);
+                                console.log(`      trackType: ${liveEventData.trackType}`);
+                                console.log(`      transcriptionLanguage: ${liveEventData.transcriptionLanguage}`);
+                                console.log(`      transcriptionState: ${liveEventData.transcriptionState}`);
+                                console.log(`      unexpectedBitrate: ${liveEventData.unexpectedBitrate}`);
 
-                                console.log(`      ingestDriftValue${liveEventData.ingestDriftValue}`);
                             }
                             break;
                         case "Microsoft.Media.LiveEventTrackDiscontinuityDetected":
