@@ -13,11 +13,21 @@ import {
     KnownOnErrorType,
     KnownPriority,
     Transform,
-    H264Video,
-    H264Layer,
-    KnownComplexity,
     KnownH264Complexity
 } from '@azure/arm-mediaservices';
+
+import {
+    createAACaudio,
+    createH264Layer,
+    createH264Video,
+    createMp4Format,
+    createPngFormat,
+    createPngImage,
+    createPngLayer,
+    createStandardEncoderPreset
+}
+from "../../Common/Encoding/transformFactory";
+
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
@@ -88,76 +98,65 @@ export async function main() {
   
     // First we create a TransformOutput
     let transformOutput: TransformOutput[] = [{
-        preset: {
-            odataType: "#Microsoft.Media.StandardEncoderPreset",
+        preset: createStandardEncoderPreset({
             codecs: [
-                {
-                    // Add an AAC Audio layer for the audio encoding
-                    odataType: "#Microsoft.Media.AacAudio",
+                createAACaudio({
                     channels: 2,
                     samplingRate: 48000,
                     bitrate: 128000,
                     profile: KnownAacAudioProfile.AacLc
-                },
-                {
-                    // Next, add a H264Video for the video encoding
-                    odataType: "#Microsoft.Media.H264Video",
+                }),
+                createH264Video({
                     keyFrameInterval: "PT2S", //ISO 8601 format supported
                     complexity: KnownH264Complexity.Balanced,
                     layers: [
-                        {
-                            odataType: "#Microsoft.Media.H264Layer",
+                        createH264Layer({
                             bitrate: 3600000, // Units are in bits per second and not kbps or Mbps - 3.6 Mbps or 3,600 kbps
                             width: "1280",
                             height: "720",
                             label: "HD-3600kbps" // This label is used to modify the file name in the output formats
-                        },
+                        }),
+                        createH264Layer(
                         {
-                            odataType: "#Microsoft.Media.H264Layer",
                             bitrate: 1600000, // Units are in bits per second and not kbps or Mbps - 1.6 Mbps or 1600 kbps
                             width: "960",
                             height: "540",
                             label: "SD-1600kbps" // This label is used to modify the file name in the output formats
-                        },
-                        {
-                            odataType: "#Microsoft.Media.H264Layer",
+                        }),
+                        createH264Layer({
                             bitrate: 600000, // Units are in bits per second and not kbps or Mbps - 0.6 Mbps or 600 kbps
                             width: "640",
                             height: "480",
                             label: "SD-600kbps" // This label is used to modify the file name in the output formats
-                        }
+                        })
                     ]
-                },
-                {
+                }),
+                createPngImage({
                     // Also generate a set of PNG thumbnails
-                    odataType: "#Microsoft.Media.PngImage",
                     start: "25%",
                     step: "25%",
                     range: "80%",
                     layers: [
-                        {
-                            odataType: "#Microsoft.Media.PngLayer",
+                        createPngLayer({
                             width: "50%",
                             height: "50%"
-                        }
+                        })
                     ]
-                }
+                })
             ],
             // Specify the format for the output files - one for video+audio, and another for the thumbnails
             formats: [
                 // Mux the H.264 video and AAC audio into MP4 files, using basename, label, bitrate and extension macros
                 // Note that since you have multiple H264Layers defined above, you have to use a macro that produces unique names per H264Layer
                 // Either {Label} or {Bitrate} should suffice
-                {
-                    odataType: "#Microsoft.Media.Mp4Format",
+                createMp4Format({
                     filenamePattern: "Video-{Basename}-{Label}-{Bitrate}{Extension}"
-                },
-                {
-                    odataType: "#Microsoft.Media.PngFormat",
+                }),
+                createPngFormat({
                     filenamePattern: "Thumbnail-{Basename}-{Index}{Extension}"
-                }
+                })
             ]
-        },
+        }),
         // What should we do with the job if there is an error?
         onError: KnownOnErrorType.StopProcessingJob,
         // What is the relative priority of this job to others? Normal, high or low?

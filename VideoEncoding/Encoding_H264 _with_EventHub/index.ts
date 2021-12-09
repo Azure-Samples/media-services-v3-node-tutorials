@@ -30,7 +30,7 @@ import {
     KnownH264Complexity
 } from '@azure/arm-mediaservices';
 import { EventHubConsumerClient, earliestEventPosition } from "@azure/event-hubs";
-import {EventProcessor} from "../../Common/EventHub/eventProcessor";
+import { EventProcessor } from "../../Common/EventHub/eventProcessor";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
