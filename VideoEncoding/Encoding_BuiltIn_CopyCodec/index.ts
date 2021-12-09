@@ -29,6 +29,7 @@ import {
     KnownComplexity,
     KnownH264Complexity
 } from '@azure/arm-mediaservices';
+import { TransformFactory }  from "../../Common/Encoding/transformFactory";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
@@ -43,6 +44,10 @@ dotenv.config();
 
 // This is the main Media Services client object
 let mediaServicesClient: AzureMediaServices;
+
+// Create a TransformFactory object from our Common library folder to make it easier to build custom presets
+// See the Common/Encoding/transformFactory.ts class for details
+let factory :TransformFactory; 
 
 // Copy the samples.env file and rename it to .env first, then populate it's values with the values obtained 
 // from your Media Services account's API Access page in the Azure portal.
@@ -99,10 +104,10 @@ export async function main() {
   
     // First we create a TransformOutput
     let transformOutput: TransformOutput[] = [{
-        preset: {
-            odataType: "#Microsoft.Media.BuiltInStandardEncoderPreset",
+        preset: factory.createBuiltInStandardEncoderPreset({
             presetName: "saasCopyCodec"  // uses the built in SaaS Copy Codec preset, which copies source audio and video to MP4 tracks. See notes at top of this file on constraints.
-        },
+        }),
+        
         // What should we do with the job if there is an error?
         onError: KnownOnErrorType.StopProcessingJob,
         // What is the relative priority of this job to others? Normal, high or low?

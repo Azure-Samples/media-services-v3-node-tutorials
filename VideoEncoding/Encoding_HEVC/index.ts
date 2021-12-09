@@ -15,6 +15,7 @@ import {
     Transform,
     KnownH265Complexity
 } from '@azure/arm-mediaservices';
+import { TransformFactory }  from "../../Common/Encoding/transformFactory";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
@@ -29,6 +30,10 @@ dotenv.config();
 
 // This is the main Media Services client object
 let mediaServicesClient: AzureMediaServices;
+
+// Create a TransformFactory object from our Common library folder to make it easier to build custom presets
+// See the Common/Encoding/transformFactory.ts class for details
+let factory :TransformFactory; 
 
 // Copy the samples.env file and rename it to .env first, then populate it's values with the values obtained 
 // from your Media Services account's API Access page in the Azure portal.
@@ -83,82 +88,72 @@ export async function main() {
 
     // First we create a TransformOutput
     let transformOutput: TransformOutput[] = [{
-        preset: {
-            odataType: "#Microsoft.Media.StandardEncoderPreset",
+        preset: factory.createStandardEncoderPreset({
             codecs: [
-                {
+                factory.createAACaudio({
                     // Add an AAC Audio layer for the audio encoding
-                    odataType: "#Microsoft.Media.AacAudio",
                     channels: 2,
                     samplingRate: 48000,
                     bitrate: 128000,
                     profile: KnownAacAudioProfile.AacLc
-                },
-                {
+                }),
+                factory.createH265Video({
                     // Next, add a H265Video for the video encoding
-                    odataType: "#Microsoft.Media.H265Video",
                     keyFrameInterval: "PT2S", //ISO 8601 format supported
                     complexity: KnownH265Complexity.Balanced,
                     layers: [
-                        {
-                            odataType: "#Microsoft.Media.H265Layer",
+                        factory.createH265Layer({
                             bitrate: 1800000, // Units are in bits per second and not kbps or Mbps - 3.6 Mbps or 3,600 kbps
                             maxBitrate: 1800000,
                             width: "1280",
                             height: "720",
                             bFrames: 4,
                             label: "HD-1800kbps" // This label is used to modify the file name in the output formats
-                        },
-                        {
-                            odataType: "#Microsoft.Media.H265Layer",
+                        }),
+                        factory.createH265Layer({
                             bitrate: 800000, // Units are in bits per second and not kbps or Mbps - 1.6 Mbps or 1600 kbps
                             maxBitrate: 800000,
                             width: "960",
                             height: "540",
                             bFrames: 4,
                             label: "SD-800kbps" // This label is used to modify the file name in the output formats
-                        },
-                        {
-                            odataType: "#Microsoft.Media.H265Layer",
+                        }),
+                        factory.createH265Layer({
                             bitrate: 300000, // Units are in bits per second and not kbps or Mbps - 0.6 Mbps or 600 kbps
                             maxBitrate: 300000,
                             width: "640",
                             height: "480",
                             bFrames: 4,
                             label: "SD-300kbps" // This label is used to modify the file name in the output formats
-                        }
+                        })
                     ]
-                },
-                {
+                }),
+                factory.createPngImage({
                     // Also generate a set of PNG thumbnails
-                    odataType: "#Microsoft.Media.PngImage",
                     start: "25%",
                     step: "25%",
                     range: "80%",
                     layers: [
-                        {
-                            odataType: "#Microsoft.Media.PngLayer",
+                        factory.createPngLayer({
                             width: "50%",
                             height: "50%"
-                        }
+                        })
                     ]
-                }
+                })
             ],
             // Specify the format for the output files - one for video+audio, and another for the thumbnails
             formats: [
                 // Mux the h265 video and AAC audio into MP4 files, using basename, label, bitrate and extension macros
                 // Note that since you have multiple H265 Layers defined above, you have to use a macro that produces unique names per H264Layer
                 // Either {Label} or {Bitrate} should suffice
-                {
-                    odataType: "#Microsoft.Media.Mp4Format",
+                factory.createMp4Format({
                     filenamePattern: "Video-{Basename}-{Label}-{Bitrate}{Extension}"
-                },
-                {
-                    odataType: "#Microsoft.Media.PngFormat",
+                }),
+                factory.createPngFormat({
                     filenamePattern: "Thumbnail-{Basename}-{Index}{Extension}"
-                }
+                })
             ]
-        },
+        }),
         // What should we do with the job if there is an error?
         onError: KnownOnErrorType.StopProcessingJob,
         // What is the relative priority of this job to others? Normal, high or low?

@@ -18,7 +18,8 @@ import {
     JpgFormat,
     JpgLayer,
     JpgImage,
-    StandardEncoderPreset
+    StandardEncoderPreset,
+    BuiltInStandardEncoderPreset
 } from "@azure/arm-mediaservices"
 
 export class TransformFactory {
@@ -105,6 +106,13 @@ export class TransformFactory {
         return {
             odataType: "#Microsoft.Media.StandardEncoderPreset",
             ...standardEncoder,
+        }
+    }
+
+    public createBuiltInStandardEncoderPreset(builtInStandardEncoder: Omit<BuiltInStandardEncoderPreset, "odataType">): BuiltInStandardEncoderPreset {
+        return {
+            odataType: "#Microsoft.Media.BuiltInStandardEncoderPreset",
+            ...builtInStandardEncoder,
         }
     }
 
