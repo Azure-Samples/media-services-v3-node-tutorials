@@ -23,17 +23,11 @@ import {
     KnownOnErrorType,
     KnownPriority,
     Transform,
-    H264Video,
-    H264Layer,
-    KnownComplexity,
     KnownH264Complexity,
-    VideoUnion,
-    AudioUnion,
     PresetUnion,
-    StandardEncoderPreset,
-    KnownDeinterlaceMode,
-    KnownDeinterlaceParity
+    StandardEncoderPreset
 } from '@azure/arm-mediaservices';
+import { TransformFactory }  from "../../Common/Encoding/transformFactory";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
@@ -67,6 +61,10 @@ const accountName: string = process.env.ACCOUNTNAME as string;
 
 // const credential = new ManagedIdentityCredential("<USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID>");
 const credential = new DefaultAzureCredential();
+
+// Create a TransformFactory object from our Common library folder to make it easier to build custom presets
+// See the Common/Encoding/transformFactory.ts class for details
+let factory :TransformFactory; 
 
 // You can either specify a local input file with the inputFile or an input Url with inputUrl. 
 // Just set the other one to null to have it select the right JobInput class type
@@ -110,24 +108,21 @@ export async function main() {
     // First we create an mostly empty TransformOutput with a very basic H264 preset that we override later.
     // If a Job were submitted to this base Transform, the output would be a single MP4 video track at 1 Mbps. 
     let transformOutput: TransformOutput[] = [{
-        preset: {
-            odataType: "#Microsoft.Media.StandardEncoderPreset",
+        preset: factory.createStandardEncoderPreset({
             codecs: [
-                {
-                    odataType: "#Microsoft.Media.H264Video",
+                factory.createH264Video({
                     layers:[{
                         odataType: "#Microsoft.Media.H264Layer",
                         bitrate: 1000000, // Units are in bits per second and not kbps or Mbps - 1 Mbps or 1,000 kbps
                     }]
-                }
+                })
             ],
             formats: [
-                {
-                    odataType: "#Microsoft.Media.Mp4Format",
+                factory.createMp4Format({
                     filenamePattern: "Video-{Basename}-{Label}-{Bitrate}{Extension}"
-                }
+                })
             ],
-        },
+        }),
         // What should we do with the job if there is an error?
         onError: KnownOnErrorType.StopProcessingJob,
         // What is the relative priority of this job to others? Normal, high or low?
@@ -163,83 +158,73 @@ export async function main() {
     console.log(`Creating a new custom preset override and submitting the job to the empty transform ${transformName} job queue...`);
 
     // Create a new Preset Override to define a custom standard encoding preset
-    let standardPreset_H264: StandardEncoderPreset = {
-        odataType: "#Microsoft.Media.StandardEncoderPreset",
+    let standardPreset_H264: StandardEncoderPreset = factory.createStandardEncoderPreset({
         codecs: [
-            {
+            factory.createH264Video({
                 // Next, add a H264Video for the video encoding
-                odataType: "#Microsoft.Media.H264Video",
                 keyFrameInterval: "PT2S", //ISO 8601 format supported
                 complexity: KnownH264Complexity.Speed,
                 layers: [
-                    {
-                        odataType: "#Microsoft.Media.H264Layer",
+                    factory.createH264Layer({
                         bitrate: 3600000, // Units are in bits per second and not kbps or Mbps - 3.6 Mbps or 3,600 kbps
                         width: "1280",
                         height: "720",
                         label: "HD-3600kbps" // This label is used to modify the file name in the output formats
-                    }
+                    })
                 ]
-            },
-            {
+            }),
+           factory.createAACaudio({
                 // Add an AAC Audio layer for the audio encoding
-                odataType: "#Microsoft.Media.AacAudio",
                 channels: 2,
                 samplingRate: 48000,
                 bitrate: 128000,
                 profile: KnownAacAudioProfile.AacLc
-            }
+            })
         ],
         formats: [
-            {
-                odataType: "#Microsoft.Media.Mp4Format",
+            factory.createMp4Format({
                 filenamePattern: "Video-{Basename}-{Label}-{Bitrate}{Extension}"
-            }
+            })
         ]
 
-    }
+    });
 
     // Submit the H264 encoding custom job, passing in the preset override defined above.
     let job = await submitJob(transformName, jobName, input, outputAssetName, standardPreset_H264);
 
     // Next, we will create another preset override that uses HEVC instead and submit it against the same simple transform
      // Create a new Preset Override to define a custom standard encoding preset
-     let standardPreset_HEVC: StandardEncoderPreset = {
-        odataType: "#Microsoft.Media.StandardEncoderPreset",
+     let standardPreset_HEVC: StandardEncoderPreset = factory.createStandardEncoderPreset({
         codecs: [
-            {
+            factory.createH265Video({
                 // Next, add a H264Video for the video encoding
-                odataType: "#Microsoft.Media.H265Video",
                 keyFrameInterval: "PT2S", //ISO 8601 format supported
                 complexity: KnownH264Complexity.Speed,
                 layers: [
-                    {
-                        odataType: "#Microsoft.Media.H265Layer",
+                    factory.createH265Layer({
                         bitrate: 1800000, // Units are in bits per second and not kbps or Mbps - 3.6 Mbps or 3,600 kbps
                         maxBitrate: 1800000,
                         width: "1280",
                         height: "720",
                         bFrames: 4,
                         label: "HD-1800kbps" // This label is used to modify the file name in the output formats
-                    },
+                    }),
                 ]
-            },
-            {
+            }),
+            factory.createAACaudio({
                 // Add an AAC Audio layer for the audio encoding
-                odataType: "#Microsoft.Media.AacAudio",
                 channels: 2,
                 samplingRate: 48000,
                 bitrate: 128000,
                 profile: KnownAacAudioProfile.AacLc
-            }
+            })
         ],
         formats: [
-            {
-                odataType: "#Microsoft.Media.Mp4Format",
+            factory.createMp4Format({
                 filenamePattern: "Video-{Basename}-{Label}-{Bitrate}{Extension}"
-            }
+            })
         ]
-    }
+    });
 
     // Lets update some names to re-use for the HEVC job we want to submit
     let jobNameHEVC = jobName + "_HEVC";
