@@ -52,6 +52,8 @@ import {
     MediaservicesGetResponse,
     ErrorResponse
 } from "@azure/arm-mediaservices";
+import { EventHubConsumerClient, earliestEventPosition, Subscription } from "@azure/event-hubs";
+import { EventProcessor } from "../../Common/EventHub/eventProcessor";
 
 // </ImportMediaServices>
 
@@ -71,6 +73,20 @@ const tenantDomain: string = process.env.AADTENANTDOMAIN as string;
 const subscriptionId: string = process.env.SUBSCRIPTIONID as string;
 const resourceGroup: string = process.env.RESOURCEGROUP as string;
 const accountName: string = process.env.ACCOUNTNAME as string;
+
+// BEGIN EVENT HUB SETTINGS CONFIGURATION
+// ----------------------------------------------------------------------------//
+// Event Hubs connection information for processing Event Grid subscription events for Media Services
+const connectionString = process.env.EVENTHUB_CONNECTION_STRING as string;
+const eventHubName = process.env.EVENTHUB_NAME as string;
+const consumerGroup = process.env.CONSUMER_GROUP_NAME as string;
+// Event Hub Consumer client object
+const consumerClient = new EventHubConsumerClient(consumerGroup, connectionString, eventHubName);
+let eventProcessor: EventProcessor;
+let subscription: Subscription;
+
+// END EVENT HUB SETTINGS CONFIGURATION
+// ----------------------------------------------------------------------------//
 
 // This sample uses the default Azure Credential object, which relies on the environment variable settings.
 // If you wish to use User assigned managed identity, see the samples for v2 of @azure/identity
@@ -363,12 +379,12 @@ export async function main() {
                 // The liveEvent returned here contains all of the updated properties you made above, and you can use the details in here to log or adjust your code. 
                 console.log(`Updated the Live Event accessToken for live event named: ${liveEvent.name}`);
             })
-            .catch((reason) => {
-                // Check for ErrorResponse object
-                if (reason.error && reason.error.message) {
-                    console.info(`Live Event Update failed: ${reason.message}`);
-                }
-            });
+                .catch((reason) => {
+                    // Check for ErrorResponse object
+                    if (reason.error && reason.error.message) {
+                        console.info(`Live Event Update failed: ${reason.message}`);
+                    }
+                });
         }
 
         console.log(`Starting the Live Event operation... please stand by`);
@@ -376,6 +392,26 @@ export async function main() {
         // Start the Live Event - this will take some time...
         console.log(`The Live Event is being allocated. If the service's hot pool is completely depleted in a region, this could delay here for up to 15-20 minutes while machines are allocated.`)
         console.log(`If this is taking a very long time, wait for at least 20 minutes and check on the status. If the code times out, or is cancelled, be sure to clean up in the portal!`)
+
+        // BEGIN EVENT HUB MONITORING START
+        // ---------------------------------------------------
+
+        // Create an EventProcessor to monitor this Live Event 
+        eventProcessor = new EventProcessor(liveEventName);
+        // Subscribe to events in the partition
+        subscription = consumerClient.subscribe(
+            {
+                // The callback where you add your code to process incoming events
+                processEvents: async (events) => eventProcessor.processEvents(events),
+                processError: async (err, context) => {
+                    console.log(`Error on partition "${context.partitionId}": ${err}`);
+                }
+            },
+            { startPosition: earliestEventPosition }
+        );
+
+        // END EVENT HUB MONITORING START
+        // ---------------------------------------------------
 
         await mediaServicesClient.liveEvents.beginStartAndWait(
             resourceGroup,
@@ -444,7 +480,6 @@ export async function main() {
             throw new Error("User canceled. Cleaning up...")
         }
 
-
         // Create the Streaming Locator URL for playback of the contents in the Live Output recording
         console.log(`Creating a streaming locator named : ${streamingLocatorName}`);
         console.log();
@@ -472,7 +507,7 @@ export async function main() {
         let hostname = streamingEndpoint.hostName;
         let scheme = "https";
 
-        // The next method "bulidManifestPaths" is a helper to list the streaming manifests for HLS and DASH. 
+        // The next method "buildManifestPaths" is a helper to list the streaming manifests for HLS and DASH. 
         // The paths are only available after the live streaming source has connected. 
         // If you wish to get the streaming manifest ahead of time, make sure to set the manifest name in the LiveOutput as done above.
         // This allows you to have a deterministic manifest path. <streaming endpoint hostname>/<streaming locator ID>/manifestName.ism/manifest(<format string>)
@@ -499,6 +534,15 @@ export async function main() {
         //@ts-ignore - these will be set, so avoiding the compiler complaint for now. 
         console.log("Cleaning up resources, stopping Live Event billing, and deleting live Event...")
         console.log("CRITICAL WARNING ($$$$) DON'T WASTE MONEY!: - Wait here for the All Clear - this takes a few minutes sometimes to clean up. DO NOT STOP DEBUGGER yet or you will leak billable resources!")
+
+        // Shut down the Event Hub subscription and client
+        // Wait for a bit before completing this. 
+        setTimeout(async () => {
+            await subscription.close();
+            await consumerClient.close();
+            console.log(`Closed the Event Hub consumer and subscription`);
+        }, 5 * 1000);
+
         await cleanUpResources(liveEventName, liveOutputName);
         console.log("All Clear, and all cleaned up. Please double check in the portal to make sure you have not leaked any Live Events, or left any Running still which would result in unwanted billing.")
     }

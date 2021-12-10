@@ -37,8 +37,7 @@
     "StreamFilesSample/*.ts",
     "StreamFilesWithDRMSample/*.ts",
     "VideoAnalytics/*.ts",
-    "Live/*.ts",
     "VideoEncoding/*/*.ts",
     "Account/*.ts"
-  ]
+,   "Live/*/*.ts"  ]
 }

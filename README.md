@@ -32,7 +32,7 @@ The projects in this repository were created using Visual Studio Code.
 |---|---|
 |[Create an account from code](/Account/CreateAccount)|The sample shows how to create a Media Services account and set the primary storage account, in addition to advanced configuration settings including Key Delivery IP allowlist, Managed Identity, storage auth, and bring your own encryption key.|
 |[Hello World - list assets](/HelloWorld-ListAssets/index.ts)|Basic example on how to connect and list assets |
-|[Live streaming](/Live/index.ts)| Basic live streaming example. **WARNING**, make sure to check that all resources are cleaned up and no longer billing in portal when using live|
+|[Live streaming with Standard Passthrough](/Live/Standard_Passthrough_Live_Event/index.ts)| Standard passtrough live streaming example. **WARNING**, make sure to check that all resources are cleaned up and no longer billing in portal when using live|
 |[Upload and stream HLS and DASH](/StreamFilesSample/index.ts)| Basic example for uploading a local file or encoding from a source URL. Sample shows how to use storage SDK to download content, and shows how to stream to a player |
 |[Upload and stream HLS and DASH with Playready and Widevine DRM](/StreamFilesWithDRMSample/index.ts)| Demonstrates how to encode and stream using Widevine and PlayReady DRM |
 |[Upload and use AI to index videos and audio](/VideoIndexerSample/index.ts)| Example of using the Video and Audio Analyzer presets to generate metadata and insights from a video or audio file |
