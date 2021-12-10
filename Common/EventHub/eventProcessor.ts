@@ -90,7 +90,7 @@ export class EventProcessor {
                         `${eventTime} - Received event: '${eventType}' for subject : ${subject} `
                         
                     );
-                    
+                    console.log (`\n`);
                 
                     switch (eventType) {
 
@@ -111,6 +111,7 @@ export class EventProcessor {
                                 if (jobData.correlationData) {
                                     console.log(`Job event correlation data:  ${JSON.stringify(jobData.correlationData)}`)
                                 }
+                                console.log (`\n`);
 
                             }
                             break;
@@ -126,6 +127,7 @@ export class EventProcessor {
                                 // You can check for your custom correlation data object here and log it. 
                                 if (jobOutputProgress.jobCorrelationData) {
                                     console.log(`Job event correlation data: ${JSON.stringify(jobOutputProgress.jobCorrelationData)}`)
+                                    console.log (`\n`);
                                 }
                             }
                             break;
@@ -141,6 +143,7 @@ export class EventProcessor {
 
                                 console.log(`Job output state changed for JobId: ${subject} PreviousState: ${jobOutputState.previousState}` +
                                     `State: ${jobOutputState.output.state} Progress: ${jobOutputState.output.progress}%`);
+                                console.log (`\n`);
                             }
                             break;
 
@@ -148,6 +151,7 @@ export class EventProcessor {
                             {
                                 let jobOutputError = e.data as MediaJobOutputErroredEventData;
                                 console.error(`ERROR: Job output on JobId: ${subject} has error message : ${jobOutputError.output.error}`);
+                                console.log (`\n`);
 
                             }
                             break;
@@ -162,6 +166,7 @@ export class EventProcessor {
                                     `EncoderIp: ${liveEventData.encoderIp} EncoderPort: ${liveEventData.encoderPort}`);
 
                                 console.error(`ERROR: LiveEvent rejected resultCode ${liveEventData.resultCode}`);
+                                console.log (`\n`);
                             }
                             break;
                         case "Microsoft.Media.LiveEventEncoderConnected":
@@ -169,6 +174,7 @@ export class EventProcessor {
                                 let liveEventData = e.data as MediaLiveEventEncoderConnectedEventData
                                 console.log(`LiveEvent encoder connected. IngestUrl: ${liveEventData.ingestUrl} StreamId: ${liveEventData.streamId} ` +
                                     `EncoderIp: ${liveEventData.encoderIp} EncoderPort: ${liveEventData.encoderPort}`);
+                                console.log (`\n`);
                             }
                             break;
                         case "Microsoft.Media.LiveEventEncoderDisconnected":
@@ -178,6 +184,7 @@ export class EventProcessor {
                                     `EncoderIp: ${liveEventData.encoderIp} EncoderPort: ${liveEventData.encoderPort}`);
 
                                 console.warn(`WARN: LiveEvent disconnected resultCode: ${liveEventData.resultCode}`);
+                                console.log (`\n`);
                             }
                             break;
 
@@ -192,6 +199,7 @@ export class EventProcessor {
                                 console.log(`   timeStamp: ${liveEventData.timestamp}`);
                                 console.log(`   timeScale: ${liveEventData.timescale}`);
                                 console.log(`   bitrate: ${liveEventData.bitrate}`);
+                                console.log (`\n`);
                             }
                             break;
                         case "Microsoft.Media.LiveEventIncomingStreamReceived":
@@ -205,6 +213,7 @@ export class EventProcessor {
                                 console.log(`   timeScale: ${liveEventData.timescale}`);
                                 console.log(`   bitrate: ${liveEventData.bitrate}`);
                                 console.log(`   duration: ${liveEventData.duration}`);
+                                console.log (`\n`);
                             }
                             break;
                         case "Microsoft.Media.LiveEventIncomingStreamsOutOfSync":
@@ -217,6 +226,7 @@ export class EventProcessor {
                                 console.log(`    minLastTimeStamp: ${liveEventData.minLastTimestamp}`);
                                 console.log(`    timescaleOfMinLastTimestamp: ${liveEventData.timescaleOfMinLastTimestamp}`);
                                 console.log(`    typeOfStreamWithMinLastTimestamp: ${liveEventData.typeOfStreamWithMinLastTimestamp}`);
+                                console.log (`\n`);
                             }
                             break;
                         case "Microsoft.Media.LiveEventIncomingVideoStreamsOutOfSync":
@@ -228,6 +238,7 @@ export class EventProcessor {
                                 console.log(`   secondDuration: ${liveEventData.secondDuration}`);
                                 console.log(`   secondTimestamp: ${liveEventData.secondTimestamp}`);
                                 console.log(`   timescale: ${liveEventData.timescale}`);
+                                console.log (`\n`);
                             }
                             break;
                         case "Microsoft.Media.LiveEventIngestHeartbeat":
@@ -250,6 +261,7 @@ export class EventProcessor {
                                 console.log(`      transcriptionLanguage: ${liveEventData.transcriptionLanguage}`);
                                 console.log(`      transcriptionState: ${liveEventData.transcriptionState}`);
                                 console.log(`      unexpectedBitrate: ${liveEventData.unexpectedBitrate}`);
+                                console.log (`\n`);
 
                             }
                             break;
@@ -264,6 +276,7 @@ export class EventProcessor {
                                 console.log(`   timescale: ${liveEventData.timescale}`);
                                 console.log(`   trackName: ${liveEventData.trackName}`);
                                 console.log(`   trackType: ${liveEventData.trackType}`);
+                                console.log (`\n`);
                             }
                             break;
                         case "LiveEventChannelArchiveHeartbeatEvent":
@@ -272,7 +285,7 @@ export class EventProcessor {
                                 console.log(`LiveEvent archive heartbeat event detected. LiveEventId: ${this.subjectName}`);
                                 console.log(`   channelLatencyMs: ${liveEventData.channelLatencyMs}`);
                                 console.log(`   latencyResultCode: ${liveEventData.latencyResultCode}`);
-
+                                console.log (`\n`);
                             }
                             break;
                     }

@@ -40,7 +40,7 @@
 import { v4 as uuidv4 } from 'uuid';
 // Load the .env file if it exists
 import * as dotenv from "dotenv";
-import * as readlineSync from 'readline-sync';
+import readline from 'readline';
 import { DefaultAzureCredential } from "@azure/identity";
 import {
     AzureMediaServices,
@@ -49,8 +49,7 @@ import {
     LiveEventInputAccessControl,
     LiveEventPreview,
     LiveOutput,
-    MediaservicesGetResponse,
-    ErrorResponse
+    MediaservicesGetResponse
 } from "@azure/arm-mediaservices";
 import { EventHubConsumerClient, earliestEventPosition, Subscription } from "@azure/event-hubs";
 import { EventProcessor } from "../../Common/EventHub/eventProcessor";
@@ -395,6 +394,7 @@ export async function main() {
 
         // BEGIN EVENT HUB MONITORING START
         // ---------------------------------------------------
+        // <EventHubMonitoring>
 
         // Create an EventProcessor to monitor this Live Event 
         eventProcessor = new EventProcessor(liveEventName);
@@ -409,7 +409,8 @@ export async function main() {
             },
             { startPosition: earliestEventPosition }
         );
-
+        
+        // </EventHubMonitoring>
         // END EVENT HUB MONITORING START
         // ---------------------------------------------------
 
@@ -472,11 +473,8 @@ export async function main() {
 
         // </GetPreviewURL>
 
-        // SET A BREAKPOINT HERE!
-        console.log("PAUSE here in the Debugger until you are ready to continue...");
-        if (readlineSync.keyInYN("Do you want to continue?")) {
-            //Yes
-        } else {
+        const answer = await askQuestion("\nIs your encoder connected and streaming yet? Do you want to continue? y or n \n", true, 20)
+        if (answer.toLowerCase()=="n") {
             throw new Error("User canceled. Cleaning up...")
         }
 
@@ -521,9 +519,8 @@ export async function main() {
 
         // SET A BREAKPOINT HERE!
         console.log("PAUSE here in the Debugger until you are ready to continue...");
-        if (readlineSync.keyInYN("Do you want to continue and clean up the sample?")) {
-            //Yes
-        }
+        const ask = await askQuestion("\nKeep streaming and monitoring event hub events. Press RETURN key to close the debugger and clean up the sample.\n", true, 20)
+       
 
     } catch (err) {
         console.log(err);
@@ -545,6 +542,7 @@ export async function main() {
 
         await cleanUpResources(liveEventName, liveOutputName);
         console.log("All Clear, and all cleaned up. Please double check in the portal to make sure you have not leaked any Live Events, or left any Running still which would result in unwanted billing.")
+        process.exit();
     }
 }
 
@@ -751,3 +749,26 @@ async function cleanUpResources(liveEventName: string, liveOutputName: string) {
     }
     // </CleanUpResources>
 }
+
+
+function askQuestion(query:string, repeat:boolean, timeoutSeconds:number):Promise<string>{
+    const rl= readline.createInterface({
+        input : process.stdin,
+        output : process.stdout
+    });
+
+    let interval :NodeJS.Timer
+    if (repeat){
+        interval = setInterval(()=> {
+            console.log(query);
+        }, 
+        timeoutSeconds * 1000)
+    }
+
+    return new Promise(resolve => rl.question(query, ans=>
+        {
+            rl.close();
+            resolve(ans)
+            clearInterval(interval);
+        }))
+};
