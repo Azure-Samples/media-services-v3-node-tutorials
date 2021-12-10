@@ -519,7 +519,7 @@ export async function main() {
 
         // SET A BREAKPOINT HERE!
         console.log("PAUSE here in the Debugger until you are ready to continue...");
-        const ask = await askQuestion("\nKeep streaming and monitoring event hub events. Press RETURN key to close the debugger and clean up the sample.\n", true, 20)
+        const ask = await askQuestion("\nKeep streaming and monitoring event hub events. Press RETURN key to close the debugger and clean up the sample.\n You should see a live ingest heart beat for each track every 20 seconds.", true, 20)
        
 
     } catch (err) {
