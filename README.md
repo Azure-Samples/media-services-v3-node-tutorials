@@ -50,16 +50,17 @@ The projects in this repository were created using Visual Studio Code.
 |[Content Aware encoding Constrained with HEVC](/VideoEncoding/Encoding_HEVC_ContentAware_Constrained/index.ts)| Demonstrates how to control the output settings of the Content Aware encoding preset to make the outputs more deterministic to your encoding needs and costs. This will still auto generate the best quality adaptive bitrate streaming set based on an analysis of the source files contents, but constrain the output to your desired ranges.|
 
 ## Prerequisites
+
 1. Download and install [Visual Studio Code](https://code.visualstudio.com/Download)
 2. Install [Node.js](https://nodejs.org/en/download/)
 3. Download and install [TypeScript](https://www.typescriptlang.org/download)
 
-    ### Install TypeScript via npm
-    You can use npm to install TypeScript globally, this means you can use the tsc command anywhere in your terminal.
-    
-    To do this, run ```npm install -g typescript```. This will install the latest version.
-    
+### Install TypeScript via npm
 
+You can use npm to install TypeScript globally, this means you can use the tsc command anywhere in your terminal.
+
+To do this, run ```npm install -g typescript```. This will install the latest version.
+    
 ## Run samples
 
 1. Clone the repository
