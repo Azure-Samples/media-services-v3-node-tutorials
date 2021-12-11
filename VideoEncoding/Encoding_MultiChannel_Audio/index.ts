@@ -59,7 +59,7 @@ const credential = new DefaultAzureCredential();
 // Just set the other one to null to have it select the right JobInput class type
 
 // const inputFile = "C:\\your\\local.mp4";
-let inputFilePath: string = "VideoEncoding\\Encoding_MultiChannel_Audio\\surround-audio.mp4"; // provide a sample file with 8 discrete audio tracks as layout is defined above. Path is relative to the working directory for Node.js
+let inputFilePath: string = "Media\\surround-audio.mp4"; // provide a sample file with 8 discrete audio tracks as layout is defined above. Path is relative to the working directory for Node.js
 let inputFileName: string = "surround-audio.mp4"
 // This is a hosted sample file to use
 let inputUrl: string;
