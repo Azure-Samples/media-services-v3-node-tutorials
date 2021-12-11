@@ -18,7 +18,7 @@ import {
     KnownComplexity,
     KnownInterleaveOutput
 } from '@azure/arm-mediaservices';
-import { TransformFactory }  from "../../Common/Encoding/transformFactory";
+import { TransformFactory }  from "../../Common/Encoding/TransformFactory";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
@@ -34,9 +34,7 @@ dotenv.config();
 // This is the main Media Services client object
 let mediaServicesClient: AzureMediaServices;
 
-// Create a TransformFactory object from our Common library folder to make it easier to build custom presets
-// See the Common/Encoding/transformFactory.ts class for details
-let factory :TransformFactory = new TransformFactory();  
+
 
 // Copy the samples.env file and rename it to .env first, then populate it's values with the values obtained 
 // from your Media Services account's API Access page in the Azure portal.
@@ -117,7 +115,7 @@ export async function main() {
         onError: KnownOnErrorType.StopProcessingJob,
         // What is the relative priority of this job to others? Normal, high or low?
         relativePriority: KnownPriority.Normal,
-        preset: factory.createBuiltInStandardEncoderPreset({
+        preset: TransformFactory.createBuiltInStandardEncoderPreset({
             presetName: KnownEncoderNamedPreset.H265ContentAwareEncoding,
             // Configurations can be used to control values used by the Content Aware Encoding Preset.
             configurations: presetConfig

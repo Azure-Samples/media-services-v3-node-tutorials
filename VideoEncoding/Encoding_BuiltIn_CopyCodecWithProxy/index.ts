@@ -32,7 +32,7 @@ import {
     KnownPriority,
     Transform
 } from '@azure/arm-mediaservices';
-import { TransformFactory }  from "../../Common/Encoding/transformFactory";
+import { TransformFactory }  from "../../Common/Encoding/TransformFactory";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
@@ -48,9 +48,7 @@ dotenv.config();
 // This is the main Media Services client object
 let mediaServicesClient: AzureMediaServices;
 
-// Create a TransformFactory object from our Common library folder to make it easier to build custom presets
-// See the Common/Encoding/transformFactory.ts class for details
-let factory :TransformFactory = new TransformFactory();  
+
 
 // Copy the samples.env file and rename it to .env first, then populate it's values with the values obtained 
 // from your Media Services account's API Access page in the Azure portal.
@@ -105,7 +103,7 @@ export async function main() {
 
     // First we create a TransformOutput
     let transformOutput: TransformOutput[] = [{
-        preset: factory.createBuiltInStandardEncoderPreset( {
+        preset: TransformFactory.createBuiltInStandardEncoderPreset( {
             // uses the built in SaaS Copy Codec preset, which copies source audio and video to MP4 tracks. 
             // This also generates a fast proxy.  See notes at top of this file on constraints and use case.
             presetName: "saasProxyCopyCodec"  

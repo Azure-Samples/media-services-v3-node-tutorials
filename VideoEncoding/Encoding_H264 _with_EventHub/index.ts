@@ -29,7 +29,7 @@ import {
     KnownComplexity,
     KnownH264Complexity
 } from '@azure/arm-mediaservices';
-import { TransformFactory }  from "../../Common/Encoding/transformFactory";
+import { TransformFactory }  from "../../Common/Encoding/TransformFactory";
 import { EventHubConsumerClient, earliestEventPosition } from "@azure/event-hubs";
 import { EventProcessor } from "../../Common/EventHub/eventProcessor";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
@@ -47,9 +47,7 @@ dotenv.config();
 // This is the main Media Services client object
 let mediaServicesClient: AzureMediaServices;
 
-// Create a TransformFactory object from our Common library folder to make it easier to build custom presets
-// See the Common/Encoding/transformFactory.ts class for details
-let factory :TransformFactory = new TransformFactory();  
+
 
 // Copy the samples.env file and rename it to .env first, then populate it's values with the values obtained 
 // from your Media Services account's API Access page in the Azure portal.
@@ -113,9 +111,9 @@ export async function main() {
 
     // First we create a TransformOutput
     let transformOutput: TransformOutput[] = [{
-        preset: factory.createStandardEncoderPreset({
+        preset: TransformFactory.createStandardEncoderPreset({
             codecs: [
-                factory.createAACaudio(
+                TransformFactory.createAACaudio(
                 {
                     // Add an AAC Audio layer for the audio encoding
                     channels: 2,
@@ -123,24 +121,24 @@ export async function main() {
                     bitrate: 128000,
                     profile: KnownAacAudioProfile.AacLc
                 }),
-                factory.createH264Video({
+                TransformFactory.createH264Video({
                     // Next, add a H264Video for the video encoding
                     keyFrameInterval: "PT2S", //ISO 8601 format supported
                     complexity: KnownH264Complexity.Balanced,
                     layers: [
-                        factory.createH264Layer({
+                        TransformFactory.createH264Layer({
                             bitrate: 3600000, // Units are in bits per second and not kbps or Mbps - 3.6 Mbps or 3,600 kbps
                             width: "1280",
                             height: "720",
                             label: "HD-3600kbps" // This label is used to modify the file name in the output formats
                         }),
-                        factory.createH264Layer({
+                        TransformFactory.createH264Layer({
                             bitrate: 1600000, // Units are in bits per second and not kbps or Mbps - 1.6 Mbps or 1600 kbps
                             width: "960",
                             height: "540",
                             label: "SD-1600kbps" // This label is used to modify the file name in the output formats
                         }),
-                        factory.createH264Layer({
+                        TransformFactory.createH264Layer({
                             bitrate: 600000, // Units are in bits per second and not kbps or Mbps - 0.6 Mbps or 600 kbps
                             width: "640",
                             height: "480",
@@ -148,13 +146,13 @@ export async function main() {
                         })
                     ]
                 }),
-                factory.createPngImage({
+                TransformFactory.createPngImage({
                     // Also generate a set of PNG thumbnails
                     start: "25%",
                     step: "25%",
                     range: "80%",
                     layers: [
-                        factory.createPngLayer({
+                        TransformFactory.createPngLayer({
                             width: "50%",
                             height: "50%"
                         })
@@ -166,10 +164,10 @@ export async function main() {
                 // Mux the H.264 video and AAC audio into MP4 files, using basename, label, bitrate and extension macros
                 // Note that since you have multiple H264Layers defined above, you have to use a macro that produces unique names per H264Layer
                 // Either {Label} or {Bitrate} should suffice
-                factory.createMp4Format({
+                TransformFactory.createMp4Format({
                     filenamePattern: "Video-{Basename}-{Label}-{Bitrate}{Extension}"
                 }),
-                factory.createPngFormat({
+                TransformFactory.createPngFormat({
                     filenamePattern: "Thumbnail-{Basename}-{Index}{Extension}"
                 })
             ]
