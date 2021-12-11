@@ -312,10 +312,9 @@ async function submitJob(transformName: string, jobName: string, jobInput: JobIn
         throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
     }
     let jobOutputs: JobOutputAsset[] = [
-        {
-            odataType: "#Microsoft.Media.JobOutputAsset",
+        TransformFactory.createJobOutputAsset({
             assetName: outputAssetName
-        }
+        })
     ];
 
     return await mediaServicesClient.jobs.create(resourceGroup, accountName, transformName, jobName, {

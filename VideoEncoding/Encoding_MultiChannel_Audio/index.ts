@@ -398,10 +398,9 @@ async function submitJob(transformName: string, jobName: string, jobInput: JobIn
     jobInputWithTrackDefinitions.inputDefinitions = inputDefinitions;
 
     let jobOutputs: JobOutputAsset[] = [
-        {
-            odataType: "#Microsoft.Media.JobOutputAsset",
-            assetName: outputAssetName,
-        }
+        TransformFactory.createJobOutputAsset({
+            assetName: outputAssetName
+        })
     ];
 
     return await mediaServicesClient.jobs.create(resourceGroup, accountName, transformName, jobName, {

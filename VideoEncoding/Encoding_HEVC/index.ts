@@ -31,8 +31,6 @@ dotenv.config();
 // This is the main Media Services client object
 let mediaServicesClient: AzureMediaServices;
 
-
-
 // Copy the samples.env file and rename it to .env first, then populate it's values with the values obtained 
 // from your Media Services account's API Access page in the Azure portal.
 const clientId: string = process.env.AADCLIENTID as string;
@@ -358,10 +356,9 @@ async function submitJob(transformName: string, jobName: string, jobInput: JobIn
         throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
     }
     let jobOutputs: JobOutputAsset[] = [
-        {
-            odataType: "#Microsoft.Media.JobOutputAsset",
+        TransformFactory.createJobOutputAsset({
             assetName: outputAssetName
-        }
+        })
     ];
 
     return await mediaServicesClient.jobs.create(resourceGroup, accountName, transformName, jobName, {
