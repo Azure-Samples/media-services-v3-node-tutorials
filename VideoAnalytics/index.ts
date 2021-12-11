@@ -110,7 +110,7 @@ export async function main() {
       console.log(`Transform ${transform.name} created (or updated if it existed already).`);
     })
     .catch((reason) => {
-      console.log(`There was an error creating the audio analyzer transform. ${reason}`)
+      console.log(`There was an error creating the transform. ${reason}`)
     });
 
 

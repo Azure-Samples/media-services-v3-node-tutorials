@@ -1,16 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-// This sample demonstrates how to create an very simple Transform to use for submitting any custom Job into.
-// Creating a very basic transform in this fashion allows you to treat the AMS v3 API more like the legacy v2 API where 
-// transforms were not required, and you could submit any number of custom jobs to the same endpoint. 
-// In the new v3 API, the default workflow is to create a transform "template" that holds a unique queue of jobs just for that
-// specific "recipe" of custom or pre-defined encoding. 
-//
-// In this sample, we show you how to create the blank empty Transform, and then submit a couple unique custom jobs to it,
-// overriding the blank empty Transform. 
-
-
 import { DefaultAzureCredential } from "@azure/identity";
 import {
     AzureMediaServices,
@@ -23,9 +13,9 @@ import {
     KnownOnErrorType,
     KnownPriority,
     Transform,
-    KnownH264Complexity,
-    PresetUnion,
-    StandardEncoderPreset
+    TrackDescriptorUnion,
+    KnownChannelMapping,
+    InputDefinitionUnion
 } from '@azure/arm-mediaservices';
 import { TransformFactory }  from "../../Common/Encoding/transformFactory";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
@@ -42,6 +32,10 @@ dotenv.config();
 
 // This is the main Media Services client object
 let mediaServicesClient: AzureMediaServices;
+
+// Create a TransformFactory object from our Common library folder to make it easier to build custom presets
+// See the Common/Encoding/transformFactory.ts class for details
+let factory :TransformFactory = new TransformFactory();  
 
 // Copy the samples.env file and rename it to .env first, then populate it's values with the values obtained 
 // from your Media Services account's API Access page in the Azure portal.
@@ -62,10 +56,6 @@ const accountName: string = process.env.ACCOUNTNAME as string;
 // const credential = new ManagedIdentityCredential("<USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID>");
 const credential = new DefaultAzureCredential();
 
-// Create a TransformFactory object from our Common library folder to make it easier to build custom presets
-// See the Common/Encoding/transformFactory.ts class for details
-let factory :TransformFactory = new TransformFactory();  
-
 // You can either specify a local input file with the inputFile or an input Url with inputUrl. 
 // Just set the other one to null to have it select the right JobInput class type
 
@@ -81,7 +71,7 @@ const setTimeoutPromise = util.promisify(setTimeout);
 
 // Args
 const outputFolder: string = "./Output";
-const namePrefix: string = "emptyTransform";
+const namePrefix: string = "encodeH264_multi_channel";
 let inputExtension: string;
 let blobName: string;
 
@@ -91,37 +81,101 @@ let blobName: string;
 export async function main() {
 
     // These are the names used for creating and finding your transforms
-    const transformName = "EmptyTransform";
+    const transformName = "Custom_H264_MultiChannel_5";
 
     mediaServicesClient = new AzureMediaServices(credential, subscriptionId);
 
-    // Create a new Standard encoding Transform that is empty
-    console.log(`Creating empty, blank, Standard Encoding transform named: ${transformName}`);
+    // Create a new Standard encoding Transform for H264
+    console.log(`Creating Standard Encoding transform named: ${transformName}`);
+  
+    // The multi-channel audio file should contain a stereo pair on tracks 1 and 2, followed by multi channel 5.1 discrete tracks in the following layout
+    // 1. Left stereo
+    // 2. Right stereo
+    // 3. Left front surround
+    // 4. Right front surround
+    // 5. Center surround
+    // 6. Low frequency
+    // 7. Back left 
+    // 8. Back right
+    //
+    // The channel mapping support is limited to only outputting a single AAC stereo track, followed by a 5.1 audio AAC track in this sample. 
 
-    // In this sample, we create the simplest of Transforms allowed by the API to later submit custom jobs against.
-    // Even though we define a single layer H264 preset here, we are going to override it later with a custom job level preset.
-    // This allows you to treat this single Transform queue like the legacy v2 API, which only supported a single Job queue type.
-    // In v3 API, the typical workflow that you will see in other samples is to create a transform "recipe" and submit jobs to it
-    // that are all of the same type of output. 
-    // Some customers need the flexibility to submit custom Jobs. 
+    const inputFile :string = "surround-audio.mp4"; // provide a sample file with 8 discrete audio tracks as layout is defined above. 
 
-    // First we create an mostly empty TransformOutput with a very basic H264 preset that we override later.
-    // If a Job were submitted to this base Transform, the output would be a single MP4 video track at 1 Mbps. 
+
+     // The Transform we created outputs two tracks, the first track is mapped to the 2 stereo inputs followed by the 5.1 audio tracks. 
+     let trackList : TrackDescriptorUnion[] = [
+         factory.createSelectAudioTrackById({
+             trackId :0,
+             channelMapping: KnownChannelMapping.StereoLeft
+         }),
+         factory.createSelectAudioTrackById(
+         {
+            trackId :1,
+            channelMapping: KnownChannelMapping.StereoRight
+        }),
+        factory.createSelectAudioTrackById({  
+            trackId :2,
+            channelMapping: KnownChannelMapping.FrontLeft
+        }),
+        factory.createSelectAudioTrackById(
+        {
+            trackId :3,
+            channelMapping: KnownChannelMapping.FrontRight
+        }),
+        factory.createSelectAudioTrackById({
+            trackId :4,
+            channelMapping: KnownChannelMapping.Center
+        }),
+        factory.createSelectAudioTrackById({
+            trackId :5,
+            channelMapping: KnownChannelMapping.LowFrequencyEffects
+        }),
+        factory.createSelectAudioTrackById({
+            trackId :6,
+            channelMapping: KnownChannelMapping.BackLeft
+        }),
+        factory.createSelectAudioTrackById({
+            trackId :7,
+            channelMapping: KnownChannelMapping.BackRight
+        }),
+
+     ];
+
+    // Create an input definition passing in the source file name and the list of included track mappings from that source file we made above. 
+    let inputDefinitions : InputDefinitionUnion[] = [
+        factory.createInputFile({
+            filename: inputFile,
+            includedTracks : trackList
+        })
+    ];
+
+    // Next we create a TransformOutput
     let transformOutput: TransformOutput[] = [{
         preset: factory.createStandardEncoderPreset({
             codecs: [
-                factory.createH264Video({
-                    layers:[{
-                        odataType: "#Microsoft.Media.H264Layer",
-                        bitrate: 1000000, // Units are in bits per second and not kbps or Mbps - 1 Mbps or 1,000 kbps
-                    }]
+                factory.createAACaudio({
+                    channels: 2, // The stereo mapped output track
+                    samplingRate: 48000,
+                    bitrate: 128000,
+                    profile: KnownAacAudioProfile.AacLc
+                }),
+                factory.createAACaudio({
+                    channels: 6, // the 5.1 surround sound mapped output track
+                    samplingRate: 48000,
+                    bitrate: 128000,
+                    profile: KnownAacAudioProfile.AacLc
                 })
             ],
+            // Specify the format for the output files - one for video+audio, and another for the thumbnails
             formats: [
+                // Mux the H.264 video and AAC audio into MP4 files, using basename, label, bitrate and extension macros
+                // Note that since you have multiple H264Layers defined above, you have to use a macro that produces unique names per H264Layer
+                // Either {Label} or {Bitrate} should suffice
                 factory.createMp4Format({
                     filenamePattern: "Video-{Basename}-{Label}-{Bitrate}{Extension}"
                 })
-            ],
+            ]
         }),
         // What should we do with the job if there is an error?
         onError: KnownOnErrorType.StopProcessingJob,
@@ -130,11 +184,11 @@ export async function main() {
     }
     ];
 
-    console.log("Creating empty transform...");
+    console.log("Creating encoding transform...");
 
     let transform: Transform = {
         name: transformName,
-        description: "An empty transform to be used for submitting custom jobs against",
+        description: "A custom multi-channel audio encoding preset",
         outputs: transformOutput
     }
 
@@ -155,103 +209,16 @@ export async function main() {
 
     await mediaServicesClient.assets.createOrUpdate(resourceGroup, accountName, outputAssetName, {});
 
-    console.log(`Creating a new custom preset override and submitting the job to the empty transform ${transformName} job queue...`);
+    console.log(`Submitting the encoding job to the ${transformName} job queue...`);
 
-    // Create a new Preset Override to define a custom standard encoding preset
-    let standardPreset_H264: StandardEncoderPreset = factory.createStandardEncoderPreset({
-        codecs: [
-            factory.createH264Video({
-                // Next, add a H264Video for the video encoding
-                keyFrameInterval: "PT2S", //ISO 8601 format supported
-                complexity: KnownH264Complexity.Speed,
-                layers: [
-                    factory.createH264Layer({
-                        bitrate: 3600000, // Units are in bits per second and not kbps or Mbps - 3.6 Mbps or 3,600 kbps
-                        width: "1280",
-                        height: "720",
-                        label: "HD-3600kbps" // This label is used to modify the file name in the output formats
-                    })
-                ]
-            }),
-           factory.createAACaudio({
-                // Add an AAC Audio layer for the audio encoding
-                channels: 2,
-                samplingRate: 48000,
-                bitrate: 128000,
-                profile: KnownAacAudioProfile.AacLc
-            })
-        ],
-        formats: [
-            factory.createMp4Format({
-                filenamePattern: "Video-{Basename}-{Label}-{Bitrate}{Extension}"
-            })
-        ]
+    let job = await submitJob(transformName, jobName, input, outputAssetName);
 
-    });
-
-    // Submit the H264 encoding custom job, passing in the preset override defined above.
-    let job = await submitJob(transformName, jobName, input, outputAssetName, standardPreset_H264);
-
-    // Next, we will create another preset override that uses HEVC instead and submit it against the same simple transform
-     // Create a new Preset Override to define a custom standard encoding preset
-     let standardPreset_HEVC: StandardEncoderPreset = factory.createStandardEncoderPreset({
-        codecs: [
-            factory.createH265Video({
-                // Next, add a H264Video for the video encoding
-                keyFrameInterval: "PT2S", //ISO 8601 format supported
-                complexity: KnownH264Complexity.Speed,
-                layers: [
-                    factory.createH265Layer({
-                        bitrate: 1800000, // Units are in bits per second and not kbps or Mbps - 3.6 Mbps or 3,600 kbps
-                        maxBitrate: 1800000,
-                        width: "1280",
-                        height: "720",
-                        bFrames: 4,
-                        label: "HD-1800kbps" // This label is used to modify the file name in the output formats
-                    }),
-                ]
-            }),
-            factory.createAACaudio({
-                // Add an AAC Audio layer for the audio encoding
-                channels: 2,
-                samplingRate: 48000,
-                bitrate: 128000,
-                profile: KnownAacAudioProfile.AacLc
-            })
-        ],
-        formats: [
-            factory.createMp4Format({
-                filenamePattern: "Video-{Basename}-{Label}-{Bitrate}{Extension}"
-            })
-        ]
-    });
-
-    // Lets update some names to re-use for the HEVC job we want to submit
-    let jobNameHEVC = jobName + "_HEVC";
-    let outputAssetNameHEVC = outputAssetName + "_HEVC";
-
-    // Lets create a new output asset
-    console.log("Creating a new output Asset (container) to encode the content into...");
-    await mediaServicesClient.assets.createOrUpdate(resourceGroup, accountName, outputAssetNameHEVC, {});
-
-     // Submit the next HEVC custom job, passing in the preset override defined above.
-    let job2 = await submitJob(transformName, jobNameHEVC, input, outputAssetNameHEVC, standardPreset_HEVC);
-
-
-    console.log(`Waiting for encoding Jobs to finish...`);
+    console.log(`Waiting for encoding Job - ${job.name} - to finish...`);
     job = await waitForJobToFinish(transformName, jobName);
-    job2 =await waitForJobToFinish(transformName, jobName);
 
-    // Wait for the first H264 job to finish and then download the output
     if (job.state == "Finished") {
         await downloadResults(outputAssetName as string, outputFolder);
-        console.log("Downloaded H264 custom job to local folder. Please review the outputs from the encoding job.")
-    }
-
-    // check on the status of the second HEVC encoding job and then download the output
-    if (job2.state == "Finished") {
-        await downloadResults(outputAssetNameHEVC as string, outputFolder);
-        console.log("Downloaded HEVC custom job to local folder.")
+        console.log("Downloaded results to local folder. Please review the outputs from the encoding job.")
     }
 }
 
@@ -349,15 +316,13 @@ async function getJobInputType(uniqueness: string): Promise<JobInputUnion> {
     if (inputFile !== undefined) {
         let assetName: string = namePrefix + "-input-" + uniqueness;
         await createInputAsset(assetName, inputFile);
-        return {
-            odataType: "#Microsoft.Media.JobInputAsset",
+        return factory.createJobInputAsset({
             assetName: assetName
-        }
+        })
     } else {
-        return {
-            odataType: "#Microsoft.Media.JobInputHttp",
+        return factory.createJobInputHttp({
             files: [inputUrl]
-        }
+        })
     }
 }
 
@@ -413,21 +378,14 @@ async function createInputAsset(assetName: string, fileToUpload: string) {
 }
 
 
-async function submitJob(transformName: string, jobName: string, jobInput: JobInputUnion, outputAssetName: string, presetOverride: PresetUnion) {
-    if (outputAssetName === undefined) {
+async function submitJob(transformName: string, jobName: string, jobInput: JobInputUnion, outputAssetName: string) {
+    if (outputAssetName == undefined) {
         throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
     }
-
-    if (presetOverride === undefined) {
-        throw new Error("Preset override must be supplied in this sample.")
-    }
-
-
     let jobOutputs: JobOutputAsset[] = [
         {
             odataType: "#Microsoft.Media.JobOutputAsset",
-            assetName: outputAssetName,
-            presetOverride: presetOverride
+            assetName: outputAssetName
         }
     ];
 

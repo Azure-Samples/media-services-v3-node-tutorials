@@ -33,7 +33,7 @@ let mediaServicesClient: AzureMediaServices;
 
 // Create a TransformFactory object from our Common library folder to make it easier to build custom presets
 // See the Common/Encoding/transformFactory.ts class for details
-let factory :TransformFactory; 
+let factory: TransformFactory;
 
 // Copy the samples.env file and rename it to .env first, then populate it's values with the values obtained 
 // from your Media Services account's API Access page in the Azure portal.
@@ -53,6 +53,7 @@ const accountName: string = process.env.ACCOUNTNAME as string;
 
 // const credential = new ManagedIdentityCredential("<USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID>");
 const credential = new DefaultAzureCredential();
+
 
 // You can either specify a local input file with the inputFile or an input Url with inputUrl. 
 // Just set the other one to null to have it select the right JobInput class type
@@ -86,8 +87,6 @@ export async function main() {
     // Create a new Standard encoding Transform for H264
     console.log(`Creating Standard Encoding transform named: ${transformName}`);
 
-    // Create a new Basic Audio Analyzer Transform Preset using the preset configuration
-  
     // First we create a TransformOutput
     let transformOutput: TransformOutput[] = [{
         preset: factory.createStandardEncoderPreset({
@@ -109,12 +108,12 @@ export async function main() {
                             label: "HD-3600kbps" // This label is used to modify the file name in the output formats
                         }),
                         factory.createH264Layer(
-                        {
-                            bitrate: 1600000, // Units are in bits per second and not kbps or Mbps - 1.6 Mbps or 1600 kbps
-                            width: "960",
-                            height: "540",
-                            label: "SD-1600kbps" // This label is used to modify the file name in the output formats
-                        }),
+                            {
+                                bitrate: 1600000, // Units are in bits per second and not kbps or Mbps - 1.6 Mbps or 1600 kbps
+                                width: "960",
+                                height: "540",
+                                label: "SD-1600kbps" // This label is used to modify the file name in the output formats
+                            }),
                         factory.createH264Layer({
                             bitrate: 600000, // Units are in bits per second and not kbps or Mbps - 0.6 Mbps or 600 kbps
                             width: "640",
@@ -169,7 +168,7 @@ export async function main() {
             console.log(`Transform ${transform.name} created (or updated if it existed already).`);
         })
         .catch((reason) => {
-            console.log(`There was an error creating the audio analyzer transform. ${reason}`)
+            console.log(`There was an error creating the transform. ${reason}`)
         });
 
     let uniqueness = uuidv4();

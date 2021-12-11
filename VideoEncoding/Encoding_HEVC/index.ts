@@ -33,7 +33,7 @@ let mediaServicesClient: AzureMediaServices;
 
 // Create a TransformFactory object from our Common library folder to make it easier to build custom presets
 // See the Common/Encoding/transformFactory.ts class for details
-let factory :TransformFactory; 
+let factory :TransformFactory = new TransformFactory();  
 
 // Copy the samples.env file and rename it to .env first, then populate it's values with the values obtained 
 // from your Media Services account's API Access page in the Azure portal.
@@ -174,7 +174,7 @@ export async function main() {
             console.log(`Transform ${transform.name} created (or updated if it existed already).`);
         })
         .catch((reason) => {
-            console.log(`There was an error creating the audio analyzer transform. ${reason}`)
+            console.log(`There was an error creating the transform. ${reason}`)
         });
 
     let uniqueness = uuidv4();

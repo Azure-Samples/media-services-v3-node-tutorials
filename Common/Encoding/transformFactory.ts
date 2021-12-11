@@ -19,11 +19,15 @@ import {
     JpgLayer,
     JpgImage,
     StandardEncoderPreset,
-    BuiltInStandardEncoderPreset
+    BuiltInStandardEncoderPreset,
+    SelectAudioTrackById,
+    SelectAudioTrackByAttribute,
+    InputFile,
+    JobInputAsset,
+    JobInputHttp
 } from "@azure/arm-mediaservices"
 
 export class TransformFactory {
-
 
     public createH264Video(video: Omit<H264Video, "odataType">): H264Video {
         return {
@@ -123,5 +127,38 @@ export class TransformFactory {
         }
     }
 
+    public createSelectAudioTrackById(audioTrackById: Omit<SelectAudioTrackById, "odataType">): SelectAudioTrackById {
+        return {
+            odataType: "#Microsoft.Media.SelectAudioTrackById",
+            ...audioTrackById,
+        }
+    }
 
+    public createSelectAudioTrackByAttribute(audioTrackByAttribute: Omit<SelectAudioTrackByAttribute, "odataType">): SelectAudioTrackByAttribute {
+        return {
+            odataType: "#Microsoft.Media.SelectAudioTrackByAttribute",
+            ...audioTrackByAttribute,
+        }
+    }
+
+    public createInputFile(inputFile: Omit<InputFile, "odataType">): InputFile {
+        return {
+            odataType: "#Microsoft.Media.InputFile",
+            ...inputFile,
+        }
+    }
+    
+    public createJobInputAsset(inputAsset: Omit<JobInputAsset, "odataType">): JobInputAsset {
+        return {
+            odataType: "#Microsoft.Media.JobInputAsset",
+            ...inputAsset,
+        }
+    }
+
+    public createJobInputHttp(inputHttp: Omit<JobInputHttp, "odataType">): JobInputHttp {
+        return {
+            odataType: "#Microsoft.Media.JobInputHttp",
+            ...inputHttp,
+        }
+    }
 }
