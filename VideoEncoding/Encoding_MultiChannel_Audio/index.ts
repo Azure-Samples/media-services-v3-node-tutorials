@@ -15,9 +15,10 @@ import {
     Transform,
     TrackDescriptorUnion,
     KnownChannelMapping,
-    InputDefinitionUnion
+    InputDefinitionUnion,
+    JobInputAsset
 } from '@azure/arm-mediaservices';
-import { TransformFactory }  from "../../Common/Encoding/transformFactory";
+import { TransformFactory } from "../../Common/Encoding/transformFactory";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
@@ -35,7 +36,7 @@ let mediaServicesClient: AzureMediaServices;
 
 // Create a TransformFactory object from our Common library folder to make it easier to build custom presets
 // See the Common/Encoding/transformFactory.ts class for details
-let factory :TransformFactory = new TransformFactory();  
+let factory: TransformFactory = new TransformFactory();
 
 // Copy the samples.env file and rename it to .env first, then populate it's values with the values obtained 
 // from your Media Services account's API Access page in the Azure portal.
@@ -60,9 +61,10 @@ const credential = new DefaultAzureCredential();
 // Just set the other one to null to have it select the right JobInput class type
 
 // const inputFile = "C:\\your\\local.mp4";
-let inputFile: string;
+let inputFilePath: string = "VideoEncoding\\Encoding_MultiChannel_Audio\\surround-audio.mp4"; // provide a sample file with 8 discrete audio tracks as layout is defined above. Path is relative to the working directory for Node.js
+let inputFileName: string = "surround-audio.mp4"
 // This is a hosted sample file to use
-let inputUrl: string = "https://amssamples.streaming.mediaservices.windows.net/2e91931e-0d29-482b-a42b-9aadc93eb825/AzurePromo.mp4";
+let inputUrl: string;
 
 // Timer values
 const timeoutSeconds: number = 60 * 10;
@@ -81,13 +83,13 @@ let blobName: string;
 export async function main() {
 
     // These are the names used for creating and finding your transforms
-    const transformName = "Custom_H264_MultiChannel_5";
+    const transformName = "Custom_AAC_MultiChannel_Surround";
 
     mediaServicesClient = new AzureMediaServices(credential, subscriptionId);
 
     // Create a new Standard encoding Transform for H264
     console.log(`Creating Standard Encoding transform named: ${transformName}`);
-  
+
     // The multi-channel audio file should contain a stereo pair on tracks 1 and 2, followed by multi channel 5.1 discrete tracks in the following layout
     // 1. Left stereo
     // 2. Right stereo
@@ -100,53 +102,50 @@ export async function main() {
     //
     // The channel mapping support is limited to only outputting a single AAC stereo track, followed by a 5.1 audio AAC track in this sample. 
 
-    const inputFile :string = "surround-audio.mp4"; // provide a sample file with 8 discrete audio tracks as layout is defined above. 
-
-
-     // The Transform we created outputs two tracks, the first track is mapped to the 2 stereo inputs followed by the 5.1 audio tracks. 
-     let trackList : TrackDescriptorUnion[] = [
-         factory.createSelectAudioTrackById({
-             trackId :0,
-             channelMapping: KnownChannelMapping.StereoLeft
-         }),
-         factory.createSelectAudioTrackById(
-         {
-            trackId :1,
-            channelMapping: KnownChannelMapping.StereoRight
+    // The Transform we created outputs two tracks, the first track is mapped to the 2 stereo inputs followed by the 5.1 audio tracks. 
+    let trackList: TrackDescriptorUnion[] = [
+        factory.createSelectAudioTrackById({
+            trackId: 0,
+            channelMapping: KnownChannelMapping.StereoLeft
         }),
-        factory.createSelectAudioTrackById({  
-            trackId :2,
+        factory.createSelectAudioTrackById(
+            {
+                trackId: 1,
+                channelMapping: KnownChannelMapping.StereoRight
+            }),
+        factory.createSelectAudioTrackById({
+            trackId: 2,
             channelMapping: KnownChannelMapping.FrontLeft
         }),
         factory.createSelectAudioTrackById(
-        {
-            trackId :3,
-            channelMapping: KnownChannelMapping.FrontRight
-        }),
+            {
+                trackId: 3,
+                channelMapping: KnownChannelMapping.FrontRight
+            }),
         factory.createSelectAudioTrackById({
-            trackId :4,
+            trackId: 4,
             channelMapping: KnownChannelMapping.Center
         }),
         factory.createSelectAudioTrackById({
-            trackId :5,
+            trackId: 5,
             channelMapping: KnownChannelMapping.LowFrequencyEffects
         }),
         factory.createSelectAudioTrackById({
-            trackId :6,
+            trackId: 6,
             channelMapping: KnownChannelMapping.BackLeft
         }),
         factory.createSelectAudioTrackById({
-            trackId :7,
+            trackId: 7,
             channelMapping: KnownChannelMapping.BackRight
         }),
 
-     ];
+    ];
 
     // Create an input definition passing in the source file name and the list of included track mappings from that source file we made above. 
-    let inputDefinitions : InputDefinitionUnion[] = [
+    let inputDefinitions: InputDefinitionUnion[] = [
         factory.createInputFile({
-            filename: inputFile,
-            includedTracks : trackList
+            filename: inputFileName,
+            includedTracks: trackList
         })
     ];
 
@@ -158,22 +157,30 @@ export async function main() {
                     channels: 2, // The stereo mapped output track
                     samplingRate: 48000,
                     bitrate: 128000,
-                    profile: KnownAacAudioProfile.AacLc
+                    profile: KnownAacAudioProfile.AacLc,
+                    label: "stereo"
                 }),
                 factory.createAACaudio({
                     channels: 6, // the 5.1 surround sound mapped output track
                     samplingRate: 48000,
-                    bitrate: 128000,
-                    profile: KnownAacAudioProfile.AacLc
+                    bitrate: 320000,
+                    profile: KnownAacAudioProfile.AacLc,
+                    label: "surround"
                 })
             ],
-            // Specify the format for the output files - one for video+audio, and another for the thumbnails
+            // Specify the format for the output files - one for AAC audio outputs to MP4
             formats: [
-                // Mux the H.264 video and AAC audio into MP4 files, using basename, label, bitrate and extension macros
-                // Note that since you have multiple H264Layers defined above, you have to use a macro that produces unique names per H264Layer
+                // Mux the AAC audio into MP4 files, using basename, label, bitrate and extension macros
+                // Note that since you have multiple AAC outputs defined above, you have to use a macro that produces unique names per AAC Layer
                 // Either {Label} or {Bitrate} should suffice
+                // By creating outputFiles and assigning the labels we can control which output tracks are muxed into the Mp4 files
+                // If you choose to mux both the stereo and surround tracks into a single MP4 output, you can remove the outputFiles and remove the second MP4 format object. 
                 factory.createMp4Format({
-                    filenamePattern: "Video-{Basename}-{Label}-{Bitrate}{Extension}"
+                    filenamePattern: "{Basename}-{Label}-{Bitrate}{Extension}",
+                    outputFiles: [
+                        { labels: ["stereo"] },  // Output one MP4 file with the stereo track in it. 
+                        { labels: ["surround"] }, // Output a second Mp4 file with the surround sound track in it 
+                    ]
                 })
             ]
         }),
@@ -211,7 +218,9 @@ export async function main() {
 
     console.log(`Submitting the encoding job to the ${transformName} job queue...`);
 
-    let job = await submitJob(transformName, jobName, input, outputAssetName);
+    // NOTE!: This call has been modified from previous samples in this repository to now take the list of InputDefinitions instead of just the filename.
+    // This passes in the IncludedTracks list to map during the Transform. 
+    let job = await submitJob(transformName, jobName, input, outputAssetName, inputDefinitions);
 
     console.log(`Waiting for encoding Job - ${job.name} - to finish...`);
     job = await waitForJobToFinish(transformName, jobName);
@@ -313,9 +322,9 @@ async function waitForJobToFinish(transformName: string, jobName: string) {
 // Creates a new input Asset and uploads the local file to it before returning a JobInputAsset object
 // Returns a JobInputHttp object if inputFile is set to null, and the inputUrl is set to a valid URL
 async function getJobInputType(uniqueness: string): Promise<JobInputUnion> {
-    if (inputFile !== undefined) {
+    if (inputFilePath !== undefined) {
         let assetName: string = namePrefix + "-input-" + uniqueness;
-        await createInputAsset(assetName, inputFile);
+        await createInputAsset(assetName, inputFilePath);
         return factory.createJobInputAsset({
             assetName: assetName
         })
@@ -364,9 +373,13 @@ async function createInputAsset(assetName: string, fileToUpload: string) {
         // Next gets the blockBlobClient needed to use the uploadFile method
         let blockBlobClient = containerClient.getBlockBlobClient(fileName);
 
+        console.log(`working directory:${process.cwd()} `)
+        let cwd: string = process.cwd();
+        let filepath: string = path.join(cwd, fileToUpload)
+
         // Parallel uploading with BlockBlobClient.uploadFile() in Node.js runtime
         // BlockBlobClient.uploadFile() is only available in Node.js and not in Browser
-        await blockBlobClient.uploadFile(fileToUpload, {
+        await blockBlobClient.uploadFile(filepath, {
             blockSize: 4 * 1024 * 1024, // 4MB Block size
             concurrency: 20, // 20 concurrent
             onProgress: (ev) => console.log(ev)
@@ -378,19 +391,23 @@ async function createInputAsset(assetName: string, fileToUpload: string) {
 }
 
 
-async function submitJob(transformName: string, jobName: string, jobInput: JobInputUnion, outputAssetName: string) {
+async function submitJob(transformName: string, jobName: string, jobInput: JobInputUnion, outputAssetName: string, inputDefinitions: InputDefinitionUnion[]) {
     if (outputAssetName == undefined) {
         throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
     }
+
+    let jobInputWithTrackDefinitions = jobInput as JobInputAsset;
+    jobInputWithTrackDefinitions.inputDefinitions = inputDefinitions;
+
     let jobOutputs: JobOutputAsset[] = [
         {
             odataType: "#Microsoft.Media.JobOutputAsset",
-            assetName: outputAssetName
+            assetName: outputAssetName,
         }
     ];
 
     return await mediaServicesClient.jobs.create(resourceGroup, accountName, transformName, jobName, {
-        input: jobInput,
+        input: jobInputWithTrackDefinitions,
         outputs: jobOutputs
     });
 
