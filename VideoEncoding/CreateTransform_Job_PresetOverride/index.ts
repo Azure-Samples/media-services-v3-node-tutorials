@@ -109,10 +109,10 @@ export async function main() {
         preset: TransformFactory.createStandardEncoderPreset({
             codecs: [
                 TransformFactory.createH264Video({
-                    layers:[{
-                        odataType: "#Microsoft.Media.H264Layer",
-                        bitrate: 1000000, // Units are in bits per second and not kbps or Mbps - 1 Mbps or 1,000 kbps
-                    }]
+                    layers:[
+                        TransformFactory.createH264Layer({
+                            bitrate: 1000000, // Units are in bits per second and not kbps or Mbps - 1 Mbps or 1,000 kbps
+                    })]
                 })
             ],
             formats: [
