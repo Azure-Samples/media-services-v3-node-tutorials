@@ -347,15 +347,13 @@ async function getJobInputType(uniqueness: string): Promise<JobInputUnion> {
     if (inputFile !== undefined) {
         let assetName: string = namePrefix + "-input-" + uniqueness;
         await createInputAsset(assetName, inputFile);
-        return {
-            odataType: "#Microsoft.Media.JobInputAsset",
+        return TransformFactory.createJobInputAsset({
             assetName: assetName
-        }
+        })
     } else {
-        return {
-            odataType: "#Microsoft.Media.JobInputHttp",
+        return TransformFactory.createJobInputHttp({
             files: [inputUrl]
-        }
+        })
     }
 }
 
@@ -426,11 +424,10 @@ async function submitJob(transformName: string, jobName: string, jobInput: JobIn
 
 
     let jobOutputs: JobOutputAsset[] = [
-        {
-            odataType: "#Microsoft.Media.JobOutputAsset",
+        TransformFactory.createJobOutputAsset({
             assetName: outputAssetName,
             presetOverride: presetOverride
-        }
+        })
     ];
 
     return await mediaServicesClient.jobs.create(resourceGroup, accountName, transformName, jobName, {

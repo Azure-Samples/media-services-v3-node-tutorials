@@ -24,7 +24,10 @@ import {
     SelectAudioTrackByAttribute,
     InputFile,
     JobInputAsset,
-    JobInputHttp
+    JobInputHttp,
+    JobOutputAsset,
+    AudioAnalyzerPresetUnion,
+    VideoAnalyzerPreset
 } from "@azure/arm-mediaservices"
 
 export class TransformFactory {
@@ -120,6 +123,20 @@ export class TransformFactory {
         }
     }
 
+  static createAudioAnalyzerPreset(audioAnalyserPreset: Omit<AudioAnalyzerPresetUnion, "odataType">): VideoAnalyzerPreset {
+        return {
+            odataType: "#Microsoft.Media.AudioAnalyzerPreset",
+            ...audioAnalyserPreset,
+        }
+    }
+
+    static createVideoAnalyzerPreset(videoAnalyserPreset: Omit<VideoAnalyzerPreset, "odataType">): VideoAnalyzerPreset {
+        return {
+            odataType: "#Microsoft.Media.VideoAnalyzerPreset",
+            ...videoAnalyserPreset,
+        }
+    }
+
     static createMp4Format(mp4Format: Omit<Mp4Format, "odataType">): Mp4Format {
         return {
             odataType: "#Microsoft.Media.Mp4Format",
@@ -159,6 +176,13 @@ export class TransformFactory {
         return {
             odataType: "#Microsoft.Media.JobInputHttp",
             ...inputHttp,
+        }
+    }    
+
+    static createJobOutputAsset(outputAsset: Omit<JobOutputAsset, "odataType">): JobOutputAsset {
+        return {
+            odataType: "#Microsoft.Media.JobOutputAsset",
+            ...outputAsset,
         }
     }
 }

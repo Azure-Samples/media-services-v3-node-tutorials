@@ -255,20 +255,17 @@ async function waitForJobToFinish(transformName: string, jobName: string) {
 // Returns a JobInputHttp object if inputFile is set to null, and the inputUrl is set to a valid URL
 async function getJobInputType(uniqueness: string): Promise<JobInputUnion> {
     if (inputFile !== undefined) {
-        let assetName: string = namePrefix + "-input-" + uniqueness;
-        await createInputAsset(assetName, inputFile);
-        return {
-            odataType: "#Microsoft.Media.JobInputAsset",
-            assetName: assetName
-        }
+      let assetName: string = namePrefix + "-input-" + uniqueness;
+      await createInputAsset(assetName, inputFile);
+      return TransformFactory.createJobInputAsset({
+        assetName: assetName
+      })
     } else {
-        return {
-            odataType: "#Microsoft.Media.JobInputHttp",
-            files: [inputUrl]
-        }
+      return TransformFactory.createJobInputHttp({
+        files: [inputUrl]
+      })
     }
-}
-
+  }
 // Creates a new Media Services Asset, which is a pointer to a storage container
 // Uses the Storage Blob npm package to upload a local file into the container through the use 
 // of the SAS URL obtained from the new Asset object.  

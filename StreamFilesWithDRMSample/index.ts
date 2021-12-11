@@ -22,6 +22,7 @@ import {
   BlobServiceClient,
   AnonymousCredential
 } from "@azure/storage-blob";
+import { TransformFactory }  from "../Common/Encoding/TransformFactory";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
 import * as path from "path";
@@ -102,10 +103,9 @@ export async function main() {
     // Create a new Transform using a preset name from the list of built in encoding presets. 
     // To use a custom encoding preset, you can change this to be a StandardEncoderPreset, which has support for codecs, formats, and filter definitions.
     // This sample uses the 'ContentAwareEncoding' preset which chooses the best output based on an analysis of the input video.
-    let adaptiveStreamingTransform: BuiltInStandardEncoderPreset = {
-      odataType: "#Microsoft.Media.BuiltInStandardEncoderPreset",
+    let adaptiveStreamingTransform: BuiltInStandardEncoderPreset = TransformFactory.createBuiltInStandardEncoderPreset({
       presetName: "ContentAwareEncoding"
-    };
+    });
 
     let encodingTransform = await mediaServicesClient.transforms.createOrUpdate(resourceGroup, accountName, encodingTransformName, {
       name: encodingTransformName,
@@ -274,15 +274,13 @@ async function getJobInputType(uniqueness: string): Promise<JobInputUnion> {
   if (inputFile !== undefined) {
     let assetName: string = namePrefix + "-input-" + uniqueness;
     await createInputAsset(assetName, inputFile);
-    return {
-      odataType: "#Microsoft.Media.JobInputAsset",
+    return TransformFactory.createJobInputAsset({
       assetName: assetName
-    }
+    })
   } else {
-    return {
-      odataType: "#Microsoft.Media.JobInputHttp",
+    return TransformFactory.createJobInputHttp({
       files: [inputUrl]
-    }
+    })
   }
 }
 
@@ -342,10 +340,9 @@ async function submitJob(transformName: string, jobName: string, jobInput: JobIn
     throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
   }
   let jobOutputs: JobOutputAsset[] = [
-    {
-      odataType: "#Microsoft.Media.JobOutputAsset",
+    TransformFactory.createJobOutputAsset({
       assetName: outputAssetName
-    }
+    })
   ];
 
   return await mediaServicesClient.jobs.create(resourceGroup, accountName, transformName, jobName, {
