@@ -63,7 +63,7 @@ const credential = new DefaultAzureCredential();
 // You can either specify a local input file with the inputFile or an input Url with inputUrl. 
 // Just set the other one to null to have it select the right JobInput class type
 
-// const inputFile = "C:\\your\\local.mp4";
+// const inputFile = "Media\\<<yourfilepath.mp4>>"; // Place your media in the /Media folder at the root of the samples. Code for upload uses relative path to current working directory for Node;
 let inputFile: string;
 // This is a hosted sample file to use
 let inputUrl: string = "https://amssamples.streaming.mediaservices.windows.net/2e91931e-0d29-482b-a42b-9aadc93eb825/AzurePromo.mp4";
