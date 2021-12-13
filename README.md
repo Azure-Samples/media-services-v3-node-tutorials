@@ -55,17 +55,9 @@ The projects in this repository were created using Visual Studio Code.
 2. Install [Node.js](https://nodejs.org/en/download/)
 3. Download and install [TypeScript](https://www.typescriptlang.org/download)
 
-<<<<<<< HEAD
-    ### Install TypeScript via npm
-    You can use npm to install TypeScript globally, this means you can use the tsc command anywhere in your terminal.
-    
-    To do this, run ```npm install -g typescript```. This will install the latest version.
-    
-=======
 ### Install TypeScript via npm
 
 You can use npm to install TypeScript globally, this means you can use the tsc command anywhere in your terminal.
->>>>>>> 10.0.0
 
 To do this, run ```npm install -g typescript```. This will install the latest version.
     
