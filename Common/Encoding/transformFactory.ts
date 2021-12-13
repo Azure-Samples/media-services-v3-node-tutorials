@@ -25,6 +25,7 @@ import {
     InputFile,
     JobInputAsset,
     JobInputHttp,
+    JobInputs,
     JobOutputAsset,
     AudioAnalyzerPresetUnion,
     VideoAnalyzerPreset,
@@ -183,6 +184,13 @@ export class TransformFactory {
     static createJobOutputAsset(outputAsset: Omit<JobOutputAsset, "odataType">): JobOutputAsset {
         return {
             odataType: "#Microsoft.Media.JobOutputAsset",
+            ...outputAsset,
+        }
+    }    
+    
+    static createJobInputs(outputAsset: Omit<JobInputs, "odataType">): JobInputs {
+        return {
+            odataType: "#Microsoft.Media.JobInputs",
             ...outputAsset,
         }
     }

@@ -60,7 +60,7 @@ dotenv.config();
 // This is the main Media Services client object
 let mediaServicesClient: AzureMediaServices;
 
-// </LongRunningOperation>
+// <LongRunningOperation>
 // Long running operation polling interval in milliseconds
 const longRunningOperationUpdateIntervalMs = 2000;
 // </LongRunningOperation>
