@@ -27,7 +27,8 @@ import {
     JobInputHttp,
     JobOutputAsset,
     AudioAnalyzerPresetUnion,
-    VideoAnalyzerPreset
+    VideoAnalyzerPreset,
+    AudioAnalyzerPreset
 } from "@azure/arm-mediaservices"
 
 export class TransformFactory {
@@ -123,7 +124,7 @@ export class TransformFactory {
         }
     }
 
-  static createAudioAnalyzerPreset(audioAnalyserPreset: Omit<AudioAnalyzerPresetUnion, "odataType">): VideoAnalyzerPreset {
+  static createAudioAnalyzerPreset(audioAnalyserPreset: Omit<AudioAnalyzerPresetUnion, "odataType">): AudioAnalyzerPreset {
         return {
             odataType: "#Microsoft.Media.AudioAnalyzerPreset",
             ...audioAnalyserPreset,
