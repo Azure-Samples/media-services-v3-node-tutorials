@@ -60,7 +60,7 @@ The projects in this repository were created using Visual Studio Code.
 You can use npm to install TypeScript globally, this means you can use the tsc command anywhere in your terminal.
 
 To do this, run ```npm install -g typescript```. This will install the latest version.
-    
+
 ## Run samples
 
 1. Clone the repository
@@ -87,4 +87,4 @@ The output from the HelloWorld-ListAssets may be empty if this is a new Media Se
 
 ## Common Issues and Troubleshooting
 
-* Assets in Media Services have naming conventions that must be adhered to in order to avoid errors. For example the client.Assets.CreateOrUpdateAsync can fail with message "The resource type is invalid" if the name does not match the [naming conventions listed in this article](https://docs.microsoft.com/en-us/azure/media-services/latest/media-services-apis-overview#naming-conventions)
+* Assets in Media Services have naming conventions that must be adhered to in order to avoid errors. For example the client.Assets.CreateOrUpdateAsync can fail with message "The resource type is invalid" if the name does not match the [naming conventions listed in this article](https://docs.microsoft.com/azure/media-services/latest/media-services-apis-overview#naming-conventions)
