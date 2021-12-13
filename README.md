@@ -17,12 +17,12 @@ urlFragment: media-services-v3-node-tutorials
 This repository contains samples showing how to use the [Azure Media Services v3](https://docs.microsoft.com/azure/media-services/latest/media-services-overview) API using the [@azure/arm-mediaservices](https://www.npmjs.com/package/@azure/arm-mediaservices) package for node.js.
 
 These tutorials work with the new [JavaScript next generation Azure SDK](https://github.com/Azure/azure-sdk-for-js/blob/main/documentation/next-generation-quickstart.md).
-The new preview SDKs for JavaScript supports Azure Identity, HTTP pipeline, error-handling.,etc, and they also follow the new Azure SDK guidelines which create easy-to-use APIs that are idiomatic, compatible, and dependable. 
+The new SDKs for JavaScript supports Azure Identity, HTTP pipeline, error-handling.,etc, and they also follow the new Azure SDK guidelines which create easy-to-use APIs that are idiomatic, compatible, and dependable.
 See [TypeScript Design Guidelines](https://azure.github.io/azure-sdk/typescript_design.html) for more information.
 
 > [!NOTE]
 > To make sure you are using the latest package, check [@azure/arm-mediaservices](https://www.npmjs.com/package/@azure/arm-mediaservices).
-> Version 10.0.0-beta.1 of *@azure/arm-mediaservices* supports the [Media Services ARM API version 2021-06-01](https://github.com/Azure/azure-rest-api-specs/tree/main/specification/mediaservices/resource-manager/Microsoft.Media/stable/2021-06-01)
+> Version 10.0.0 of *@azure/arm-mediaservices* supports the [Media Services ARM API version 2021-06-01](https://github.com/Azure/azure-rest-api-specs/tree/main/specification/mediaservices/resource-manager/Microsoft.Media/stable/2021-06-01)
 
 ## Overview
 
