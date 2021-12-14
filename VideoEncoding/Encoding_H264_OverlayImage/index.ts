@@ -56,6 +56,7 @@ const credential = new DefaultAzureCredential();
 
 // const inputFile = "Media\\<<yourfilepath.mp4>>"; // Place your media in the /Media folder at the root of the samples. Code for upload uses relative path to current working directory for Node;
 let inputFile: string = "Media\\ignite.mp4";
+
 // This is a hosted sample file to use
 let inputUrl: string = "https://amssamples.streaming.mediaservices.windows.net/2e91931e-0d29-482b-a42b-9aadc93eb825/AzurePromo.mp4";
 
