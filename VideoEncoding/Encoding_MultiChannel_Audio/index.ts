@@ -18,7 +18,7 @@ import {
     InputDefinitionUnion,
     JobInputAsset
 } from '@azure/arm-mediaservices';
-import { TransformFactory } from "../../Common/Encoding/TransformFactory";
+import * as factory from "../../Common/Encoding/TransformFactory";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
@@ -102,37 +102,37 @@ export async function main() {
 
     // The Transform we created outputs two tracks, the first track is mapped to the 2 stereo inputs followed by the 5.1 audio tracks. 
     let trackList: TrackDescriptorUnion[] = [
-        TransformFactory.createSelectAudioTrackById({
+        factory.createSelectAudioTrackById({
             trackId: 0,
             channelMapping: KnownChannelMapping.StereoLeft
         }),
-        TransformFactory.createSelectAudioTrackById(
+        factory.createSelectAudioTrackById(
             {
                 trackId: 1,
                 channelMapping: KnownChannelMapping.StereoRight
             }),
-        TransformFactory.createSelectAudioTrackById({
+        factory.createSelectAudioTrackById({
             trackId: 2,
             channelMapping: KnownChannelMapping.FrontLeft
         }),
-        TransformFactory.createSelectAudioTrackById(
+        factory.createSelectAudioTrackById(
             {
                 trackId: 3,
                 channelMapping: KnownChannelMapping.FrontRight
             }),
-        TransformFactory.createSelectAudioTrackById({
+        factory.createSelectAudioTrackById({
             trackId: 4,
             channelMapping: KnownChannelMapping.Center
         }),
-        TransformFactory.createSelectAudioTrackById({
+        factory.createSelectAudioTrackById({
             trackId: 5,
             channelMapping: KnownChannelMapping.LowFrequencyEffects
         }),
-        TransformFactory.createSelectAudioTrackById({
+        factory.createSelectAudioTrackById({
             trackId: 6,
             channelMapping: KnownChannelMapping.BackLeft
         }),
-        TransformFactory.createSelectAudioTrackById({
+        factory.createSelectAudioTrackById({
             trackId: 7,
             channelMapping: KnownChannelMapping.BackRight
         }),
@@ -141,7 +141,7 @@ export async function main() {
 
     // Create an input definition passing in the source file name and the list of included track mappings from that source file we made above. 
     let inputDefinitions: InputDefinitionUnion[] = [
-        TransformFactory.createInputFile({
+        factory.createInputFile({
             filename: inputFileName,
             includedTracks: trackList
         })
@@ -149,16 +149,16 @@ export async function main() {
 
     // Next we create a TransformOutput
     let transformOutput: TransformOutput[] = [{
-        preset: TransformFactory.createStandardEncoderPreset({
+        preset: factory.createStandardEncoderPreset({
             codecs: [
-                TransformFactory.createAACaudio({
+                factory.createAACaudio({
                     channels: 2, // The stereo mapped output track
                     samplingRate: 48000,
                     bitrate: 128000,
                     profile: KnownAacAudioProfile.AacLc,
                     label: "stereo"
                 }),
-                TransformFactory.createAACaudio({
+                factory.createAACaudio({
                     channels: 6, // the 5.1 surround sound mapped output track
                     samplingRate: 48000,
                     bitrate: 320000,
@@ -173,7 +173,7 @@ export async function main() {
                 // Either {Label} or {Bitrate} should suffice
                 // By creating outputFiles and assigning the labels we can control which output tracks are muxed into the Mp4 files
                 // If you choose to mux both the stereo and surround tracks into a single MP4 output, you can remove the outputFiles and remove the second MP4 format object. 
-                TransformFactory.createMp4Format({
+                factory.createMp4Format({
                     filenamePattern: "{Basename}-{Label}-{Bitrate}{Extension}",
                     outputFiles: [
                         { labels: ["stereo"] },  // Output one MP4 file with the stereo track in it. 
@@ -323,11 +323,11 @@ async function getJobInputType(uniqueness: string): Promise<JobInputUnion> {
     if (inputFilePath !== undefined) {
         let assetName: string = namePrefix + "-input-" + uniqueness;
         await createInputAsset(assetName, inputFilePath);
-        return TransformFactory.createJobInputAsset({
+        return factory.createJobInputAsset({
             assetName: assetName
         })
     } else {
-        return TransformFactory.createJobInputHttp({
+        return factory.createJobInputHttp({
             files: [inputUrl]
         })
     }
@@ -398,7 +398,7 @@ async function submitJob(transformName: string, jobName: string, jobInput: JobIn
     jobInputWithTrackDefinitions.inputDefinitions = inputDefinitions;
 
     let jobOutputs: JobOutputAsset[] = [
-        TransformFactory.createJobOutputAsset({
+        factory.createJobOutputAsset({
             assetName: outputAssetName
         })
     ];

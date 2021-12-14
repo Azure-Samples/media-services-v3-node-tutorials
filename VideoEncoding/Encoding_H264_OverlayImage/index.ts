@@ -9,14 +9,11 @@ import {
     JobInputUnion,
     JobsGetResponse,
     TransformOutput,
+    KnownAacAudioProfile,
     KnownOnErrorType,
     KnownPriority,
     Transform,
-    KnownEncoderNamedPreset,
-    PresetConfigurations,
-    Preset,
-    KnownComplexity,
-    KnownInterleaveOutput
+    KnownH264Complexity
 } from '@azure/arm-mediaservices';
 import * as factory  from "../../Common/Encoding/TransformFactory";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
@@ -33,7 +30,6 @@ dotenv.config();
 
 // This is the main Media Services client object
 let mediaServicesClient: AzureMediaServices;
-
 
 // Copy the samples.env file and rename it to .env first, then populate it's values with the values obtained 
 // from your Media Services account's API Access page in the Azure portal.
@@ -54,6 +50,7 @@ const accountName: string = process.env.ACCOUNTNAME as string;
 // const credential = new ManagedIdentityCredential("<USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID>");
 const credential = new DefaultAzureCredential();
 
+
 // You can either specify a local input file with the inputFile or an input Url with inputUrl. 
 // Just set the other one to null to have it select the right JobInput class type
 
@@ -62,6 +59,10 @@ let inputFile: string;
 // This is a hosted sample file to use
 let inputUrl: string = "https://amssamples.streaming.mediaservices.windows.net/2e91931e-0d29-482b-a42b-9aadc93eb825/AzurePromo.mp4";
 
+// Use the following PNG image to overlay on top of the video.
+let overlayFile = "Media\\AzureMediaService.png";
+let overlayLabel = "overlayCloud"
+
 // Timer values
 const timeoutSeconds: number = 60 * 10;
 const sleepInterval: number = 1000 * 2;
@@ -69,7 +70,7 @@ const setTimeoutPromise = util.promisify(setTimeout);
 
 // Args
 const outputFolder: string = "./Output";
-const namePrefix: string = "contentAware264Constrained";
+const namePrefix: string = "encodeOverlayPng";
 let inputExtension: string;
 let blobName: string;
 
@@ -79,54 +80,81 @@ let blobName: string;
 export async function main() {
 
     // These are the names used for creating and finding your transforms
-    const transformName = "H264EncodingContentAwareConstrained";
+    const transformName = "H264EncodingOverlayImagePng";
 
     mediaServicesClient = new AzureMediaServices(credential, subscriptionId);
 
     // Create a new Standard encoding Transform for H264
     console.log(`Creating Standard Encoding transform named: ${transformName}`);
 
-
-    // This sample uses constraints on the CAE encoding preset to reduce the number of tracks output and resolutions to a specific range. 
-    // First we will create a PresetConfigurations object to define the constraints that we want to use
-    // This allows you to configure the encoder settings to control the balance between speed and quality. Example: set Complexity as Speed for faster encoding but less compression efficiency.
-
-    let presetConfig : PresetConfigurations = {
-        complexity: KnownComplexity.Speed,
-        // The output includes both audio and video.
-        interleaveOutput: KnownInterleaveOutput.InterleavedOutput,
-        // The key frame interval in seconds. Example: set as 2 to reduce the playback buffering for some players.
-        keyFrameIntervalInSeconds: 2,
-        // The maximum bitrate in bits per second (threshold for the top video layer). Example: set MaxBitrateBps as 6000000 to avoid producing very high bitrate outputs for contents with high complexity.
-        maxBitrateBps: 6000000,
-        // The minimum bitrate in bits per second (threshold for the bottom video layer). Example: set MinBitrateBps as 200000 to have a bottom layer that covers users with low network bandwidth.
-        minBitrateBps: 200000,
-        maxHeight: 720,
-        // The minimum height of output video layers. Example: set MinHeight as 360 to avoid output layers of smaller resolutions like 180P.
-        minHeight: 270,
-        // The maximum number of output video layers. Example: set MaxLayers as 4 to make sure at most 4 output layers are produced to control the overall cost of the encoding job.
-        maxLayers: 3
-    }
-
-    // Create a new Content Aware Encoding Preset using the preset configuration
+    // First we create a TransformOutput
     let transformOutput: TransformOutput[] = [{
+        preset: factory.createStandardEncoderPreset({
+            codecs: [
+                factory.createAACaudio({
+                    channels: 2,
+                    samplingRate: 48000,
+                    bitrate: 128000,
+                    profile: KnownAacAudioProfile.AacLc
+                }),
+                factory.createH264Video({
+                    keyFrameInterval: "PT2S", //ISO 8601 format supported
+                    complexity: KnownH264Complexity.Balanced,
+                    layers: [
+                        factory.createH264Layer({
+                            bitrate: 3600000, // Units are in bits per second and not kbps or Mbps - 3.6 Mbps or 3,600 kbps
+                            width: "1280",
+                            height: "720",
+                            label: "HD-3600kbps" // This label is used to modify the file name in the output formats
+                        }),
+                        factory.createH264Layer(
+                            {
+                                bitrate: 1600000, // Units are in bits per second and not kbps or Mbps - 1.6 Mbps or 1600 kbps
+                                width: "960",
+                                height: "540",
+                                label: "SD-1600kbps" // This label is used to modify the file name in the output formats
+                            }),
+                    ]
+                }),
+            ],
+            // Specify the format for the output files - one for video+audio, and another for the thumbnails
+            formats: [
+                // Mux the H.264 video and AAC audio into MP4 files, using basename, label, bitrate and extension macros
+                // Note that since you have multiple H264Layers defined above, you have to use a macro that produces unique names per H264Layer
+                // Either {Label} or {Bitrate} should suffice
+                factory.createMp4Format({
+                    filenamePattern: "Video-{Basename}-{Label}-{Bitrate}{Extension}"
+                })
+            ],
+            filters: {
+                overlays: [
+                    factory.createVideoOverlay({
+                        inputLabel: overlayLabel, // same label that is used in the JobInput to identify which file in the asset is the actual overlay image .png file. 
+                        position: {
+                            left:"10%",  // left and top position of the overlay in absolute pixel or percentage relative to the source videos resolution. 
+                            top:"10%", 
+                        },
+                        opacity: 0.75,
+                        start: "PT0S", // Start at beginning of video. 
+                        fadeInDuration: "PT2S", // 2 second fade in. 
+                        fadeOutDuration: "PT2S", // 2 second fade out. 
+                        end: "PT5S", // end the fade out at 5 seconds on the timeline... fade will begin 2 seconds before this end time. 
+                    })
+                ]
+            }
+        }),
         // What should we do with the job if there is an error?
         onError: KnownOnErrorType.StopProcessingJob,
         // What is the relative priority of this job to others? Normal, high or low?
-        relativePriority: KnownPriority.Normal,
-        preset: factory.createBuiltInStandardEncoderPreset({
-            presetName: KnownEncoderNamedPreset.ContentAwareEncoding,
-            // Configurations can be used to control values used by the Content Aware Encoding Preset.
-            configurations: presetConfig
-            })
-        }
+        relativePriority: KnownPriority.Normal
+    }
     ];
 
     console.log("Creating encoding transform...");
 
     let transform: Transform = {
         name: transformName,
-        description: "H264 content aware encoding with configuration settings",
+        description: "A simple custom H264 encoding transform that overlays a PNG image on the video source",
         outputs: transformOutput
     }
 
@@ -139,17 +167,29 @@ export async function main() {
         });
 
     let uniqueness = uuidv4();
-    let input = await getJobInputType(uniqueness);
+    let jobVideoInputAsset = await getJobInputType(uniqueness);
     let outputAssetName = `${namePrefix}-output-${uniqueness}`;
     let jobName = `${namePrefix}-job-${uniqueness}`;
 
-    console.log("Creating the output Asset (container) to encode the content into...");
+    // Create the JobInput for the PNG Image overlay
+    let overlayAssetName : string = namePrefix + "-overlay-" + uniqueness;
+    await createInputAsset(overlayAssetName, overlayFile);
+    let jobInputOverlay = await factory.createJobInputAsset({
+      assetName: overlayAssetName,
+      label:overlayLabel // This is the same value as the label we set in the Filters of the Transform above. It tells the job that this is the asset that has the PNG image in it to use as the overlay image. 
+    })
 
+    console.log("Creating the output Asset (container) to encode the content into...");
     await mediaServicesClient.assets.createOrUpdate(resourceGroup, accountName, outputAssetName, {});
 
-    console.log(`Submitting the encoding job to the ${transformName} job queue...`);
+    let jobInputs = [   // Create a list of JobInputs - we will add both the video and ovelay image assets here as the inputs to the job. 
+        jobVideoInputAsset,
+        jobInputOverlay  // Order does not matter here, it is the "label" used on the Filter and the jobInputOverlay that is important!
+    ]
 
-    let job = await submitJob(transformName, jobName, input, outputAssetName);
+    console.log(`Submitting the encoding job to the ${transformName} job queue...`);
+    // In this sample, we modify the submitJob() method to take a JobInputUnion[] and then pass that into the Job on creation. 
+    let job = await submitJob(transformName, jobName, jobInputs, outputAssetName);
 
     console.log(`Waiting for encoding Job - ${job.name} - to finish...`);
     job = await waitForJobToFinish(transformName, jobName);
@@ -232,7 +272,11 @@ async function waitForJobToFinish(transformName: string, jobName: string) {
         }
 
         if (job.state == 'Finished' || job.state == 'Error' || job.state == 'Canceled') {
-
+            if (job.state == `Error` && job.outputs !== undefined && job.outputs[0] !== undefined)
+            {
+                console.log(`Job Error details ${job.outputs[0].error?.message}.`);
+                console.log(`Job Error code ${job.outputs[0].error?.code}.`);
+            }
             return job;
         } else if (new Date() > timeout) {
             console.log(`Job ${job.name} timed out. Please retry or check the source file.`);
@@ -263,6 +307,7 @@ async function getJobInputType(uniqueness: string): Promise<JobInputUnion> {
       })
     }
   }
+
 // Creates a new Media Services Asset, which is a pointer to a storage container
 // Uses the Storage Blob npm package to upload a local file into the container through the use 
 // of the SAS URL obtained from the new Asset object.  
@@ -315,7 +360,7 @@ async function createInputAsset(assetName: string, fileToUpload: string) {
 }
 
 
-async function submitJob(transformName: string, jobName: string, jobInput: JobInputUnion, outputAssetName: string) {
+async function submitJob(transformName: string, jobName: string, jobInputs: JobInputUnion[], outputAssetName: string) {
     if (outputAssetName == undefined) {
         throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
     }
@@ -326,7 +371,9 @@ async function submitJob(transformName: string, jobName: string, jobInput: JobIn
     ];
 
     return await mediaServicesClient.jobs.create(resourceGroup, accountName, transformName, jobName, {
-        input: jobInput,
+        input: factory.createJobInputs({
+            inputs : jobInputs
+        }),
         outputs: jobOutputs
     });
 

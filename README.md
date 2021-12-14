@@ -30,8 +30,8 @@ The projects in this repository were created using Visual Studio Code.
 
 |Project name|Description|
 |---|---|
-|[Create an account from code](/Account/CreateAccount)|The sample shows how to create a Media Services account and set the primary storage account, in addition to advanced configuration settings including Key Delivery IP allowlist, Managed Identity, storage auth, and bring your own encryption key.|
-|[Hello World - list assets](/HelloWorld-ListAssets/index.ts)|Basic example on how to connect and list assets |
+|[Create an account from code](/Account/CreateAccount/create-account.ts)|The sample shows how to create a Media Services account and set the primary storage account, in addition to advanced configuration settings including Key Delivery IP allowlist, Managed Identity, storage auth, and bring your own encryption key.|
+|[Hello World - list assets](/HelloWorld-ListAssets/list-assets.ts)|Basic example on how to connect and list assets |
 |[Live streaming with Standard Passthrough](/Live/Standard_Passthrough_Live_Event/index.ts)| Standard passthrough live streaming example. **WARNING**, make sure to check that all resources are cleaned up and no longer billing in portal when using live|
 |[Live streaming with Standard Passthrough with EventHub](/Live/Standard_Passthrough_Live_Event_with_EventHub/index.ts)| Demonstrates how to use Event Hub to subscribe to events on the live streaming channel. Events include encoder connections, disconnections, heartbeat, latency, discontinuity and drift issues.  **WARNING**, make sure to check that all resources are cleaned up and no longer billing in portal when using live|
 |[Live streaming with Basic Passthrough](/Live/Basic_Passthrough_Live_Event/index.ts)| Shows how to set up the basic passthrough live event if you only need to broadcast a low cost UGC channel. **WARNING**, make sure to check that all resources are cleaned up and no longer billing in portal when using live|
@@ -60,7 +60,7 @@ The projects in this repository were created using Visual Studio Code.
 You can use npm to install TypeScript globally, this means you can use the tsc command anywhere in your terminal.
 
 To do this, run ```npm install -g typescript```. This will install the latest version.
-    
+
 ## Run samples
 
 1. Clone the repository
@@ -87,4 +87,4 @@ The output from the HelloWorld-ListAssets may be empty if this is a new Media Se
 
 ## Common Issues and Troubleshooting
 
-* Assets in Media Services have naming conventions that must be adhered to in order to avoid errors. For example the client.Assets.CreateOrUpdateAsync can fail with message "The resource type is invalid" if the name does not match the [naming conventions listed in this article](https://docs.microsoft.com/en-us/azure/media-services/latest/media-services-apis-overview#naming-conventions)
+* Assets in Media Services have naming conventions that must be adhered to in order to avoid errors. For example the client.Assets.CreateOrUpdateAsync can fail with message "The resource type is invalid" if the name does not match the [naming conventions listed in this article](https://docs.microsoft.com/azure/media-services/latest/media-services-apis-overview#naming-conventions)

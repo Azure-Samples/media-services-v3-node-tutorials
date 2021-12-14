@@ -27,7 +27,7 @@ import {
     PresetUnion,
     StandardEncoderPreset
 } from '@azure/arm-mediaservices';
-import { TransformFactory }  from "../../Common/Encoding/TransformFactory";
+import * as factory  from "../../Common/Encoding/TransformFactory";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
@@ -106,17 +106,17 @@ export async function main() {
     // First we create an mostly empty TransformOutput with a very basic H264 preset that we override later.
     // If a Job were submitted to this base Transform, the output would be a single MP4 video track at 1 Mbps. 
     let transformOutput: TransformOutput[] = [{
-        preset: TransformFactory.createStandardEncoderPreset({
+        preset: factory.createStandardEncoderPreset({
             codecs: [
-                TransformFactory.createH264Video({
+                factory.createH264Video({
                     layers:[
-                        TransformFactory.createH264Layer({
+                        factory.createH264Layer({
                             bitrate: 1000000, // Units are in bits per second and not kbps or Mbps - 1 Mbps or 1,000 kbps
                     })]
                 })
             ],
             formats: [
-                TransformFactory.createMp4Format({
+                factory.createMp4Format({
                     filenamePattern: "Video-{Basename}-{Label}-{Bitrate}{Extension}"
                 })
             ],
@@ -156,14 +156,14 @@ export async function main() {
     console.log(`Creating a new custom preset override and submitting the job to the empty transform ${transformName} job queue...`);
 
     // Create a new Preset Override to define a custom standard encoding preset
-    let standardPreset_H264: StandardEncoderPreset = TransformFactory.createStandardEncoderPreset({
+    let standardPreset_H264: StandardEncoderPreset = factory.createStandardEncoderPreset({
         codecs: [
-            TransformFactory.createH264Video({
+            factory.createH264Video({
                 // Next, add a H264Video for the video encoding
                 keyFrameInterval: "PT2S", //ISO 8601 format supported
                 complexity: KnownH264Complexity.Speed,
                 layers: [
-                    TransformFactory.createH264Layer({
+                    factory.createH264Layer({
                         bitrate: 3600000, // Units are in bits per second and not kbps or Mbps - 3.6 Mbps or 3,600 kbps
                         width: "1280",
                         height: "720",
@@ -171,7 +171,7 @@ export async function main() {
                     })
                 ]
             }),
-           TransformFactory.createAACaudio({
+           factory.createAACaudio({
                 // Add an AAC Audio layer for the audio encoding
                 channels: 2,
                 samplingRate: 48000,
@@ -180,7 +180,7 @@ export async function main() {
             })
         ],
         formats: [
-            TransformFactory.createMp4Format({
+            factory.createMp4Format({
                 filenamePattern: "Video-{Basename}-{Label}-{Bitrate}{Extension}"
             })
         ]
@@ -192,14 +192,14 @@ export async function main() {
 
     // Next, we will create another preset override that uses HEVC instead and submit it against the same simple transform
      // Create a new Preset Override to define a custom standard encoding preset
-     let standardPreset_HEVC: StandardEncoderPreset = TransformFactory.createStandardEncoderPreset({
+     let standardPreset_HEVC: StandardEncoderPreset = factory.createStandardEncoderPreset({
         codecs: [
-            TransformFactory.createH265Video({
+            factory.createH265Video({
                 // Next, add a H264Video for the video encoding
                 keyFrameInterval: "PT2S", //ISO 8601 format supported
                 complexity: KnownH264Complexity.Speed,
                 layers: [
-                    TransformFactory.createH265Layer({
+                    factory.createH265Layer({
                         bitrate: 1800000, // Units are in bits per second and not kbps or Mbps - 3.6 Mbps or 3,600 kbps
                         maxBitrate: 1800000,
                         width: "1280",
@@ -209,7 +209,7 @@ export async function main() {
                     }),
                 ]
             }),
-            TransformFactory.createAACaudio({
+            factory.createAACaudio({
                 // Add an AAC Audio layer for the audio encoding
                 channels: 2,
                 samplingRate: 48000,
@@ -218,7 +218,7 @@ export async function main() {
             })
         ],
         formats: [
-            TransformFactory.createMp4Format({
+            factory.createMp4Format({
                 filenamePattern: "Video-{Basename}-{Label}-{Bitrate}{Extension}"
             })
         ]
@@ -347,11 +347,11 @@ async function getJobInputType(uniqueness: string): Promise<JobInputUnion> {
     if (inputFile !== undefined) {
         let assetName: string = namePrefix + "-input-" + uniqueness;
         await createInputAsset(assetName, inputFile);
-        return TransformFactory.createJobInputAsset({
+        return factory.createJobInputAsset({
             assetName: assetName
         })
     } else {
-        return TransformFactory.createJobInputHttp({
+        return factory.createJobInputHttp({
             files: [inputUrl]
         })
     }
@@ -424,7 +424,7 @@ async function submitJob(transformName: string, jobName: string, jobInput: JobIn
 
 
     let jobOutputs: JobOutputAsset[] = [
-        TransformFactory.createJobOutputAsset({
+        factory.createJobOutputAsset({
             assetName: outputAssetName,
             presetOverride: presetOverride
         })

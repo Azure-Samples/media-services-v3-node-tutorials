@@ -25,165 +25,179 @@ import {
     InputFile,
     JobInputAsset,
     JobInputHttp,
+    JobInputs,
     JobOutputAsset,
     AudioAnalyzerPresetUnion,
     VideoAnalyzerPreset,
-    AudioAnalyzerPreset
+    AudioAnalyzerPreset,
+    VideoOverlay
 } from "@azure/arm-mediaservices"
 
-export class TransformFactory {
 
-    static createH264Video(video: Omit<H264Video, "odataType">): H264Video {
-        return {
-            odataType: "#Microsoft.Media.H264Video",
-            ...video,
-        }
+export function createH264Video(video: Omit<H264Video, "odataType">): H264Video {
+    return {
+        odataType: "#Microsoft.Media.H264Video",
+        ...video,
     }
+}
 
-    static createH264Layer(layer: Omit<H264Layer, "odataType">): H264Layer {
-        return {
-            odataType: "#Microsoft.Media.H264Layer",
-            ...layer,
-        }
+export function createH264Layer(layer: Omit<H264Layer, "odataType">): H264Layer {
+    return {
+        odataType: "#Microsoft.Media.H264Layer",
+        ...layer,
     }
+}
 
-    static createH265Video(video: Omit<H265Video, "odataType">): H265Video {
-        return {
-            odataType: "#Microsoft.Media.H265Video",
-            ...video,
-        }
+export function createH265Video(video: Omit<H265Video, "odataType">): H265Video {
+    return {
+        odataType: "#Microsoft.Media.H265Video",
+        ...video,
     }
+}
 
-    static createH265Layer(layer: Omit<H265Layer, "odataType">): H265Layer {
-        return {
-            odataType: "#Microsoft.Media.H265Layer",
-            ...layer,
-        }
+export function createH265Layer(layer: Omit<H265Layer, "odataType">): H265Layer {
+    return {
+        odataType: "#Microsoft.Media.H265Layer",
+        ...layer,
     }
+}
 
-    static createAACaudio(audio: Omit<AacAudio, "odataType">): AacAudio {
-        return {
-            odataType: "#Microsoft.Media.AacAudio",
-            ...audio,
-        }
+export function createAACaudio(audio: Omit<AacAudio, "odataType">): AacAudio {
+    return {
+        odataType: "#Microsoft.Media.AacAudio",
+        ...audio,
     }
+}
 
-    static createPngImage(image: Omit<PngImage, "odataType">): PngImage {
-        return {
-            odataType: "#Microsoft.Media.PngImage",
-            ...image,
-        }
+export function createPngImage(image: Omit<PngImage, "odataType">): PngImage {
+    return {
+        odataType: "#Microsoft.Media.PngImage",
+        ...image,
     }
+}
 
-    static createPngLayer(image: Omit<PngLayer, "odataType">): PngLayer {
-        return {
-            odataType: "#Microsoft.Media.PngLayer",
-            ...image,
-        }
+export function createPngLayer(image: Omit<PngLayer, "odataType">): PngLayer {
+    return {
+        odataType: "#Microsoft.Media.PngLayer",
+        ...image,
     }
+}
 
-    static createPngFormat(pngFormat: Omit<PngFormat, "odataType">): PngFormat {
-        return {
-            odataType: "#Microsoft.Media.PngFormat",
-            ...pngFormat,
-        }
+export function createPngFormat(pngFormat: Omit<PngFormat, "odataType">): PngFormat {
+    return {
+        odataType: "#Microsoft.Media.PngFormat",
+        ...pngFormat,
     }
+}
 
-    static createJpgImage(image: Omit<JpgImage, "odataType">): JpgImage {
-        return {
-            odataType: "#Microsoft.Media.JpgImage",
-            ...image,
-        }
+export function createJpgImage(image: Omit<JpgImage, "odataType">): JpgImage {
+    return {
+        odataType: "#Microsoft.Media.JpgImage",
+        ...image,
     }
-    
-    static createJpgLayer(image: Omit<JpgLayer, "odataType">): JpgLayer {
-        return {
-            odataType: "#Microsoft.Media.JpgLayer",
-            ...image,
-        }
-    }
-    
-    static createJpgFormat(format: Omit<JpgFormat, "odataType">): JpgFormat {
-        return {
-            odataType: "#Microsoft.Media.JpgFormat",
-            ...format,
-        }
-    }
+}
 
-    static createStandardEncoderPreset(standardEncoder: Omit<StandardEncoderPreset, "odataType">): StandardEncoderPreset {
-        return {
-            odataType: "#Microsoft.Media.StandardEncoderPreset",
-            ...standardEncoder,
-        }
+export function createJpgLayer(image: Omit<JpgLayer, "odataType">): JpgLayer {
+    return {
+        odataType: "#Microsoft.Media.JpgLayer",
+        ...image,
     }
+}
 
-    static createBuiltInStandardEncoderPreset(builtInStandardEncoder: Omit<BuiltInStandardEncoderPreset, "odataType">): BuiltInStandardEncoderPreset {
-        return {
-            odataType: "#Microsoft.Media.BuiltInStandardEncoderPreset",
-            ...builtInStandardEncoder,
-        }
+export function createJpgFormat(format: Omit<JpgFormat, "odataType">): JpgFormat {
+    return {
+        odataType: "#Microsoft.Media.JpgFormat",
+        ...format,
     }
+}
 
-  static createAudioAnalyzerPreset(audioAnalyserPreset: Omit<AudioAnalyzerPresetUnion, "odataType">): AudioAnalyzerPreset {
-        return {
-            odataType: "#Microsoft.Media.AudioAnalyzerPreset",
-            ...audioAnalyserPreset,
-        }
+export function createStandardEncoderPreset(standardEncoder: Omit<StandardEncoderPreset, "odataType">): StandardEncoderPreset {
+    return {
+        odataType: "#Microsoft.Media.StandardEncoderPreset",
+        ...standardEncoder,
     }
+}
 
-    static createVideoAnalyzerPreset(videoAnalyserPreset: Omit<VideoAnalyzerPreset, "odataType">): VideoAnalyzerPreset {
-        return {
-            odataType: "#Microsoft.Media.VideoAnalyzerPreset",
-            ...videoAnalyserPreset,
-        }
+export function createBuiltInStandardEncoderPreset(builtInStandardEncoder: Omit<BuiltInStandardEncoderPreset, "odataType">): BuiltInStandardEncoderPreset {
+    return {
+        odataType: "#Microsoft.Media.BuiltInStandardEncoderPreset",
+        ...builtInStandardEncoder,
     }
+}
 
-    static createMp4Format(mp4Format: Omit<Mp4Format, "odataType">): Mp4Format {
-        return {
-            odataType: "#Microsoft.Media.Mp4Format",
-            ...mp4Format,
-        }
+export function createAudioAnalyzerPreset(audioAnalyserPreset: Omit<AudioAnalyzerPresetUnion, "odataType">): AudioAnalyzerPreset {
+    return {
+        odataType: "#Microsoft.Media.AudioAnalyzerPreset",
+        ...audioAnalyserPreset,
     }
+}
 
-    static createSelectAudioTrackById(audioTrackById: Omit<SelectAudioTrackById, "odataType">): SelectAudioTrackById {
-        return {
-            odataType: "#Microsoft.Media.SelectAudioTrackById",
-            ...audioTrackById,
-        }
+export function createVideoAnalyzerPreset(videoAnalyserPreset: Omit<VideoAnalyzerPreset, "odataType">): VideoAnalyzerPreset {
+    return {
+        odataType: "#Microsoft.Media.VideoAnalyzerPreset",
+        ...videoAnalyserPreset,
     }
+}
 
-    static createSelectAudioTrackByAttribute(audioTrackByAttribute: Omit<SelectAudioTrackByAttribute, "odataType">): SelectAudioTrackByAttribute {
-        return {
-            odataType: "#Microsoft.Media.SelectAudioTrackByAttribute",
-            ...audioTrackByAttribute,
-        }
+export function createMp4Format(mp4Format: Omit<Mp4Format, "odataType">): Mp4Format {
+    return {
+        odataType: "#Microsoft.Media.Mp4Format",
+        ...mp4Format,
     }
+}
 
-    static createInputFile(inputFile: Omit<InputFile, "odataType">): InputFile {
-        return {
-            odataType: "#Microsoft.Media.InputFile",
-            ...inputFile,
-        }
+export function createSelectAudioTrackById(audioTrackById: Omit<SelectAudioTrackById, "odataType">): SelectAudioTrackById {
+    return {
+        odataType: "#Microsoft.Media.SelectAudioTrackById",
+        ...audioTrackById,
     }
-    
-    static createJobInputAsset(inputAsset: Omit<JobInputAsset, "odataType">): JobInputAsset {
-        return {
-            odataType: "#Microsoft.Media.JobInputAsset",
-            ...inputAsset,
-        }
+}
+
+export function createSelectAudioTrackByAttribute(audioTrackByAttribute: Omit<SelectAudioTrackByAttribute, "odataType">): SelectAudioTrackByAttribute {
+    return {
+        odataType: "#Microsoft.Media.SelectAudioTrackByAttribute",
+        ...audioTrackByAttribute,
     }
+}
 
-    static createJobInputHttp(inputHttp: Omit<JobInputHttp, "odataType">): JobInputHttp {
-        return {
-            odataType: "#Microsoft.Media.JobInputHttp",
-            ...inputHttp,
-        }
-    }    
+export function createInputFile(inputFile: Omit<InputFile, "odataType">): InputFile {
+    return {
+        odataType: "#Microsoft.Media.InputFile",
+        ...inputFile,
+    }
+}
 
-    static createJobOutputAsset(outputAsset: Omit<JobOutputAsset, "odataType">): JobOutputAsset {
-        return {
-            odataType: "#Microsoft.Media.JobOutputAsset",
-            ...outputAsset,
-        }
+export function createJobInputAsset(inputAsset: Omit<JobInputAsset, "odataType">): JobInputAsset {
+    return {
+        odataType: "#Microsoft.Media.JobInputAsset",
+        ...inputAsset,
+    }
+}
+
+export function createJobInputHttp(inputHttp: Omit<JobInputHttp, "odataType">): JobInputHttp {
+    return {
+        odataType: "#Microsoft.Media.JobInputHttp",
+        ...inputHttp,
+    }
+}
+
+export function createJobOutputAsset(outputAsset: Omit<JobOutputAsset, "odataType">): JobOutputAsset {
+    return {
+        odataType: "#Microsoft.Media.JobOutputAsset",
+        ...outputAsset,
+    }
+}
+
+export function createJobInputs(outputAsset: Omit<JobInputs, "odataType">): JobInputs {
+    return {
+        odataType: "#Microsoft.Media.JobInputs",
+        ...outputAsset,
+    }
+}
+
+export function createVideoOverlay(videoOverlay: Omit<VideoOverlay, "odataType">): VideoOverlay {
+    return {
+        odataType: "#Microsoft.Media.VideoOverlay",
+        ...videoOverlay,
     }
 }
