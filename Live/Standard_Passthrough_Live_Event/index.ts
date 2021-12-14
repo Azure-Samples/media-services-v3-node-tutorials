@@ -61,8 +61,10 @@ dotenv.config();
 let mediaServicesClient: AzureMediaServices;
 
 // <LongRunningOperation>
+
 // Long running operation polling interval in milliseconds
 const longRunningOperationUpdateIntervalMs = 2000;
+
 // </LongRunningOperation>
 
 // Copy the samples.env file and rename it to .env first, then populate it's values with the values obtained 
@@ -95,6 +97,8 @@ export async function main() {
     let streamingLocatorName = `liveStreamLocator${uniqueness}`;
     let streamingEndpointName = "default"; // Change this to your specific streaming endpoint name if not using "default"
     let mediaAccount: MediaservicesGetResponse;
+
+    // <CreateMediaServicesClient>
 
     // The primary live event and output objects for creating and cleaning up later. 
     let liveEvent: LiveEvent;

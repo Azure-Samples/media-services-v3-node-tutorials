@@ -60,7 +60,7 @@ let inputFile: string;
 let inputUrl: string = "https://amssamples.streaming.mediaservices.windows.net/2e91931e-0d29-482b-a42b-9aadc93eb825/AzurePromo.mp4";
 
 // Use the following PNG image to overlay on top of the video.
-let overlayFile = "Media\\cloud.png";
+let overlayFile = "Media\\AzureMediaService.png";
 let overlayLabel = "overlayCloud"
 
 // Timer values
@@ -124,20 +124,20 @@ export async function main() {
                 // Either {Label} or {Bitrate} should suffice
                 TransformFactory.createMp4Format({
                     filenamePattern: "Video-{Basename}-{Label}-{Bitrate}{Extension}"
-                }),
-                TransformFactory.createPngFormat({
-                    filenamePattern: "Thumbnail-{Basename}-{Index}{Extension}"
                 })
             ],
             filters: {
                 overlays: [
-                    {
-                        odataType: "#Microsoft.Media.VideoOverlay",
+                    TransformFactory.createVideoOverlay({
                         inputLabel: overlayLabel, // same label that is used in the JobInput to identify which file in the asset is the actual overlay image .png file. 
-                        position: {left:"1200", top:"670"}, // left, top position of the overlay in absolute pixel position relative to the source videos resolution. 
-                        // Percentage based settings are coming soon, but not yet supported. In the future you can set this to "90%","90%" for example to be resolution independent on the source video positioning.
-                        opacity: 0.50  
-                    }
+                        position: {
+                            left:"10%",  // left, top position of the overlay in absolute pixel or percentage relative to the source videos resolution. 
+                            top:"10%", 
+                            //height:"497", // this is the exact pixel height of the overlay image, or you can use relative percentages as well here. 
+                            //width:"496" // this is the exact pixel width of the overlay image, or you can use relative percentages as well here. 
+                        },
+                        opacity: 0.75
+                    })
                 ]
             }
         }),

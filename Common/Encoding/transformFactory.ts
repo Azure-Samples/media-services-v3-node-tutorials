@@ -29,7 +29,8 @@ import {
     JobOutputAsset,
     AudioAnalyzerPresetUnion,
     VideoAnalyzerPreset,
-    AudioAnalyzerPreset
+    AudioAnalyzerPreset,
+    VideoOverlay
 } from "@azure/arm-mediaservices"
 
 export class TransformFactory {
@@ -192,6 +193,13 @@ export class TransformFactory {
         return {
             odataType: "#Microsoft.Media.JobInputs",
             ...outputAsset,
+        }
+    }   
+    
+    static createVideoOverlay(videoOverlay: Omit<VideoOverlay, "odataType">): VideoOverlay {
+        return {
+            odataType: "#Microsoft.Media.VideoOverlay",
+            ...videoOverlay,
         }
     }
 }
