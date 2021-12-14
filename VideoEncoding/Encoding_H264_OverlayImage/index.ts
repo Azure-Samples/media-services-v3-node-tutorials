@@ -131,8 +131,8 @@ export async function main() {
                     factory.createVideoOverlay({
                         inputLabel: overlayLabel, // same label that is used in the JobInput to identify which file in the asset is the actual overlay image .png file. 
                         position: {
-                            left:"85%",  // left and top position of the overlay in absolute pixel or percentage relative to the source videos resolution. 
-                            top:"85%", 
+                            left:"10%",  // left and top position of the overlay in absolute pixel or percentage relative to the source videos resolution. 
+                            top:"10%", 
                         },
                         opacity: 0.75
                     })
