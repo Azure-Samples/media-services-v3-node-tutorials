@@ -10,6 +10,8 @@ import {
   JobsGetResponse,
   AudioAnalyzerPreset,
   VideoAnalyzerPreset,
+  KnownAudioAnalysisMode,
+  JobOutputUnion,
 } from '@azure/arm-mediaservices';
 import * as factory  from "../Common/Encoding/TransformFactory";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
@@ -49,9 +51,9 @@ const credential = new DefaultAzureCredential();
 // Just set the other one to null to have it select the right JobInput class type
 
 // const inputFile = "Media\\<<yourfilepath.mp4>>"; // Place your media in the /Media folder at the root of the samples. Code for upload uses relative path to current working directory for Node;
-let inputFile: string;
-// This is a hosted sample file to use
-let inputUrl: string = "https://amssamples.streaming.mediaservices.windows.net/2e91931e-0d29-482b-a42b-9aadc93eb825/AzurePromo.mp4";
+let inputFile: string = "Media\\ignite.mp4";
+// This is a hosted sample file to use. It can be anything accessible on the series of tubes and pipes.
+let inputUrl: string; //= "https://amssamples.streaming.mediaservices.windows.net/2e91931e-0d29-482b-a42b-9aadc93eb825/AzurePromo.mp4";
 
 // Timer values
 const timeoutSeconds: number = 60 * 10;
@@ -60,7 +62,7 @@ const setTimeoutPromise = util.promisify(setTimeout);
 
 // Args
 const outputFolder: string = "./Output";
-const namePrefix: string = "analyze-videoaudio";
+const namePrefix: string = "analyze-audio";
 let inputExtension: string;
 let blobName: string;
 
@@ -70,31 +72,26 @@ let blobName: string;
 export async function main() {
 
   // These are the names used for creating and finding your transforms
-  const audioAnalyzerTransformName = "AudioAnalyzerTransform";
-  const videoAnalyzerTransformName = "VideoAnalyzerTransform";
+  const audioAnalyzerTransformName = "AudioAnalyzerTransformBasic";
 
   mediaServicesClient = new AzureMediaServices(credential, subscriptionId);
 
-
-  // Ensure that you have customized transforms for the AudioAnalyzer and VideoAnalyzer.  This is really a one time setup operation.
-  console.log("Creating Audio and Video analyzer transforms...");
+  // Ensure that you have customized transforms for the AudioAnalyzer.  This is really a one time setup operation.
+  console.log("Creating Audio analyzer transforms...");
 
   // Create a new Basic Audio Analyzer Transform Preset using the preset configuration
   let audioAnalyzerBasicPreset: AudioAnalyzerPreset = factory.createAudioAnalyzerPreset({
-    audioLanguage: "en-US", // Be sure to modify this to your desired language code in BCP-47 format
-    mode: "Basic",  // Change this to Standard if you would like to use the more advanced audio analyzer
+    audioLanguage: "en-GB", // Be sure to modify this to your desired language code in BCP-47 format. 
+    // Set the language to British English - see https://docs.microsoft.com/en-us/azure/cognitive-services/speech-service/language-support#speech-to-text 
+    //
+    // There are two modes available, Basic and Standard
+    // Basic : This mode performs speech-to-text transcription and generation of a VTT subtitle/caption file. 
+    //         The output of this mode includes an Insights JSON file including only the keywords, transcription,and timing information. 
+    //         Automatic language detection and speaker diarization are not included in this mode.
+    // Standard : Performs all operations included in the Basic mode, additionally performing language detection and speaker diarization.
+    //
+    mode: KnownAudioAnalysisMode.Basic,  // Change this to Standard if you would like to use the more advanced audio analyzer
   });
-
-  // Create a new Video Analyzer Transform Preset using the preset configuration
-  let videoAnalyzerPreset: VideoAnalyzerPreset = factory.createVideoAnalyzerPreset({
-    audioLanguage: "en-US",  // Be sure to modify this to your desired language code in BCP-47 format
-    insightsToExtract: "AllInsights", // Video Analyzer can also run in Video only mode.
-    mode: "Standard", // Video analyzer can also process audio in basic or standard mode when using All Insights
-    experimentalOptions : { // Optional settings for preview or experimental features
-       // "SpeechProfanityFilterMode": "None" // Disables the speech-to-text profanity filtering
-    }
-  });
-
   console.log("Creating audio analyzer transform...");
 
   await mediaServicesClient.transforms.createOrUpdate(resourceGroup, accountName, audioAnalyzerTransformName, {
@@ -113,22 +110,6 @@ export async function main() {
     });
 
 
-  console.log("Creating video analyzer transform...");
-  let videoAnalyzerTransform = await mediaServicesClient.transforms.createOrUpdate(resourceGroup, accountName, videoAnalyzerTransformName, {
-    name: videoAnalyzerTransformName,
-    outputs: [
-      {
-        preset: videoAnalyzerPreset
-      }
-    ]
-  })
-    .then((transform) => {
-      console.log(`Transform ${transform.name} created (or updated if it existed already).`);
-    })
-    .catch((reason) => {
-      console.log(`There was an error creating the video analyzer transform. ${reason}`)
-    });
-
   let uniqueness = uuidv4();
   let input = await getJobInputType(uniqueness);
   let outputAssetName = `${namePrefix}-output-${uniqueness}`;
@@ -137,15 +118,38 @@ export async function main() {
   console.log("Creating the output Asset to analyze the content into...");
 
   await mediaServicesClient.assets.createOrUpdate(resourceGroup, accountName, outputAssetName, {});
+  let analysisTransformName = audioAnalyzerTransformName; 
 
-  // Choose which of the analyzer Transform names you would like to use here by changing the name of the Transform to be used
-  // For the basic audio analyzer - pass in the audioAnalyzerTransformName
-  // For the video Analyzer - change this code to pass in the videoAnalyzerTransformName
-  let analysisTransformName = audioAnalyzerTransformName; // or change to videoAnalyzerTransformName to see those results
+  // The next section is mostly optional, but shows how you can override the default language that was set when the Transform was first created above. 
+  // Use this method if you need to change the language used in the same Transform.  
+  // This can help reduce the number of Transforms you have to define.  For example, you would not want to have a "Basic Audio Transform" for every language supported in AMS.  
+  // That would just be silly right?
 
-  console.log(`Submitting the analyzer job to the ${analysisTransformName} job queue...`);
+  // <PresetOverride>
+  // First we re-define the preset that we want to use for this specific Job...
+  // We can redefine any jobs preset
+  let presetOverride = factory.createAudioAnalyzerPreset(
+  {
+      audioLanguage: "en-US", // swap the language from British English to US English here
+      mode: KnownAudioAnalysisMode.Basic 
+  });
 
-  let job = await submitJob(analysisTransformName, jobName, input, outputAssetName);
+  // Then we use the PresetOverride property of the JobOutput to pass in the override values to use on this single Job 
+  // without the need to create a completely separate and new Transform with another language code or Mode setting. 
+  // This can save a lot of complexity in your AMS account and reduce the number of Transforms used.
+  let jobOutput = factory.createJobOutputAsset(
+  {
+      assetName: outputAssetName,
+      presetOverride: presetOverride  // pass in the Preset override here to change the default Transform setting on this job.
+  })
+
+  // After the job completes you can inspect the downloaded insights.json file to confirm that the language was set properly.
+  // by matching the "sourceLanguage" and "language" properties in that file. "language": "en-US" for example. 
+
+  console.log(`Submitting the audio analysis job to the ${analysisTransformName} job queue...`);
+  let job = await submitJob(analysisTransformName, jobName, input, jobOutput);
+
+  // </PresetOverride>
 
   console.log(`Waiting for Job - ${job.name} - to finish analyzing`);
   job = await waitForJobToFinish(analysisTransformName, jobName);
@@ -312,14 +316,13 @@ async function createInputAsset(assetName: string, fileToUpload: string) {
 }
 
 
-async function submitJob(transformName: string, jobName: string, jobInput: JobInputUnion, outputAssetName: string) {
-  if (outputAssetName == undefined) {
-    throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
+async function submitJob(transformName: string, jobName: string, jobInput: JobInputUnion, jobOutput: JobOutputAsset) {
+  if (jobOutput === undefined) {
+    throw new Error("JobOutput is not defined. Check creation of the output asset");
   }
+
   let jobOutputs: JobOutputAsset[] = [
-    factory.createJobOutputAsset({
-      assetName: outputAssetName
-    })
+    jobOutput
   ];
 
   return await mediaServicesClient.jobs.create(resourceGroup, accountName, transformName, jobName, {
