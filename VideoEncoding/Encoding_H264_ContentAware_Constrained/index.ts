@@ -18,7 +18,7 @@ import {
     KnownComplexity,
     KnownInterleaveOutput
 } from '@azure/arm-mediaservices';
-import { TransformFactory }  from "../../Common/Encoding/TransformFactory";
+import * as factory  from "../../Common/Encoding/TransformFactory";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
@@ -114,7 +114,7 @@ export async function main() {
         onError: KnownOnErrorType.StopProcessingJob,
         // What is the relative priority of this job to others? Normal, high or low?
         relativePriority: KnownPriority.Normal,
-        preset: TransformFactory.createBuiltInStandardEncoderPreset({
+        preset: factory.createBuiltInStandardEncoderPreset({
             presetName: KnownEncoderNamedPreset.ContentAwareEncoding,
             // Configurations can be used to control values used by the Content Aware Encoding Preset.
             configurations: presetConfig
@@ -254,11 +254,11 @@ async function getJobInputType(uniqueness: string): Promise<JobInputUnion> {
     if (inputFile !== undefined) {
       let assetName: string = namePrefix + "-input-" + uniqueness;
       await createInputAsset(assetName, inputFile);
-      return TransformFactory.createJobInputAsset({
+      return factory.createJobInputAsset({
         assetName: assetName
       })
     } else {
-      return TransformFactory.createJobInputHttp({
+      return factory.createJobInputHttp({
         files: [inputUrl]
       })
     }
@@ -320,7 +320,7 @@ async function submitJob(transformName: string, jobName: string, jobInput: JobIn
         throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
     }
     let jobOutputs: JobOutputAsset[] = [
-        TransformFactory.createJobOutputAsset({
+        factory.createJobOutputAsset({
             assetName: outputAssetName
         })
     ];

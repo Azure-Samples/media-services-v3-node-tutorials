@@ -32,7 +32,7 @@ import {
     KnownPriority,
     Transform
 } from '@azure/arm-mediaservices';
-import { TransformFactory }  from "../../Common/Encoding/TransformFactory";
+import * as factory  from "../../Common/Encoding/TransformFactory";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
@@ -103,7 +103,7 @@ export async function main() {
 
     // First we create a TransformOutput
     let transformOutput: TransformOutput[] = [{
-        preset: TransformFactory.createBuiltInStandardEncoderPreset( {
+        preset: factory.createBuiltInStandardEncoderPreset( {
             // uses the built in SaaS Copy Codec preset, which copies source audio and video to MP4 tracks. 
             // This also generates a fast proxy.  See notes at top of this file on constraints and use case.
             presetName: "saasProxyCopyCodec"  
@@ -248,11 +248,11 @@ async function getJobInputType(uniqueness: string): Promise<JobInputUnion> {
     if (inputFile !== undefined) {
       let assetName: string = namePrefix + "-input-" + uniqueness;
       await createInputAsset(assetName, inputFile);
-      return TransformFactory.createJobInputAsset({
+      return factory.createJobInputAsset({
         assetName: assetName
       })
     } else {
-      return TransformFactory.createJobInputHttp({
+      return factory.createJobInputHttp({
         files: [inputUrl]
       })
     }
@@ -315,7 +315,7 @@ async function submitJob(transformName: string, jobName: string, jobInput: JobIn
         throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
     }
     let jobOutputs: JobOutputAsset[] = [
-        TransformFactory.createJobOutputAsset({
+        factory.createJobOutputAsset({
             assetName: outputAssetName
         })
     ];

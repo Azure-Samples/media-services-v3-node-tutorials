@@ -11,7 +11,7 @@ import {
   AudioAnalyzerPreset,
   VideoAnalyzerPreset,
 } from '@azure/arm-mediaservices';
-import { TransformFactory }  from "../Common/Encoding/TransformFactory";
+import * as factory  from "../Common/Encoding/TransformFactory";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
@@ -80,13 +80,13 @@ export async function main() {
   console.log("Creating Audio and Video analyzer transforms...");
 
   // Create a new Basic Audio Analyzer Transform Preset using the preset configuration
-  let audioAnalyzerBasicPreset: AudioAnalyzerPreset = TransformFactory.createAudioAnalyzerPreset({
+  let audioAnalyzerBasicPreset: AudioAnalyzerPreset = factory.createAudioAnalyzerPreset({
     audioLanguage: "en-US", // Be sure to modify this to your desired language code in BCP-47 format
     mode: "Basic",  // Change this to Standard if you would like to use the more advanced audio analyzer
   });
 
   // Create a new Video Analyzer Transform Preset using the preset configuration
-  let videoAnalyzerPreset: VideoAnalyzerPreset = TransformFactory.createVideoAnalyzerPreset({
+  let videoAnalyzerPreset: VideoAnalyzerPreset = factory.createVideoAnalyzerPreset({
     audioLanguage: "en-US",  // Be sure to modify this to your desired language code in BCP-47 format
     insightsToExtract: "AllInsights", // Video Analyzer can also run in Video only mode.
     mode: "Standard", // Video analyzer can also process audio in basic or standard mode when using All Insights
@@ -250,11 +250,11 @@ async function getJobInputType(uniqueness: string): Promise<JobInputUnion> {
   if (inputFile !== undefined) {
     let assetName: string = namePrefix + "-input-" + uniqueness;
     await createInputAsset(assetName, inputFile);
-    return TransformFactory.createJobInputAsset({
+    return factory.createJobInputAsset({
       assetName: assetName
     })
   } else {
-    return TransformFactory.createJobInputHttp({
+    return factory.createJobInputHttp({
       files: [inputUrl]
     })
   }
@@ -317,7 +317,7 @@ async function submitJob(transformName: string, jobName: string, jobInput: JobIn
     throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
   }
   let jobOutputs: JobOutputAsset[] = [
-    TransformFactory.createJobOutputAsset({
+    factory.createJobOutputAsset({
       assetName: outputAssetName
     })
   ];

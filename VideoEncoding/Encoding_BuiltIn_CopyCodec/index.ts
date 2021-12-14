@@ -29,7 +29,7 @@ import {
     KnownComplexity,
     KnownH264Complexity
 } from '@azure/arm-mediaservices';
-import { TransformFactory }  from "../../Common/Encoding/TransformFactory";
+import * as factory  from "../../Common/Encoding/TransformFactory";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
@@ -102,7 +102,7 @@ export async function main() {
   
     // First we create a TransformOutput
     let transformOutput: TransformOutput[] = [{
-        preset: TransformFactory.createBuiltInStandardEncoderPreset({
+        preset: factory.createBuiltInStandardEncoderPreset({
             presetName: "saasCopyCodec"  // uses the built in SaaS Copy Codec preset, which copies source audio and video to MP4 tracks. See notes at top of this file on constraints.
         }),
         
@@ -224,6 +224,11 @@ async function waitForJobToFinish(transformName: string, jobName: string) {
 
         if (job.state == 'Finished' || job.state == 'Error' || job.state == 'Canceled') {
 
+            if (job.state == `Error` && job.outputs !== undefined && job.outputs[0] !== undefined)
+            {
+                console.log(`Job Error details ${job.outputs[0].error?.message}.`);
+                console.log(`Job Error code ${job.outputs[0].error?.code}.`);
+            }
             return job;
         } else if (new Date() > timeout) {
             console.log(`Job ${job.name} timed out. Please retry or check the source file.`);
@@ -245,11 +250,11 @@ async function getJobInputType(uniqueness: string): Promise<JobInputUnion> {
     if (inputFile !== undefined) {
       let assetName: string = namePrefix + "-input-" + uniqueness;
       await createInputAsset(assetName, inputFile);
-      return TransformFactory.createJobInputAsset({
+      return factory.createJobInputAsset({
         assetName: assetName
       })
     } else {
-      return TransformFactory.createJobInputHttp({
+      return factory.createJobInputHttp({
         files: [inputUrl]
       })
     }
@@ -312,7 +317,7 @@ async function submitJob(transformName: string, jobName: string, jobInput: JobIn
         throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
     }
     let jobOutputs: JobOutputAsset[] = [
-        TransformFactory.createJobOutputAsset({
+        factory.createJobOutputAsset({
             assetName: outputAssetName
         })
     ];

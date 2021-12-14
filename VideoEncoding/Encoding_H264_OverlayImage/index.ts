@@ -15,7 +15,7 @@ import {
     Transform,
     KnownH264Complexity
 } from '@azure/arm-mediaservices';
-import { TransformFactory }  from "../../Common/Encoding/TransformFactory";
+import * as factory  from "../../Common/Encoding/TransformFactory";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
@@ -89,25 +89,25 @@ export async function main() {
 
     // First we create a TransformOutput
     let transformOutput: TransformOutput[] = [{
-        preset: TransformFactory.createStandardEncoderPreset({
+        preset: factory.createStandardEncoderPreset({
             codecs: [
-                TransformFactory.createAACaudio({
+                factory.createAACaudio({
                     channels: 2,
                     samplingRate: 48000,
                     bitrate: 128000,
                     profile: KnownAacAudioProfile.AacLc
                 }),
-                TransformFactory.createH264Video({
+                factory.createH264Video({
                     keyFrameInterval: "PT2S", //ISO 8601 format supported
                     complexity: KnownH264Complexity.Balanced,
                     layers: [
-                        TransformFactory.createH264Layer({
+                        factory.createH264Layer({
                             bitrate: 3600000, // Units are in bits per second and not kbps or Mbps - 3.6 Mbps or 3,600 kbps
                             width: "1280",
                             height: "720",
                             label: "HD-3600kbps" // This label is used to modify the file name in the output formats
                         }),
-                        TransformFactory.createH264Layer(
+                        factory.createH264Layer(
                             {
                                 bitrate: 1600000, // Units are in bits per second and not kbps or Mbps - 1.6 Mbps or 1600 kbps
                                 width: "960",
@@ -122,19 +122,17 @@ export async function main() {
                 // Mux the H.264 video and AAC audio into MP4 files, using basename, label, bitrate and extension macros
                 // Note that since you have multiple H264Layers defined above, you have to use a macro that produces unique names per H264Layer
                 // Either {Label} or {Bitrate} should suffice
-                TransformFactory.createMp4Format({
+                factory.createMp4Format({
                     filenamePattern: "Video-{Basename}-{Label}-{Bitrate}{Extension}"
                 })
             ],
             filters: {
                 overlays: [
-                    TransformFactory.createVideoOverlay({
+                    factory.createVideoOverlay({
                         inputLabel: overlayLabel, // same label that is used in the JobInput to identify which file in the asset is the actual overlay image .png file. 
                         position: {
-                            left:"10%",  // left, top position of the overlay in absolute pixel or percentage relative to the source videos resolution. 
-                            top:"10%", 
-                            //height:"497", // this is the exact pixel height of the overlay image, or you can use relative percentages as well here. 
-                            //width:"496" // this is the exact pixel width of the overlay image, or you can use relative percentages as well here. 
+                            left:"85%",  // left and top position of the overlay in absolute pixel or percentage relative to the source videos resolution. 
+                            top:"85%", 
                         },
                         opacity: 0.75
                     })
@@ -172,7 +170,7 @@ export async function main() {
     // Create the JobInput for the PNG Image overlay
     let overlayAssetName : string = namePrefix + "-overlay-" + uniqueness;
     await createInputAsset(overlayAssetName, overlayFile);
-    let jobInputOverlay = await TransformFactory.createJobInputAsset({
+    let jobInputOverlay = await factory.createJobInputAsset({
       assetName: overlayAssetName,
       label:overlayLabel // This is the same value as the label we set in the Filters of the Transform above. It tells the job that this is the asset that has the PNG image in it to use as the overlay image. 
     })
@@ -270,7 +268,11 @@ async function waitForJobToFinish(transformName: string, jobName: string) {
         }
 
         if (job.state == 'Finished' || job.state == 'Error' || job.state == 'Canceled') {
-
+            if (job.state == `Error` && job.outputs !== undefined && job.outputs[0] !== undefined)
+            {
+                console.log(`Job Error details ${job.outputs[0].error?.message}.`);
+                console.log(`Job Error code ${job.outputs[0].error?.code}.`);
+            }
             return job;
         } else if (new Date() > timeout) {
             console.log(`Job ${job.name} timed out. Please retry or check the source file.`);
@@ -292,11 +294,11 @@ async function getJobInputType(uniqueness: string): Promise<JobInputUnion> {
     if (inputFile !== undefined) {
       let assetName: string = namePrefix + "-input-" + uniqueness;
       await createInputAsset(assetName, inputFile);
-      return TransformFactory.createJobInputAsset({
+      return factory.createJobInputAsset({
         assetName: assetName
       })
     } else {
-      return TransformFactory.createJobInputHttp({
+      return factory.createJobInputHttp({
         files: [inputUrl]
       })
     }
@@ -359,13 +361,13 @@ async function submitJob(transformName: string, jobName: string, jobInputs: JobI
         throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
     }
     let jobOutputs: JobOutputAsset[] = [
-        TransformFactory.createJobOutputAsset({
+        factory.createJobOutputAsset({
             assetName: outputAssetName
         })
     ];
 
     return await mediaServicesClient.jobs.create(resourceGroup, accountName, transformName, jobName, {
-        input: TransformFactory.createJobInputs({
+        input: factory.createJobInputs({
             inputs : jobInputs
         }),
         outputs: jobOutputs

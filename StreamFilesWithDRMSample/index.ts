@@ -22,7 +22,7 @@ import {
   BlobServiceClient,
   AnonymousCredential
 } from "@azure/storage-blob";
-import { TransformFactory }  from "../Common/Encoding/TransformFactory";
+import * as factory  from "../Common/Encoding/TransformFactory";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
 import * as path from "path";
@@ -103,7 +103,7 @@ export async function main() {
     // Create a new Transform using a preset name from the list of built in encoding presets. 
     // To use a custom encoding preset, you can change this to be a StandardEncoderPreset, which has support for codecs, formats, and filter definitions.
     // This sample uses the 'ContentAwareEncoding' preset which chooses the best output based on an analysis of the input video.
-    let adaptiveStreamingTransform: BuiltInStandardEncoderPreset = TransformFactory.createBuiltInStandardEncoderPreset({
+    let adaptiveStreamingTransform: BuiltInStandardEncoderPreset = factory.createBuiltInStandardEncoderPreset({
       presetName: "ContentAwareEncoding"
     });
 
@@ -274,11 +274,11 @@ async function getJobInputType(uniqueness: string): Promise<JobInputUnion> {
   if (inputFile !== undefined) {
     let assetName: string = namePrefix + "-input-" + uniqueness;
     await createInputAsset(assetName, inputFile);
-    return TransformFactory.createJobInputAsset({
+    return factory.createJobInputAsset({
       assetName: assetName
     })
   } else {
-    return TransformFactory.createJobInputHttp({
+    return factory.createJobInputHttp({
       files: [inputUrl]
     })
   }
@@ -340,7 +340,7 @@ async function submitJob(transformName: string, jobName: string, jobInput: JobIn
     throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
   }
   let jobOutputs: JobOutputAsset[] = [
-    TransformFactory.createJobOutputAsset({
+    factory.createJobOutputAsset({
       assetName: outputAssetName
     })
   ];

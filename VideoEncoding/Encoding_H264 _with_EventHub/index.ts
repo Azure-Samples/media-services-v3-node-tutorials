@@ -29,7 +29,7 @@ import {
     KnownComplexity,
     KnownH264Complexity
 } from '@azure/arm-mediaservices';
-import { TransformFactory }  from "../../Common/Encoding/TransformFactory";
+import * as factory  from "../../Common/Encoding/TransformFactory";
 import { EventHubConsumerClient, earliestEventPosition } from "@azure/event-hubs";
 import { EventProcessor } from "../../Common/EventHub/eventProcessor";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
@@ -111,9 +111,9 @@ export async function main() {
 
     // First we create a TransformOutput
     let transformOutput: TransformOutput[] = [{
-        preset: TransformFactory.createStandardEncoderPreset({
+        preset: factory.createStandardEncoderPreset({
             codecs: [
-                TransformFactory.createAACaudio(
+                factory.createAACaudio(
                 {
                     // Add an AAC Audio layer for the audio encoding
                     channels: 2,
@@ -121,24 +121,24 @@ export async function main() {
                     bitrate: 128000,
                     profile: KnownAacAudioProfile.AacLc
                 }),
-                TransformFactory.createH264Video({
+                factory.createH264Video({
                     // Next, add a H264Video for the video encoding
                     keyFrameInterval: "PT2S", //ISO 8601 format supported
                     complexity: KnownH264Complexity.Balanced,
                     layers: [
-                        TransformFactory.createH264Layer({
+                        factory.createH264Layer({
                             bitrate: 3600000, // Units are in bits per second and not kbps or Mbps - 3.6 Mbps or 3,600 kbps
                             width: "1280",
                             height: "720",
                             label: "HD-3600kbps" // This label is used to modify the file name in the output formats
                         }),
-                        TransformFactory.createH264Layer({
+                        factory.createH264Layer({
                             bitrate: 1600000, // Units are in bits per second and not kbps or Mbps - 1.6 Mbps or 1600 kbps
                             width: "960",
                             height: "540",
                             label: "SD-1600kbps" // This label is used to modify the file name in the output formats
                         }),
-                        TransformFactory.createH264Layer({
+                        factory.createH264Layer({
                             bitrate: 600000, // Units are in bits per second and not kbps or Mbps - 0.6 Mbps or 600 kbps
                             width: "640",
                             height: "480",
@@ -146,13 +146,13 @@ export async function main() {
                         })
                     ]
                 }),
-                TransformFactory.createPngImage({
+                factory.createPngImage({
                     // Also generate a set of PNG thumbnails
                     start: "25%",
                     step: "25%",
                     range: "80%",
                     layers: [
-                        TransformFactory.createPngLayer({
+                        factory.createPngLayer({
                             width: "50%",
                             height: "50%"
                         })
@@ -164,10 +164,10 @@ export async function main() {
                 // Mux the H.264 video and AAC audio into MP4 files, using basename, label, bitrate and extension macros
                 // Note that since you have multiple H264Layers defined above, you have to use a macro that produces unique names per H264Layer
                 // Either {Label} or {Bitrate} should suffice
-                TransformFactory.createMp4Format({
+                factory.createMp4Format({
                     filenamePattern: "Video-{Basename}-{Label}-{Bitrate}{Extension}"
                 }),
-                TransformFactory.createPngFormat({
+                factory.createPngFormat({
                     filenamePattern: "Thumbnail-{Basename}-{Index}{Extension}"
                 })
             ]
@@ -335,11 +335,11 @@ async function getJobInputType(uniqueness: string): Promise<JobInputUnion> {
     if (inputFile !== undefined) {
       let assetName: string = namePrefix + "-input-" + uniqueness;
       await createInputAsset(assetName, inputFile);
-      return TransformFactory.createJobInputAsset({
+      return factory.createJobInputAsset({
         assetName: assetName
       })
     } else {
-      return TransformFactory.createJobInputHttp({
+      return factory.createJobInputHttp({
         files: [inputUrl]
       })
     }
@@ -401,7 +401,7 @@ async function submitJob(transformName: string, jobName: string, jobInput: JobIn
         throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
     }
     let jobOutputs: JobOutputAsset[] = [
-        TransformFactory.createJobOutputAsset({
+        factory.createJobOutputAsset({
             assetName: outputAssetName
         })
     ];
