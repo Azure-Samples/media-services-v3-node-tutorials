@@ -55,7 +55,8 @@ const credential = new DefaultAzureCredential();
 // Just set the other one to null to have it select the right JobInput class type
 
 // const inputFile = "Media\\<<yourfilepath.mp4>>"; // Place your media in the /Media folder at the root of the samples. Code for upload uses relative path to current working directory for Node;
-let inputFile: string;
+let inputFile: string = "Media\\ignite.mp4";
+
 // This is a hosted sample file to use
 let inputUrl: string = "https://amssamples.streaming.mediaservices.windows.net/2e91931e-0d29-482b-a42b-9aadc93eb825/AzurePromo.mp4";
 
@@ -133,8 +134,15 @@ export async function main() {
                         position: {
                             left:"10%",  // left and top position of the overlay in absolute pixel or percentage relative to the source videos resolution. 
                             top:"10%", 
+                            // You can also set the height and width of the rectangle to draw into, but there is known problem here. 
+                            // If you use % for the top and left (or any of these) you have to stick with % for all or you will get a job configuration Error 
+                            // Also, it can alter your aspect ratio when using percentages, so you have to know the source video size in relation to the source image to 
+                            // provide the proper image size.  Recommendation is to just use the right size image for the source video here and avoid passing in height and width for now. 
+                            // height: (if above is percentage based, this has to be also! Otherwise pixels are allowed. No mixing. )
+                            // width: (if above is percentage based, this has to be also! Otherwise pixels are allowed No mixing. )
+
                         },
-                        opacity: 0.75,
+                        opacity: 0.75, // Sets the blending opacity value to make the image slightly transparent over the video. 
                         start: "PT0S", // Start at beginning of video. 
                         fadeInDuration: "PT2S", // 2 second fade in. 
                         fadeOutDuration: "PT2S", // 2 second fade out. 
