@@ -134,7 +134,11 @@ export async function main() {
                             left:"10%",  // left and top position of the overlay in absolute pixel or percentage relative to the source videos resolution. 
                             top:"10%", 
                         },
-                        opacity: 0.75
+                        opacity: 0.75,
+                        start: "PT0S", // Start at beginning of video. 
+                        fadeInDuration: "PT2S", // 2 second fade in. 
+                        fadeOutDuration: "PT2S", // 2 second fade out. 
+                        end: "PT5S", // end the fade out at 5 seconds on the timeline... fade will begin 2 seconds before this end time. 
                     })
                 ]
             }
