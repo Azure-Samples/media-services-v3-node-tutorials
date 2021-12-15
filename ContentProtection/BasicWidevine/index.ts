@@ -419,7 +419,7 @@ async function createOrUpdateContentKeyPolicy(policyName: string, tokenSigningKe
     })
   }
 
-  // Add the two license type configurations for  Widevine to the policy
+  // Add the WideVine configuration to the policy
   options = [
 
     {
@@ -429,7 +429,7 @@ async function createOrUpdateContentKeyPolicy(policyName: string, tokenSigningKe
   ];
 
   await mediaServicesClient.contentKeyPolicies.createOrUpdate(resourceGroup, accountName, policyName, {
-    description: "Content Key Policy Description",
+    description: "Content Key Policy Widevine",
     options: options
   });
 

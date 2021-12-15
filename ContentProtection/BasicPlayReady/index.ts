@@ -42,7 +42,7 @@ dotenv.config();
 
 // You can view the raw REST API calls by setting the logging level to verbose
 // For details see - https://github.com/Azure/azure-sdk-for-js/blob/main/sdk/core/logger/README.md 
-setLogLevel("verbose");
+setLogLevel("error"); // verbose, info, warning, error
 
 // This is the main Media Services client object
 let mediaServicesClient: AzureMediaServices;
@@ -89,7 +89,7 @@ let blobName: string;
 const issuer: string = "myIssuer";
 const audience: string = "myAudience";
 let tokenSigningKey: Int16Array = new Int16Array(40);
-const contentKeyPolicyName = "CommonEncryptionCencDrmContentKeyPolicy_2021_12_15";
+const contentKeyPolicyName = "CommonEncryptionCencDrmContentKeyPolicy_2021_12_15_Playready";
 const symmetricKey: string = process.env.DRMSYMMETRICKEY as string;
 
 ///////////////////////////////////////////
@@ -398,6 +398,7 @@ async function createOrUpdateContentKeyPolicy(policyName: string, tokenSigningKe
         contentKeyLocation: {
           odataType: "#Microsoft.Media.ContentKeyPolicyPlayReadyContentEncryptionKeyFromHeader"
         },
+        
         playRight: {
           allowPassingVideoContentToUnknownOutput: "Allowed",
           imageConstraintForAnalogComponentVideoRestriction: true,
@@ -413,13 +414,11 @@ async function createOrUpdateContentKeyPolicy(policyName: string, tokenSigningKe
         licenseType: "NonPersistent",
         contentType: "Unspecified"
       }
-    ],
-    responseCustomData: undefined
+    ]
   }
 
-  // Add the two license type configurations for  Widevine to the policy
+  // Add the Playready configuration to the policy
   options = [
-
     {
       configuration: playreadyConfig,
       restriction: restriction
@@ -427,7 +426,7 @@ async function createOrUpdateContentKeyPolicy(policyName: string, tokenSigningKe
   ];
 
   await mediaServicesClient.contentKeyPolicies.createOrUpdate(resourceGroup, accountName, policyName, {
-    description: "Content Key Policy Description",
+    description: "Content Key Policy Playready",
     options: options
   });
 
@@ -462,7 +461,7 @@ async function getStreamingUrls(locatorName: string, token: string) {
         console.log(manifestPath);
         console.log("IMPORTANT!! For all DRM Samples to work, you must use an HTTPS hosted player page. This could drive you insane if you miss this point.");
         console.log("For Widevine testing, please open the link in the Chrome Browser.");
-        console.log(`Click to playback in AMP player: https://ampdemo.azureedge.net/?url=${manifestPath}&widevine=true&token=Bearer%20${token}`)
+        console.log(`Click to playback in AMP player: https://ampdemo.azureedge.net/?url=${manifestPath}&playready=true&token=Bearer%20${token}`)
       });
     });
   }
