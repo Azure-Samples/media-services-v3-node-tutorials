@@ -196,8 +196,16 @@ export async function main() {
 
 
 main().catch((err) => {
+    
     console.error("Error running sample:", err.message);
-});
+    console.error (`Error code: ${err.code}`);
+  
+    if (err.name == 'RestError'){
+        // REST API Error message
+        console.error("Error request:\n\n", err.request);
+    }
+  
+  });
 
 
 async function downloadResults(assetName: string, resultsFolder: string) {

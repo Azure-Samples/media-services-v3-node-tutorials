@@ -409,7 +409,7 @@ export async function main() {
             },
             { startPosition: earliestEventPosition }
         );
-        
+
         // </EventHubMonitoring>
         // END EVENT HUB MONITORING START
         // ---------------------------------------------------
@@ -474,7 +474,7 @@ export async function main() {
         // </GetPreviewURL>
 
         const answer = await askQuestion("\nIs your encoder connected and streaming yet? Do you want to continue? y or n \n", true, 20)
-        if (answer.toLowerCase()=="n") {
+        if (answer.toLowerCase() == "n") {
             throw new Error("User canceled. Cleaning up...")
         }
 
@@ -520,7 +520,7 @@ export async function main() {
         // SET A BREAKPOINT HERE!
         console.log("PAUSE here in the Debugger until you are ready to continue...");
         const ask = await askQuestion("\nKeep streaming and monitoring event hub events. Press RETURN key to close the debugger and clean up the sample.\n You should see a live ingest heart beat for each track every 20 seconds.", true, 20)
-       
+
 
     } catch (err) {
         console.log(err);
@@ -548,6 +548,12 @@ export async function main() {
 
 main().catch((err) => {
     console.error("Error running live streaming sample:", err.message);
+
+    if (err.name == 'RestError') {
+        // REST API Error message
+        console.error("Error request:\n\n", err.request);
+    }
+    
     console.error("WARNING: If you hit this message, double check the Portal to make sure you do not have any Running live events - or they will remain billing!");
 });
 
@@ -751,24 +757,23 @@ async function cleanUpResources(liveEventName: string, liveOutputName: string) {
 }
 
 
-function askQuestion(query:string, repeat:boolean, timeoutSeconds:number):Promise<string>{
-    const rl= readline.createInterface({
-        input : process.stdin,
-        output : process.stdout
+function askQuestion(query: string, repeat: boolean, timeoutSeconds: number): Promise<string> {
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
     });
 
-    let interval :NodeJS.Timer
-    if (repeat){
-        interval = setInterval(()=> {
+    let interval: NodeJS.Timer
+    if (repeat) {
+        interval = setInterval(() => {
             console.log(query);
-        }, 
-        timeoutSeconds * 1000)
+        },
+            timeoutSeconds * 1000)
     }
 
-    return new Promise(resolve => rl.question(query, ans=>
-        {
-            rl.close();
-            resolve(ans)
-            clearInterval(interval);
-        }))
+    return new Promise(resolve => rl.question(query, ans => {
+        rl.close();
+        resolve(ans)
+        clearInterval(interval);
+    }))
 };

@@ -34,7 +34,7 @@ dotenv.config();
 
 // You can view the raw REST API calls by setting the logging level to verbose
 // For details see - https://github.com/Azure/azure-sdk-for-js/blob/main/sdk/core/logger/README.md 
-setLogLevel("verbose");
+setLogLevel("error");
 
 // This is the main Media Services client object
 let mediaServicesClient: AzureMediaServices;
@@ -211,7 +211,15 @@ export async function main() {
 
 
 main().catch((err) => {
+    
     console.error("Error running sample:", err.message);
+    console.error (`Error code: ${err.code}`);
+
+    if (err.name == 'RestError'){
+        // REST API Error message
+        console.error("Error request:\n\n", err.request);
+    }
+  
 });
 
 

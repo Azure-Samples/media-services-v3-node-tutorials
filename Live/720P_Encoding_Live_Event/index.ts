@@ -363,12 +363,12 @@ export async function main() {
                 // The liveEvent returned here contains all of the updated properties you made above, and you can use the details in here to log or adjust your code. 
                 console.log(`Updated the Live Event accessToken for live event named: ${liveEvent.name}`);
             })
-            .catch((reason) => {
-                // Check for ErrorResponse object
-                if (reason.error && reason.error.message) {
-                    console.info(`Live Event Update failed: ${reason.message}`);
-                }
-            });
+                .catch((reason) => {
+                    // Check for ErrorResponse object
+                    if (reason.error && reason.error.message) {
+                        console.info(`Live Event Update failed: ${reason.message}`);
+                    }
+                });
         }
 
         console.log(`Starting the Live Event operation... please stand by`);
@@ -506,6 +506,11 @@ export async function main() {
 
 main().catch((err) => {
     console.error("Error running live streaming sample:", err.message);
+
+    if (err.name == 'RestError') {
+        // REST API Error message
+        console.error("Error request:\n\n", err.request);
+    }
     console.error("WARNING: If you hit this message, double check the Portal to make sure you do not have any Running live events - or they will remain billing!");
 });
 
