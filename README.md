@@ -91,3 +91,17 @@ The output from the HelloWorld-ListAssets may be empty if this is a new Media Se
 ## Common Issues and Troubleshooting
 
 * Assets in Media Services have naming conventions that must be adhered to in order to avoid errors. For example the client.Assets.CreateOrUpdateAsync can fail with message "The resource type is invalid" if the name does not match the [naming conventions listed in this article](https://docs.microsoft.com/azure/media-services/latest/media-services-apis-overview#naming-conventions)
+
+## Azure Logger client library for JavaScript
+
+The `@azure/logger` package can be used to enable logging in the Azure SDKs for JavaScript.
+For details on this package see [Azure Logger client library for JavaScript](https://github.com/Azure/azure-sdk-for-js/blob/main/sdk/core/logger/README.md)
+
+Logging can be enabled for the Azure SDK in the following ways:
+
+- Setting the AZURE_LOG_LEVEL environment variable in the launch.json file in this sample
+- Calling setLogLevel imported from "@azure/logger"
+- Calling enable() on specific loggers
+- Using the `DEBUG` environment variable.
+
+Note that AZURE_LOG_LEVEL, if set, takes precedence over DEBUG. Only use DEBUG without specifying AZURE_LOG_LEVEL or calling setLogLevel.

@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 
 import { DefaultAzureCredential } from "@azure/identity";
+import {AzureLogLevel,setLogLevel} from "@azure/logger";
 import {
     AzureMediaServices,
     AssetContainerPermission,
@@ -30,6 +31,10 @@ import * as fs from 'fs';
 import * as dotenv from "dotenv";
 import { format } from "path";
 dotenv.config();
+
+// You can view the raw REST API calls by setting the logging level to verbose
+// For details see - https://github.com/Azure/azure-sdk-for-js/blob/main/sdk/core/logger/README.md 
+setLogLevel("verbose");
 
 // This is the main Media Services client object
 let mediaServicesClient: AzureMediaServices;
@@ -185,7 +190,7 @@ export async function main() {
 
     let outputAssetName = `${namePrefix}-output-${uniqueness}`;
     let jobName = `${namePrefix}-job-${uniqueness}`;
-
+        
     // Create the Output Asset for the Job to write final results to. 
     console.log("Creating the output Asset (container) to encode the content into...");
     await mediaServicesClient.assets.createOrUpdate(resourceGroup, accountName, outputAssetName, {});

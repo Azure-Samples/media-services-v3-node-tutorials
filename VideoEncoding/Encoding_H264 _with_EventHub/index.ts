@@ -130,18 +130,24 @@ export async function main() {
                             bitrate: 3600000, // Units are in bits per second and not kbps or Mbps - 3.6 Mbps or 3,600 kbps
                             width: "1280",
                             height: "720",
+                            bufferWindow: "PT5S",
+                            profile: "Auto",
                             label: "HD-3600kbps" // This label is used to modify the file name in the output formats
                         }),
                         factory.createH264Layer({
                             bitrate: 1600000, // Units are in bits per second and not kbps or Mbps - 1.6 Mbps or 1600 kbps
                             width: "960",
                             height: "540",
+                            bufferWindow: "PT5S",
+                            profile: "Auto",
                             label: "SD-1600kbps" // This label is used to modify the file name in the output formats
                         }),
                         factory.createH264Layer({
                             bitrate: 600000, // Units are in bits per second and not kbps or Mbps - 0.6 Mbps or 600 kbps
                             width: "640",
                             height: "480",
+                            bufferWindow: "PT5S",
+                            profile: "Auto",
                             label: "SD-600kbps" // This label is used to modify the file name in the output formats
                         })
                     ]
