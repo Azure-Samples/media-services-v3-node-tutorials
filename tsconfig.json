@@ -34,6 +34,7 @@
   ],
   "include": [
     "HelloWorld-ListAssets/*.ts",
+    "Streaming/*/*.ts",
     "StreamFilesSample/*.ts",
     "StreamFilesWithDRMSample/*.ts",
     "ContentProtection/*/*.ts",
