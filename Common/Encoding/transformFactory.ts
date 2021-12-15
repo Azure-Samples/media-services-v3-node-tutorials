@@ -30,7 +30,8 @@ import {
     AudioAnalyzerPresetUnion,
     VideoAnalyzerPreset,
     AudioAnalyzerPreset,
-    VideoOverlay
+    VideoOverlay,
+    JobInputSequence
 } from "@azure/arm-mediaservices"
 
 
@@ -188,10 +189,18 @@ export function createJobOutputAsset(outputAsset: Omit<JobOutputAsset, "odataTyp
     }
 }
 
-export function createJobInputs(outputAsset: Omit<JobInputs, "odataType">): JobInputs {
+export function createJobInputSequence(inputSequence: Omit<JobInputSequence, "odataType">): JobInputSequence {
+    return {
+        odataType: "#Microsoft.Media.JobInputSequence",
+        ...inputSequence,
+    }
+}
+
+
+export function createJobInputs(jobInputs: Omit<JobInputs, "odataType">): JobInputs {
     return {
         odataType: "#Microsoft.Media.JobInputs",
-        ...outputAsset,
+        ...jobInputs,
     }
 }
 
