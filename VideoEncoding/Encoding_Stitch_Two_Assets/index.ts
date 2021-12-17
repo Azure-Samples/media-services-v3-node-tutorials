@@ -1,18 +1,8 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-// This sample shows how to use the built-in Copy codec preset that can take a source video file that is already encoded
-// using H264 and AAC audio, and copy it into MP4 tracks that are ready to be streamed by the AMS service.
-// This is useful for scenarios where you have complete control over the source asset, and can encode it in a way that is 
-// consistent with streaming (2-6 second GOP length, Constant Bitrate CBR encoding, no or limited B frames).
-// This preset should be capable of converting a source 1 hour video into a streaming MP4 format in under 1 minute, as it is not
-// doing any encoding - just re-packaging the content into MP4 files. 
-//
-// NOTE: If the input has any B frames encoded, we occasionally can get the GOP boundaries that are off by 1 tick
-//       which can cause some issues with adaptive switching.
-//       This preset works up to 4K and 60fps content.   
-
 import { DefaultAzureCredential } from "@azure/identity";
+import {AzureLogLevel,setLogLevel} from "@azure/logger";
 import {
     AzureMediaServices,
     AssetContainerPermission,
@@ -24,12 +14,12 @@ import {
     KnownOnErrorType,
     KnownPriority,
     Transform,
-    H264Video,
-    H264Layer,
-    KnownComplexity,
-    KnownH264Complexity
+    KnownH264Complexity,
+    JobInputAsset,
+    JobInputSequence,
+    Asset
 } from '@azure/arm-mediaservices';
-import * as factory  from "../../Common/Encoding/TransformFactory";
+import * as factory from "../../Common/Encoding/TransformFactory";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
@@ -42,10 +32,12 @@ import * as dotenv from "dotenv";
 import { format } from "path";
 dotenv.config();
 
+// You can view the raw REST API calls by setting the logging level to verbose
+// For details see - https://github.com/Azure/azure-sdk-for-js/blob/main/sdk/core/logger/README.md 
+setLogLevel("error");
+
 // This is the main Media Services client object
 let mediaServicesClient: AzureMediaServices;
-
-
 
 // Copy the samples.env file and rename it to .env first, then populate it's values with the values obtained 
 // from your Media Services account's API Access page in the Azure portal.
@@ -66,13 +58,17 @@ const accountName: string = process.env.ACCOUNTNAME as string;
 // const credential = new ManagedIdentityCredential("<USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID>");
 const credential = new DefaultAzureCredential();
 
+
 // You can either specify a local input file with the inputFile or an input Url with inputUrl. 
 // Just set the other one to null to have it select the right JobInput class type
 
 // const inputFile = "Media\\<<yourfilepath.mp4>>"; // Place your media in the /Media folder at the root of the samples. Code for upload uses relative path to current working directory for Node;
-let inputFile: string;
+let inputFile: string = "Media\\ignite.mp4";
 // This is a hosted sample file to use
 let inputUrl: string = "https://amssamples.streaming.mediaservices.windows.net/2e91931e-0d29-482b-a42b-9aadc93eb825/AzurePromo.mp4";
+
+// Add a bumper to the front of the video
+let bumperFile: string = "Media\\Azure_Bumper.mp4";
 
 // Timer values
 const timeoutSeconds: number = 60 * 10;
@@ -81,7 +77,7 @@ const setTimeoutPromise = util.promisify(setTimeout);
 
 // Args
 const outputFolder: string = "./Output";
-const namePrefix: string = "encode_builtin_copycodec";
+const namePrefix: string = "stitchTwoAssets";
 let inputExtension: string;
 let blobName: string;
 
@@ -91,21 +87,46 @@ let blobName: string;
 export async function main() {
 
     // These are the names used for creating and finding your transforms
-    const transformName = "CopyCodec";
+    const transformName = "StitchTwoAssets";
 
     mediaServicesClient = new AzureMediaServices(credential, subscriptionId);
 
     // Create a new Standard encoding Transform for H264
     console.log(`Creating Standard Encoding transform named: ${transformName}`);
 
-    
-  
     // First we create a TransformOutput
     let transformOutput: TransformOutput[] = [{
-        preset: factory.createBuiltInStandardEncoderPreset({
-            presetName: "saasCopyCodec"  // uses the built in SaaS Copy Codec preset, which copies source audio and video to MP4 tracks. See notes at top of this file on constraints.
+        preset: factory.createStandardEncoderPreset({
+            codecs: [
+                factory.createAACaudio({
+                    channels: 2,
+                    samplingRate: 48000,
+                    bitrate: 128000,
+                    profile: KnownAacAudioProfile.AacLc
+                }),
+                factory.createH264Video({
+                    keyFrameInterval: "PT2S", //ISO 8601 format supported
+                    complexity: KnownH264Complexity.Balanced,
+                    layers: [
+                        factory.createH264Layer({
+                            bitrate: 3600000, // Units are in bits per second and not kbps or Mbps - 3.6 Mbps or 3,600 kbps
+                            width: "1280",
+                            height: "720",
+                            label: "HD-3600kbps" // This label is used to modify the file name in the output formats
+                        })
+                    ]
+                })
+            ],
+            // Specify the format for the output files - one for video+audio, and another for the thumbnails
+            formats: [
+                // Mux the H.264 video and AAC audio into MP4 files, using basename, label, bitrate and extension macros
+                // Note that since you have multiple H264Layers defined above, you have to use a macro that produces unique names per H264Layer
+                // Either {Label} or {Bitrate} should suffice
+                factory.createMp4Format({
+                    filenamePattern: "Video-{Basename}-{Label}-{Bitrate}{Extension}"
+                })
+            ]
         }),
-        
         // What should we do with the job if there is an error?
         onError: KnownOnErrorType.StopProcessingJob,
         // What is the relative priority of this job to others? Normal, high or low?
@@ -117,7 +138,7 @@ export async function main() {
 
     let transform: Transform = {
         name: transformName,
-        description: "Built in preset using the Saas Copy Codec preset. This copies the source audio and video to an MP4 file.",
+        description: "Stitches together two assets",
         outputs: transformOutput
     }
 
@@ -130,17 +151,54 @@ export async function main() {
         });
 
     let uniqueness = uuidv4();
-    let input = await getJobInputType(uniqueness);
+    // Create a new  Asset and upload the 1st specified local video file into it. This is our video "bumper" to stitch to the front.
+    let input: Asset = await createInputAsset("main" + uniqueness, inputFile) // This creates and uploads the main video file
+    // Create a second  Asset and upload the 2nd specified local video file into it.
+    let input2: Asset = await createInputAsset("bumper" + uniqueness, bumperFile); // This creates and uploads the second video file.
+
+    // Create a Job Input Sequence with the two assets to stitch together
+    // In this sample we will stich a bumper into the main video asset at the head, 6 seconds, and at the tail. We end the main video at 12s total. 
+    // TIMELINE :   | Bumper | Main video -----> 6 s | Bumper | Main Video 6s -----------> 12s | Bumper |s
+    // You can extend this sample to stitch any number of assets together and adjust the time offsets to create custom edits
+
+    if (input.name === undefined || input2.name === undefined) {
+        throw new Error("Error: Input assets were not created properly");
+    }
+
+    let bumperJobInputAsset = factory.createJobInputAsset(
+        {
+            assetName: input2.name,
+            start: {
+                odataType: "#Microsoft.Media.AbsoluteClipTime",
+                time: "PT0S"
+            },
+            label: "bumper"
+        }
+    );
+
+    let mainJobInputAsset = factory.createJobInputAsset(
+        {
+            assetName: input.name,
+            start: {
+                odataType: "#Microsoft.Media.AbsoluteClipTime",
+                time: "PT0S"
+            },
+            label: "main"
+        }
+    );
+
+
     let outputAssetName = `${namePrefix}-output-${uniqueness}`;
     let jobName = `${namePrefix}-job-${uniqueness}`;
-
+        
+    // Create the Output Asset for the Job to write final results to. 
     console.log("Creating the output Asset (container) to encode the content into...");
-
     await mediaServicesClient.assets.createOrUpdate(resourceGroup, accountName, outputAssetName, {});
 
     console.log(`Submitting the encoding job to the ${transformName} job queue...`);
 
-    let job = await submitJob(transformName, jobName, input, outputAssetName);
+    // This submit Job method was modified to take the inputSequence instead of a single input
+    let job = await submitJob(transformName, jobName, [bumperJobInputAsset, mainJobInputAsset], outputAssetName);
 
     console.log(`Waiting for encoding Job - ${job.name} - to finish...`);
     job = await waitForJobToFinish(transformName, jobName);
@@ -156,13 +214,13 @@ main().catch((err) => {
     
     console.error("Error running sample:", err.message);
     console.error (`Error code: ${err.code}`);
-  
+
     if (err.name == 'RestError'){
         // REST API Error message
         console.error("Error request:\n\n", err.request);
     }
   
-  });
+});
 
 
 async function downloadResults(assetName: string, resultsFolder: string) {
@@ -232,11 +290,6 @@ async function waitForJobToFinish(transformName: string, jobName: string) {
 
         if (job.state == 'Finished' || job.state == 'Error' || job.state == 'Canceled') {
 
-            if (job.state == `Error` && job.outputs !== undefined && job.outputs[0] !== undefined)
-            {
-                console.log(`Job Error details ${job.outputs[0].error?.message}.`);
-                console.log(`Job Error code ${job.outputs[0].error?.code}.`);
-            }
             return job;
         } else if (new Date() > timeout) {
             console.log(`Job ${job.name} timed out. Please retry or check the source file.`);
@@ -254,19 +307,18 @@ async function waitForJobToFinish(transformName: string, jobName: string) {
 // Set inputFile to null to create a Job input that sources from an HTTP URL path
 // Creates a new input Asset and uploads the local file to it before returning a JobInputAsset object
 // Returns a JobInputHttp object if inputFile is set to null, and the inputUrl is set to a valid URL
-async function getJobInputType(uniqueness: string): Promise<JobInputUnion> {
-    if (inputFile !== undefined) {
-      let assetName: string = namePrefix + "-input-" + uniqueness;
-      await createInputAsset(assetName, inputFile);
-      return factory.createJobInputAsset({
-        assetName: assetName
-      })
-    } else {
-      return factory.createJobInputHttp({
-        files: [inputUrl]
-      })
+async function createJobInputAsset(filePath: string, assetName: string): Promise<JobInputUnion> {
+    if (filePath.indexOf('http://') <= 0 || filePath.indexOf('https://') <= 0) {
+        await createInputAsset(assetName, filePath);
+        return factory.createJobInputAsset({
+            assetName: assetName
+        })
+    } else { // this is an http input...
+        return factory.createJobInputHttp({
+            files: [filePath]
+        })
     }
-  }
+}
 
 // Creates a new Media Services Asset, which is a pointer to a storage container
 // Uses the Storage Blob npm package to upload a local file into the container through the use 
@@ -320,18 +372,27 @@ async function createInputAsset(assetName: string, fileToUpload: string) {
 }
 
 
-async function submitJob(transformName: string, jobName: string, jobInput: JobInputUnion, outputAssetName: string) {
-    if (outputAssetName == undefined) {
+async function submitJob(transformName: string, jobName: string, inputAssets: JobInputAsset[], outputAssetName: string) {
+    if (outputAssetName === undefined) {
         throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
     }
+
     let jobOutputs: JobOutputAsset[] = [
         factory.createJobOutputAsset({
             assetName: outputAssetName
         })
     ];
 
+    // Create the job input sequence passing the list of assets to it.
+    let jobInputSequence = factory.createJobInputSequence({
+        inputs:inputAssets
+    })
+
+    // BUG: This is failing to submit the job currently due to some bug in the SDK that removes 
+    //      the assetName properties from the JobInputAssets in the JobInputSequence
+    
     return await mediaServicesClient.jobs.create(resourceGroup, accountName, transformName, jobName, {
-        input: jobInput,
+        input: jobInputSequence,
         outputs: jobOutputs
     });
 

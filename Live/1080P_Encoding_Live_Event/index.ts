@@ -506,6 +506,12 @@ export async function main() {
 
 main().catch((err) => {
     console.error("Error running live streaming sample:", err.message);
+    
+    if (err.name == 'RestError'){
+        // REST API Error message
+        console.error("Error request:\n\n", err.request);
+    }
+
     console.error("WARNING: If you hit this message, double check the Portal to make sure you do not have any Running live events - or they will remain billing!");
 });
 

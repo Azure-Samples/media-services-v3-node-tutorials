@@ -39,6 +39,8 @@ The projects in this repository were created using Visual Studio Code.
 |[Live streaming with 1080P encoding](/Live/720P_Encoding_Live_Event/index.ts)| Use live encoding in the cloud with the 1080P HD adaptive bitrate encoding preset. **WARNING**, make sure to check that all resources are cleaned up and no longer billing in portal when using live|
 |[Upload and stream HLS and DASH](/StreamFilesSample/index.ts)| Basic example for uploading a local file or encoding from a source URL. Sample shows how to use storage SDK to download content, and shows how to stream to a player |
 |[Upload and stream HLS and DASH with Playready and Widevine DRM](/StreamFilesWithDRMSample/index.ts)| Demonstrates how to encode and stream using Widevine and PlayReady DRM |
+|[Basic Playready DRM content protection and streaming](/ContentProtection/BasicPlayready/index.ts)| Demonstrates how to encode and stream using PlayReady DRM |
+||[Basic Widevine DRM content protection and streaming](/ContentProtection/BasicWidevine/index.ts)| Demonstrates how to encode and stream using Widevine DRM |
 |[Upload and use AI to index videos and audio](/VideoIndexerSample/index.ts)| Example of using the Video and Audio Analyzer presets to generate metadata and insights from a video or audio file |
 |[Create Transform, use Job preset overrides (v2-to-v3 API migration)](/VideoEncoding/CreateTransform_Job_PresetOverride/index.ts)| If you need a workflow where you desire to submit custom preset jobs to a single queue, you can use this base sample which shows how to create a simple, (mostly) empty Transform, and then you can use the preset override property on the Job to submit custom presets to the same transform. This allows you to treat the v3 AMS API a lot more like the legacy v2 API Job queue if you desire.|
 |[Basic Encoding with H264](/VideoEncoding/Encoding_H264/index.ts)| Shows how to use the standard encoder to encode a source file into H264 format with AAC audio and PNG thumbnails |
@@ -91,3 +93,17 @@ The output from the HelloWorld-ListAssets may be empty if this is a new Media Se
 ## Common Issues and Troubleshooting
 
 * Assets in Media Services have naming conventions that must be adhered to in order to avoid errors. For example the client.Assets.CreateOrUpdateAsync can fail with message "The resource type is invalid" if the name does not match the [naming conventions listed in this article](https://docs.microsoft.com/azure/media-services/latest/media-services-apis-overview#naming-conventions)
+
+## Azure Logger client library for JavaScript
+
+The `@azure/logger` package can be used to enable logging in the Azure SDKs for JavaScript.
+For details on this package see [Azure Logger client library for JavaScript](https://github.com/Azure/azure-sdk-for-js/blob/main/sdk/core/logger/README.md)
+
+Logging can be enabled for the Azure SDK in the following ways:
+
+- Setting the AZURE_LOG_LEVEL environment variable in the launch.json file in this sample
+- Calling setLogLevel imported from "@azure/logger"
+- Calling enable() on specific loggers
+- Using the `DEBUG` environment variable.
+
+Note that AZURE_LOG_LEVEL, if set, takes precedence over DEBUG. Only use DEBUG without specifying AZURE_LOG_LEVEL or calling setLogLevel.

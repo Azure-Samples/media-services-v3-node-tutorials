@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 
 import { DefaultAzureCredential } from "@azure/identity";
+import {AzureLogLevel,setLogLevel} from "@azure/logger";
 import {
   AzureMediaServices,
   BuiltInStandardEncoderPreset,
@@ -10,11 +11,11 @@ import {
   JobInputUnion,
   JobsGetResponse
 } from '@azure/arm-mediaservices';
-import { 
-  BlobServiceClient, 
+import {
+  BlobServiceClient,
   AnonymousCredential
 } from "@azure/storage-blob";
-import * as factory  from "../Common/Encoding/TransformFactory";
+import * as factory from "../../Common/Encoding/TransformFactory";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
 import * as path from "path";
@@ -48,11 +49,15 @@ const accountName: string = process.env.ACCOUNTNAME as string;
 // const credential = new ManagedIdentityCredential("<USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID>");
 const credential = new DefaultAzureCredential();
 
+// You can view the raw REST API calls by setting the logging level to verbose
+// For details see - https://github.com/Azure/azure-sdk-for-js/blob/main/sdk/core/logger/README.md 
+setLogLevel("error");
+
 // You can either specify a local input file with the inputFile or an input Url with inputUrl. 
 // Just set the other one to null to have it select the right JobInput class type
 
 // const inputFile = "Media\\<<yourfilepath.mp4>>"; // Place your media in the /Media folder at the root of the samples. Code for upload uses relative path to current working directory for Node;
-let inputFile: string;
+let inputFile: string = "Media\\ignite.mp4";
 // This is a hosted sample file to use
 let inputUrl: string = "https://amssamples.streaming.mediaservices.windows.net/2e91931e-0d29-482b-a42b-9aadc93eb825/AzurePromo.mp4";
 
@@ -62,8 +67,11 @@ const sleepInterval: number = 1000 * 2;
 const setTimeoutPromise = util.promisify(setTimeout);
 
 // Args
-const outputFolder: string = "./Temp";
-const namePrefix: string = "stream";
+const outputFolder: string = "./Output";
+const namePrefix: string = "streamAssetFilters";
+const streamingEndpointName = "default"; // Change this to your specific streaming endpoint name if not using "default"
+
+
 let inputExtension: string;
 let blobName: string;
 
@@ -114,13 +122,44 @@ export async function main() {
       console.log(`Waiting for Job - ${job.name} - to finish encoding`);
       job = await waitForJobToFinish(encodingTransformName, jobName);
 
-      if (job.state == "Finished") {
-        await downloadResults(outputAsset.name as string, outputFolder);
-      }
+      console.log(`Job Finished.`);
+      console.log(`Creating locator for streaming...`);
 
+      // Now that the content has been encoded, publish it for Streaming by creating a StreamingLocator.
       let locator = await createStreamingLocator(outputAsset.name, locatorName);
+
+      // Create the Asset filters
+      console.log("Creating an asset filter...");
+      let assetFilterName = "filter1";
+
+      // Create the asset filter 
+      let assetFilter = await mediaServicesClient.assetFilters.createOrUpdate(
+        resourceGroup,
+        accountName,
+        outputAsset.name,
+        assetFilterName,
+        {
+          // In this sample we are going to filter the manifest by the time range of the presentation using the default timescale. 
+          // You can adjust these settings for your own needs. Not that you can also control output tracks, and quality levels with a filter. 
+          tracks: [],
+          presentationTimeRange: {
+            // startTimestamp = 100000000 and endTimestamp = 300000000 using the default timescale will generate
+            // a play-list that contains fragments from between 10 seconds and 30 seconds of the VoD presentation.
+            // If a fragment straddles the boundary, the entire fragment will be included in the manifest.
+            startTimestamp: 100000000,
+            endTimestamp: 300000000,
+          }
+        });
+
+
+      // We will now list the streaming URLs, and append the asset filter name to the playback URLs in the form of .ism/Manifest(format=m3u8-cmaf,filter={filterName}) for example.
       if (locator.name !== undefined) {
-        let urls = await getStreamingUrls(locator.name);
+        //let urls = await getStreamingUrls(locator.name, assetFilterName);
+        let urls = await buildManifestPaths(
+          locator.streamingLocatorId,
+          path.basename(inputFile).replace(path.extname(inputFile), ""),
+          assetFilterName);
+
       } else throw new Error("Locator was not created or Locator.name is undefined");
 
     }
@@ -157,7 +196,7 @@ async function downloadResults(assetName: string, resultsFolder: string) {
   if (listContainerSas.assetContainerSasUrls) {
     let containerSasUrl = listContainerSas.assetContainerSasUrls[0];
     let sasUri = url.parseURL(containerSasUrl);
-    
+
     // Get the Blob service client using the Asset's SAS URL and the Anonymous credential method on the Blob service client
     const anonymousCredential = new AnonymousCredential();
     let blobClient = new BlobServiceClient(containerSasUrl, anonymousCredential)
@@ -181,7 +220,7 @@ async function downloadResults(assetName: string, resultsFolder: string) {
     let i = 1;
     for await (const blob of containerClient.listBlobsFlat()) {
       console.log(`Blob ${i++}: ${blob.name}`);
-     
+
       let blockBlobClient = containerClient.getBlockBlobClient(blob.name);
       await blockBlobClient.downloadToFile(path.join(directory, blob.name), 0, undefined,
         {
@@ -193,7 +232,7 @@ async function downloadResults(assetName: string, resultsFolder: string) {
         });
     }
   }
-  
+
 }
 
 async function waitForJobToFinish(transformName: string, jobName: string) {
@@ -202,7 +241,12 @@ async function waitForJobToFinish(transformName: string, jobName: string) {
 
   async function pollForJobStatus(): Promise<JobsGetResponse> {
     let job = await mediaServicesClient.jobs.get(resourceGroup, accountName, transformName, jobName);
-    console.log(job.state);
+    // Note that you can report the progress for each Job output if you have more than one. In this case, we only have one output in the Transform
+    // that we defined in this sample, so we can check that with the job.outputs[0].progress parameter.
+    if (job.outputs != undefined) {
+      console.log(`Job State is : ${job.state},  Progress: ${job.outputs[0].progress}%`);
+    }
+
     if (job.state == 'Finished' || job.state == 'Error' || job.state == 'Canceled') {
 
       return job;
@@ -320,7 +364,7 @@ async function createStreamingLocator(assetName: string, locatorName: string) {
   return locator;
 }
 
-async function getStreamingUrls(locatorName: string) {
+async function getStreamingUrls(locatorName: string, filterName: string) {
   // Make sure the streaming endpoint is in the "Running" state on your account
   let streamingEndpoint = await mediaServicesClient.streamingEndpoints.get(resourceGroup, accountName, "default");
 
@@ -329,9 +373,66 @@ async function getStreamingUrls(locatorName: string) {
     paths.streamingPaths.forEach(path => {
       path.paths?.forEach(formatPath => {
         let manifestPath = "https://" + streamingEndpoint.hostName + formatPath
+
+        // If there is a filter passed in, add it to the URL path
+        if (filterName !== undefined) {
+          manifestPath.replace("\)", `,filter=${filterName})`);
+        }
+
         console.log(manifestPath);
         console.log(`Click to playback in AMP player: http://ampdemo.azureedge.net/?url=${manifestPath}`)
       });
     });
   }
 }
+
+// <BuildManifestPaths>
+
+// This method builds the manifest URL from the static values used during creation of the Live Output.
+// This allows you to have a deterministic manifest path. <streaming endpoint hostname>/<streaming locator ID>/manifestName.ism/manifest(<format string>)
+async function buildManifestPaths(streamingLocatorId: string | undefined, manifestName: string, filterName: string | undefined) {
+  const hlsFormat: string = "format=m3u8-cmaf";
+  const dashFormat: string = "format=mpd-time-cmaf";
+
+  // Get the default streaming endpoint on the account
+  let streamingEndpoint = await mediaServicesClient.streamingEndpoints.get(resourceGroup, accountName, streamingEndpointName);
+
+  if (streamingEndpoint?.resourceState !== "Running") {
+      console.log(`Streaming endpoint is stopped. Starting the endpoint named ${streamingEndpointName}`);
+      await mediaServicesClient.streamingEndpoints.beginStartAndWait(resourceGroup, accountName, streamingEndpointName, {
+         
+      })
+          .then(() => {
+              console.log("Streaming Endpoint Started.");
+          })
+
+  }
+
+  let manifestBase = `https://${streamingEndpoint.hostName}/${streamingLocatorId}/${manifestName}.ism/manifest`
+
+  let hlsManifest: string;
+
+  if (filterName === undefined) {
+    hlsManifest = `${manifestBase}(${hlsFormat})`;
+  } else {
+    hlsManifest = `${manifestBase}(${hlsFormat},filter=${filterName})`;
+  }
+  console.log(`The HLS (MP4) manifest URL is : ${hlsManifest}`);
+  console.log("Open the following URL to playback the live stream in an HLS compliant player (HLS.js, Shaka, ExoPlayer) or directly in an iOS device");
+  console.log(`${hlsManifest}`);
+  console.log();
+
+  let dashManifest:string;
+  if (filterName === undefined) {
+    dashManifest = `${manifestBase}(${dashFormat})`;
+  } else {
+    dashManifest = `${manifestBase}(${dashFormat},filter=${filterName})`;
+  }
+
+  console.log(`The DASH manifest URL is : ${dashManifest}`);
+  console.log("Open the following URL to playback the live stream from the LiveOutput in the Azure Media Player");
+  console.log(`https://ampdemo.azureedge.net/?url=${dashManifest}&heuristicprofile=lowlatency`);
+  console.log();
+}
+
+// </BuildManifestPaths>

@@ -32,7 +32,7 @@ import {
     KnownPriority,
     Transform
 } from '@azure/arm-mediaservices';
-import * as factory  from "../../Common/Encoding/TransformFactory";
+import * as factory from "../../Common/Encoding/TransformFactory";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
@@ -73,7 +73,8 @@ const credential = new DefaultAzureCredential();
 // Just set the other one to null to have it select the right JobInput class type
 
 // const inputFile = "Media\\<<yourfilepath.mp4>>"; // Place your media in the /Media folder at the root of the samples. Code for upload uses relative path to current working directory for Node;
-let inputFile: string;
+let inputFile: string = "private\\CaltrainToyTransform.mp4";
+
 // This is a hosted sample file to use
 let inputUrl: string = "https://amssamples.streaming.mediaservices.windows.net/2e91931e-0d29-482b-a42b-9aadc93eb825/AzurePromo.mp4";
 
@@ -103,10 +104,10 @@ export async function main() {
 
     // First we create a TransformOutput
     let transformOutput: TransformOutput[] = [{
-        preset: factory.createBuiltInStandardEncoderPreset( {
+        preset: factory.createBuiltInStandardEncoderPreset({
             // uses the built in SaaS Copy Codec preset, which copies source audio and video to MP4 tracks. 
             // This also generates a fast proxy.  See notes at top of this file on constraints and use case.
-            presetName: "saasProxyCopyCodec"  
+            presetName: "saasProxyCopyCodec"
         }),
         // What should we do with the job if there is an error?
         onError: KnownOnErrorType.StopProcessingJob,
@@ -135,15 +136,16 @@ export async function main() {
     let input = await getJobInputType(uniqueness);
     let outputAssetName = `${namePrefix}-output-${uniqueness}`;
     let jobName = `${namePrefix}-job-${uniqueness}`;
+    let locatorName = `locator${uniqueness}`;
 
     console.log("Creating the output Asset (container) to encode the content into...");
 
-    await mediaServicesClient.assets.createOrUpdate(resourceGroup, accountName, outputAssetName, {});
+    let outputAsset = await mediaServicesClient.assets.createOrUpdate(resourceGroup, accountName, outputAssetName, {});
 
     console.log(`Submitting the encoding job to the ${transformName} job queue...`);
 
     // Submit the job, passing in a custom correlation data object for tracking purposes. You can catch this data on the job output or in Event Grid Events. 
-    let job = await submitJob(transformName, jobName, input, outputAssetName, { myTenant:"myCustomTenantName", myId:"1234" });
+    let job = await submitJob(transformName, jobName, input, outputAssetName, { myTenant: "myCustomTenantName", myId: "1234" });
 
     console.log(`Waiting for encoding Job - ${job.name} - to finish...`);
     job = await waitForJobToFinish(transformName, jobName);
@@ -152,11 +154,28 @@ export async function main() {
         await downloadResults(outputAssetName as string, outputFolder);
         console.log("Downloaded results to local folder. Please review the outputs from the encoding job.")
     }
+
+    // Publish the output asset for streaming via HLS or DASH
+    if (outputAsset !== undefined) {
+        let locator = await createStreamingLocator(outputAssetName, locatorName);
+        if (locator.name !== undefined) {
+            let urls = await getStreamingUrls(locator.name);
+        } else throw new Error("Locator was not created or Locator.name is undefined");
+    }
+
 }
 
 
 main().catch((err) => {
+
     console.error("Error running sample:", err.message);
+    console.error(`Error code: ${err.code}`);
+
+    if (err.name == 'RestError') {
+        // REST API Error message
+        console.error("Error request:\n\n", err.request);
+    }
+
 });
 
 
@@ -246,17 +265,17 @@ async function waitForJobToFinish(transformName: string, jobName: string) {
 // Returns a JobInputHttp object if inputFile is set to null, and the inputUrl is set to a valid URL
 async function getJobInputType(uniqueness: string): Promise<JobInputUnion> {
     if (inputFile !== undefined) {
-      let assetName: string = namePrefix + "-input-" + uniqueness;
-      await createInputAsset(assetName, inputFile);
-      return factory.createJobInputAsset({
-        assetName: assetName
-      })
+        let assetName: string = namePrefix + "-input-" + uniqueness;
+        await createInputAsset(assetName, inputFile);
+        return factory.createJobInputAsset({
+            assetName: assetName
+        })
     } else {
-      return factory.createJobInputHttp({
-        files: [inputUrl]
-      })
+        return factory.createJobInputHttp({
+            files: [inputUrl]
+        })
     }
-  }
+}
 
 // Creates a new Media Services Asset, which is a pointer to a storage container
 // Uses the Storage Blob npm package to upload a local file into the container through the use 
@@ -310,7 +329,7 @@ async function createInputAsset(assetName: string, fileToUpload: string) {
 }
 
 
-async function submitJob(transformName: string, jobName: string, jobInput: JobInputUnion, outputAssetName: string, correlationData:any) {
+async function submitJob(transformName: string, jobName: string, jobInput: JobInputUnion, outputAssetName: string, correlationData: any) {
     if (outputAssetName == undefined) {
         throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
     }
@@ -327,5 +346,36 @@ async function submitJob(transformName: string, jobName: string, jobInput: JobIn
         correlationData: correlationData
     });
 
+}
+
+async function createStreamingLocator(assetName: string, locatorName: string) {
+    let streamingLocator = {
+        assetName: assetName,
+        streamingPolicyName: "Predefined_ClearStreamingOnly"  // no DRM or AES128 encryption protection on this asset. Clear means unencrypted.
+    };
+
+    let locator = await mediaServicesClient.streamingLocators.create(
+        resourceGroup,
+        accountName,
+        locatorName,
+        streamingLocator);
+
+    return locator;
+}
+
+async function getStreamingUrls(locatorName: string) {
+    // Make sure the streaming endpoint is in the "Running" state on your account
+    let streamingEndpoint = await mediaServicesClient.streamingEndpoints.get(resourceGroup, accountName, "default");
+
+    let paths = await mediaServicesClient.streamingLocators.listPaths(resourceGroup, accountName, locatorName);
+    if (paths.streamingPaths) {
+        paths.streamingPaths.forEach(path => {
+            path.paths?.forEach(formatPath => {
+                let manifestPath = "https://" + streamingEndpoint.hostName + formatPath
+                console.log(manifestPath);
+                console.log(`Click to playback in AMP player: http://ampdemo.azureedge.net/?url=${manifestPath}`)
+            });
+        });
+    }
 }
 

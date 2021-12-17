@@ -3,6 +3,14 @@
 
 // This sample shows how to use the built-in Copy codec preset that can take a source video file that is already encoded
 // using H264 and AAC audio, and copy it into MP4 tracks that are ready to be streamed by the AMS service.
+// In addition, this preset generates a fast proxy MP4 from the source video. 
+// This is very helpful for scenarios where you want to make the uploaded MP4 asset available quickly for streaming, but also generate
+// a low quality proxy version of the asset for quick preview, video thumbnails, or low bitrate delivery while your application logic
+// decides if you need to backfill any more additional layers (540P, 360P, etc) to make the full adaptive bitrate set complete. 
+// This strategy is commonly used by services like YouTube to make content appear to be "instantly" available, but slowly fill in the 
+// quality levels for a more complete adaptive streaming experience. See the Encoding_BuiltIn_CopyCodec sample for a version that does not
+// generate the additional proxy layer. 
+// 
 // This is useful for scenarios where you have complete control over the source asset, and can encode it in a way that is 
 // consistent with streaming (2-6 second GOP length, Constant Bitrate CBR encoding, no or limited B frames).
 // This preset should be capable of converting a source 1 hour video into a streaming MP4 format in under 1 minute, as it is not
@@ -20,16 +28,11 @@ import {
     JobInputUnion,
     JobsGetResponse,
     TransformOutput,
-    KnownAacAudioProfile,
     KnownOnErrorType,
     KnownPriority,
-    Transform,
-    H264Video,
-    H264Layer,
-    KnownComplexity,
-    KnownH264Complexity
+    Transform
 } from '@azure/arm-mediaservices';
-import * as factory  from "../../Common/Encoding/TransformFactory";
+import * as factory from "../../Common/Encoding/TransformFactory";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
@@ -70,7 +73,7 @@ const credential = new DefaultAzureCredential();
 // Just set the other one to null to have it select the right JobInput class type
 
 // const inputFile = "Media\\<<yourfilepath.mp4>>"; // Place your media in the /Media folder at the root of the samples. Code for upload uses relative path to current working directory for Node;
-let inputFile: string;
+let inputFile: string = "private\\CaltrainToyTransform.mp4";
 // This is a hosted sample file to use
 let inputUrl: string = "https://amssamples.streaming.mediaservices.windows.net/2e91931e-0d29-482b-a42b-9aadc93eb825/AzurePromo.mp4";
 
@@ -81,7 +84,7 @@ const setTimeoutPromise = util.promisify(setTimeout);
 
 // Args
 const outputFolder: string = "./Output";
-const namePrefix: string = "encode_builtin_copycodec";
+const namePrefix: string = "encode_copycodec+sprite+proxy";
 let inputExtension: string;
 let blobName: string;
 
@@ -91,21 +94,66 @@ let blobName: string;
 export async function main() {
 
     // These are the names used for creating and finding your transforms
-    const transformName = "CopyCodec";
+    const transformName = "CopyCodecWithSpriteAndProxy";
 
     mediaServicesClient = new AzureMediaServices(credential, subscriptionId);
 
     // Create a new Standard encoding Transform for H264
     console.log(`Creating Standard Encoding transform named: ${transformName}`);
 
-    
-  
     // First we create a TransformOutput
-    let transformOutput: TransformOutput[] = [{
-        preset: factory.createBuiltInStandardEncoderPreset({
-            presetName: "saasCopyCodec"  // uses the built in SaaS Copy Codec preset, which copies source audio and video to MP4 tracks. See notes at top of this file on constraints.
+    let transformOutput: TransformOutput[] = [
+        {
+            preset: factory.createBuiltInStandardEncoderPreset({
+                presetName: "SaasSourceAligned360pOnly" // There are some undocumented magical presets in our toolbox that do fun stuff - this one is going to copy the codecs from the source and also generate a 360p proxy file.
+                
+                // Other magical presets to play around with...
+                // "SaasCopyCodec" - this just copies the source video and audio into an MP4 ready for streaming.  The source has to be H264 and AAC with CBR encoding and no B frames typically. 
+                // "SaasProxyCopyCodec" - this copies the source video and audio into an MP4 ready for streaming and generates a proxy file.   The source has to be H264 and AAC with CBR encoding and no B frames typically. 
+                // "SaasSourceAligned360pOnly" - same as above, but generates a single 360P proxy layer that is aligned in GOP to the source file. Useful for "backfilling" a proxy on a pre-encoded file uploaded.  
+                // "SaasSourceAligned540pOnly"-  generates a single 540P proxy layer that is aligned in GOP to the source file. Useful for "backfilling" a proxy on a pre-encoded file uploaded. 
+                // "SaasSourceAligned540p" - generates an adaptive set of 540P and 360P that is aligned to the source file. used for "backfilling" a pre-encoded or uploaded source file in an output asset for better streaming. 
+                // "SaasSourceAligned360p" - generates an adaptive set of 360P and 180P that is aligned to the source file. used for "backfilling" a pre-encoded or uploaded source file in an output asset for better streaming. 
+            })
+        },
+        {
+        // uses the Standard Encoder Preset to generate copy the source audio and video to an output track, and generate a proxy and a sprite
+        preset: factory.createStandardEncoderPreset({
+            codecs: [
+                factory.createCopyVideo({  // this part of the sample is a custom copy codec - copies the video track from the source to the output MP4 file
+                    label: "sourcevideo"
+                }),
+                factory.createCopyAudio({ // this part of the sample is a custom copy codec - copies the audio track from the source to the output MP4 file
+                    label: "sourceaudio"
+                }),
+                factory.createJpgImage({
+                    // Also generate a set of thumbnails in one Jpg file (thumbnail sprite)
+                    start: "0%",
+                    step: "5%",
+                    range: "100%",
+                    spriteColumn:10,  // Key is to set the column number here, and then set the width and height of the layer.
+                    layers: [
+                        factory.createJpgLayer({
+                            width: "20%",
+                            height: "20%",
+                            quality:85
+                        })
+                    ]
+                })
+            ],
+            // Specify the format for the output files - one for video+audio, and another for the thumbnails
+            formats: [
+                // Mux the H.264 video and AAC audio into MP4 files, using basename, label, bitrate and extension macros
+                // Note that since you have multiple H264Layers defined above, you have to use a macro that produces unique names per H264Layer
+                // Either {Label} or {Bitrate} should suffice
+                factory.createMp4Format({
+                    filenamePattern: "CopyCodec-{Basename}-{Label}-{Bitrate}{Extension}"
+                }),
+                factory.createJpgFormat({
+                    filenamePattern: "sprite-{Basename}-{Index}{Extension}"
+                })
+            ]
         }),
-        
         // What should we do with the job if there is an error?
         onError: KnownOnErrorType.StopProcessingJob,
         // What is the relative priority of this job to others? Normal, high or low?
@@ -133,14 +181,29 @@ export async function main() {
     let input = await getJobInputType(uniqueness);
     let outputAssetName = `${namePrefix}-output-${uniqueness}`;
     let jobName = `${namePrefix}-job-${uniqueness}`;
+    let locatorName = `locator${uniqueness}`;
 
     console.log("Creating the output Asset (container) to encode the content into...");
 
-    await mediaServicesClient.assets.createOrUpdate(resourceGroup, accountName, outputAssetName, {});
+    let outputAsset = await mediaServicesClient.assets.createOrUpdate(resourceGroup, accountName, outputAssetName, {});
 
     console.log(`Submitting the encoding job to the ${transformName} job queue...`);
 
-    let job = await submitJob(transformName, jobName, input, outputAssetName);
+    
+    // Since the above transform generates two Transform outputs, we need to define two Job output assets to push that content into. 
+    // In this case, we want both Transform outputs to go back into the same output asset container. 
+    let jobOutputs: JobOutputAsset[] = [
+        // First Job oup
+        factory.createJobOutputAsset({
+            assetName: outputAssetName
+        }),
+        factory.createJobOutputAsset({
+            assetName: outputAssetName
+        })
+    ];
+
+    // Submit the job, passing in a custom correlation data object for tracking purposes. You can catch this data on the job output or in Event Grid Events. 
+    let job = await submitJob(transformName, jobName, input, jobOutputs, { myTenant: "myCustomTenantName", myId: "1234" });
 
     console.log(`Waiting for encoding Job - ${job.name} - to finish...`);
     job = await waitForJobToFinish(transformName, jobName);
@@ -149,20 +212,29 @@ export async function main() {
         await downloadResults(outputAssetName as string, outputFolder);
         console.log("Downloaded results to local folder. Please review the outputs from the encoding job.")
     }
+
+    // Publish the output asset for streaming via HLS or DASH
+    if (outputAsset !== undefined) {
+        let locator = await createStreamingLocator(outputAssetName, locatorName);
+        if (locator.name !== undefined) {
+            let urls = await getStreamingUrls(locator.name);
+        } else throw new Error("Locator was not created or Locator.name is undefined");
+    }
+
 }
 
 
 main().catch((err) => {
-    
+
     console.error("Error running sample:", err.message);
-    console.error (`Error code: ${err.code}`);
-  
-    if (err.name == 'RestError'){
+    console.error(`Error code: ${err.code}`);
+
+    if (err.name == 'RestError') {
         // REST API Error message
         console.error("Error request:\n\n", err.request);
     }
-  
-  });
+
+});
 
 
 async function downloadResults(assetName: string, resultsFolder: string) {
@@ -232,11 +304,6 @@ async function waitForJobToFinish(transformName: string, jobName: string) {
 
         if (job.state == 'Finished' || job.state == 'Error' || job.state == 'Canceled') {
 
-            if (job.state == `Error` && job.outputs !== undefined && job.outputs[0] !== undefined)
-            {
-                console.log(`Job Error details ${job.outputs[0].error?.message}.`);
-                console.log(`Job Error code ${job.outputs[0].error?.code}.`);
-            }
             return job;
         } else if (new Date() > timeout) {
             console.log(`Job ${job.name} timed out. Please retry or check the source file.`);
@@ -256,17 +323,17 @@ async function waitForJobToFinish(transformName: string, jobName: string) {
 // Returns a JobInputHttp object if inputFile is set to null, and the inputUrl is set to a valid URL
 async function getJobInputType(uniqueness: string): Promise<JobInputUnion> {
     if (inputFile !== undefined) {
-      let assetName: string = namePrefix + "-input-" + uniqueness;
-      await createInputAsset(assetName, inputFile);
-      return factory.createJobInputAsset({
-        assetName: assetName
-      })
+        let assetName: string = namePrefix + "-input-" + uniqueness;
+        await createInputAsset(assetName, inputFile);
+        return factory.createJobInputAsset({
+            assetName: assetName
+        })
     } else {
-      return factory.createJobInputHttp({
-        files: [inputUrl]
-      })
+        return factory.createJobInputHttp({
+            files: [inputUrl]
+        })
     }
-  }
+}
 
 // Creates a new Media Services Asset, which is a pointer to a storage container
 // Uses the Storage Blob npm package to upload a local file into the container through the use 
@@ -320,20 +387,46 @@ async function createInputAsset(assetName: string, fileToUpload: string) {
 }
 
 
-async function submitJob(transformName: string, jobName: string, jobInput: JobInputUnion, outputAssetName: string) {
-    if (outputAssetName == undefined) {
-        throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
-    }
-    let jobOutputs: JobOutputAsset[] = [
-        factory.createJobOutputAsset({
-            assetName: outputAssetName
-        })
-    ];
+async function submitJob(transformName: string, jobName: string, jobInput: JobInputUnion, jobOutputs: JobOutputAsset[], correlationData: any) {
+
 
     return await mediaServicesClient.jobs.create(resourceGroup, accountName, transformName, jobName, {
         input: jobInput,
-        outputs: jobOutputs
+        outputs: jobOutputs,
+        // Pass in custom correlation data to match up to your customer tenants, or any custom job tracking information you wish to log in the event grid events
+        correlationData: correlationData
     });
 
+}
+
+async function createStreamingLocator(assetName: string, locatorName: string) {
+    let streamingLocator = {
+        assetName: assetName,
+        streamingPolicyName: "Predefined_ClearStreamingOnly"  // no DRM or AES128 encryption protection on this asset. Clear means unencrypted.
+    };
+
+    let locator = await mediaServicesClient.streamingLocators.create(
+        resourceGroup,
+        accountName,
+        locatorName,
+        streamingLocator);
+
+    return locator;
+}
+
+async function getStreamingUrls(locatorName: string) {
+    // Make sure the streaming endpoint is in the "Running" state on your account
+    let streamingEndpoint = await mediaServicesClient.streamingEndpoints.get(resourceGroup, accountName, "default");
+
+    let paths = await mediaServicesClient.streamingLocators.listPaths(resourceGroup, accountName, locatorName);
+    if (paths.streamingPaths) {
+        paths.streamingPaths.forEach(path => {
+            path.paths?.forEach(formatPath => {
+                let manifestPath = "https://" + streamingEndpoint.hostName + formatPath
+                console.log(manifestPath);
+                console.log(`Click to playback in AMP player: http://ampdemo.azureedge.net/?url=${manifestPath}`)
+            });
+        });
+    }
 }
 
