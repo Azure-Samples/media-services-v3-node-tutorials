@@ -383,10 +383,16 @@ async function submitJob(transformName: string, jobName: string, inputAssets: Jo
         })
     ];
 
+    // Create the job input sequence passing the list of assets to it.
+    let jobInputSequence = factory.createJobInputSequence({
+        inputs:inputAssets
+    })
+
+    // BUG: This is failing to submit the job currently due to some bug in the SDK that removes 
+    //      the assetName properties from the JobInputAssets in the JobInputSequence
+    
     return await mediaServicesClient.jobs.create(resourceGroup, accountName, transformName, jobName, {
-        input: factory.createJobInputSequence({
-            inputs: inputAssets
-        }),
+        input: jobInputSequence,
         outputs: jobOutputs
     });
 

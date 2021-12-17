@@ -31,9 +31,25 @@ import {
     VideoAnalyzerPreset,
     AudioAnalyzerPreset,
     VideoOverlay,
-    JobInputSequence
+    JobInputSequence,
+    CopyVideo,
+    CopyAudio
 } from "@azure/arm-mediaservices"
 
+
+export function createCopyVideo(video: Omit<CopyVideo, "odataType">): CopyVideo {
+    return {
+        odataType: "#Microsoft.Media.CopyVideo",
+        ...video,
+    }
+}
+
+export function createCopyAudio(audio: Omit<CopyAudio, "odataType">): CopyAudio {
+    return {
+        odataType: "#Microsoft.Media.CopyAudio",
+        ...audio,
+    }
+}
 
 export function createH264Video(video: Omit<H264Video, "odataType">): H264Video {
     return {
@@ -189,10 +205,10 @@ export function createJobOutputAsset(outputAsset: Omit<JobOutputAsset, "odataTyp
     }
 }
 
-export function createJobInputSequence(inputSequence: Omit<JobInputSequence, "odataType">): JobInputSequence {
+export function createJobInputSequence(jobInputSequence: Omit<JobInputSequence, "odataType">): JobInputSequence {
     return {
         odataType: "#Microsoft.Media.JobInputSequence",
-        ...inputSequence,
+        ...jobInputSequence,
     }
 }
 

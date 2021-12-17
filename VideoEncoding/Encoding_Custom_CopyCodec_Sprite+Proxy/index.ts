@@ -74,7 +74,6 @@ const credential = new DefaultAzureCredential();
 
 // const inputFile = "Media\\<<yourfilepath.mp4>>"; // Place your media in the /Media folder at the root of the samples. Code for upload uses relative path to current working directory for Node;
 let inputFile: string = "private\\CaltrainToyTransform.mp4";
-
 // This is a hosted sample file to use
 let inputUrl: string = "https://amssamples.streaming.mediaservices.windows.net/2e91931e-0d29-482b-a42b-9aadc93eb825/AzurePromo.mp4";
 
@@ -85,7 +84,7 @@ const setTimeoutPromise = util.promisify(setTimeout);
 
 // Args
 const outputFolder: string = "./Output";
-const namePrefix: string = "encode_builtin_copycodec_withproxy";
+const namePrefix: string = "encode_copycodec+sprite+proxy";
 let inputExtension: string;
 let blobName: string;
 
@@ -95,7 +94,7 @@ let blobName: string;
 export async function main() {
 
     // These are the names used for creating and finding your transforms
-    const transformName = "CopyCodecWithProxy";
+    const transformName = "CopyCodecWithSpriteAndProxy";
 
     mediaServicesClient = new AzureMediaServices(credential, subscriptionId);
 
@@ -103,11 +102,57 @@ export async function main() {
     console.log(`Creating Standard Encoding transform named: ${transformName}`);
 
     // First we create a TransformOutput
-    let transformOutput: TransformOutput[] = [{
-        preset: factory.createBuiltInStandardEncoderPreset({
-            // uses the built in SaaS Copy Codec preset, which copies source audio and video to MP4 tracks. 
-            // This also generates a fast proxy.  See notes at top of this file on constraints and use case.
-            presetName: "saasProxyCopyCodec"
+    let transformOutput: TransformOutput[] = [
+        {
+            preset: factory.createBuiltInStandardEncoderPreset({
+                presetName: "SaasSourceAligned360pOnly" // There are some undocumented magical presets in our toolbox that do fun stuff - this one is going to copy the codecs from the source and also generate a 360p proxy file.
+                
+                // Other magical presets to play around with...
+                // "SaasCopyCodec" - this just copies the source video and audio into an MP4 ready for streaming.  The source has to be H264 and AAC with CBR encoding and no B frames typically. 
+                // "SaasProxyCopyCodec" - this copies the source video and audio into an MP4 ready for streaming and generates a proxy file.   The source has to be H264 and AAC with CBR encoding and no B frames typically. 
+                // "SaasSourceAligned360pOnly" - same as above, but generates a single 360P proxy layer that is aligned in GOP to the source file. Useful for "backfilling" a proxy on a pre-encoded file uploaded.  
+                // "SaasSourceAligned540pOnly"-  generates a single 540P proxy layer that is aligned in GOP to the source file. Useful for "backfilling" a proxy on a pre-encoded file uploaded. 
+                // "SaasSourceAligned540p" - generates an adaptive set of 540P and 360P that is aligned to the source file. used for "backfilling" a pre-encoded or uploaded source file in an output asset for better streaming. 
+                // "SaasSourceAligned360p" - generates an adaptive set of 360P and 180P that is aligned to the source file. used for "backfilling" a pre-encoded or uploaded source file in an output asset for better streaming. 
+            })
+        },
+        {
+        // uses the Standard Encoder Preset to generate copy the source audio and video to an output track, and generate a proxy and a sprite
+        preset: factory.createStandardEncoderPreset({
+            codecs: [
+                factory.createCopyVideo({  // this part of the sample is a custom copy codec - copies the video track from the source to the output MP4 file
+                    label: "sourcevideo"
+                }),
+                factory.createCopyAudio({ // this part of the sample is a custom copy codec - copies the audio track from the source to the output MP4 file
+                    label: "sourceaudio"
+                }),
+                factory.createJpgImage({
+                    // Also generate a set of thumbnails in one Jpg file (thumbnail sprite)
+                    start: "0%",
+                    step: "5%",
+                    range: "100%",
+                    spriteColumn:10,  // Key is to set the column number here, and then set the width and height of the layer.
+                    layers: [
+                        factory.createJpgLayer({
+                            width: "20%",
+                            height: "20%",
+                            quality:85
+                        })
+                    ]
+                })
+            ],
+            // Specify the format for the output files - one for video+audio, and another for the thumbnails
+            formats: [
+                // Mux the H.264 video and AAC audio into MP4 files, using basename, label, bitrate and extension macros
+                // Note that since you have multiple H264Layers defined above, you have to use a macro that produces unique names per H264Layer
+                // Either {Label} or {Bitrate} should suffice
+                factory.createMp4Format({
+                    filenamePattern: "CopyCodec-{Basename}-{Label}-{Bitrate}{Extension}"
+                }),
+                factory.createJpgFormat({
+                    filenamePattern: "sprite-{Basename}-{Index}{Extension}"
+                })
+            ]
         }),
         // What should we do with the job if there is an error?
         onError: KnownOnErrorType.StopProcessingJob,
@@ -144,8 +189,21 @@ export async function main() {
 
     console.log(`Submitting the encoding job to the ${transformName} job queue...`);
 
+    
+    // Since the above transform generates two Transform outputs, we need to define two Job output assets to push that content into. 
+    // In this case, we want both Transform outputs to go back into the same output asset container. 
+    let jobOutputs: JobOutputAsset[] = [
+        // First Job oup
+        factory.createJobOutputAsset({
+            assetName: outputAssetName
+        }),
+        factory.createJobOutputAsset({
+            assetName: outputAssetName
+        })
+    ];
+
     // Submit the job, passing in a custom correlation data object for tracking purposes. You can catch this data on the job output or in Event Grid Events. 
-    let job = await submitJob(transformName, jobName, input, outputAssetName, { myTenant: "myCustomTenantName", myId: "1234" });
+    let job = await submitJob(transformName, jobName, input, jobOutputs, { myTenant: "myCustomTenantName", myId: "1234" });
 
     console.log(`Waiting for encoding Job - ${job.name} - to finish...`);
     job = await waitForJobToFinish(transformName, jobName);
@@ -329,15 +387,8 @@ async function createInputAsset(assetName: string, fileToUpload: string) {
 }
 
 
-async function submitJob(transformName: string, jobName: string, jobInput: JobInputUnion, outputAssetName: string, correlationData: any) {
-    if (outputAssetName == undefined) {
-        throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
-    }
-    let jobOutputs: JobOutputAsset[] = [
-        factory.createJobOutputAsset({
-            assetName: outputAssetName
-        })
-    ];
+async function submitJob(transformName: string, jobName: string, jobInput: JobInputUnion, jobOutputs: JobOutputAsset[], correlationData: any) {
+
 
     return await mediaServicesClient.jobs.create(resourceGroup, accountName, transformName, jobName, {
         input: jobInput,
