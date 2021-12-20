@@ -34,19 +34,21 @@ export function setResourceGroup(groupName:string){
     resourceGroup = groupName
 }
 
-export async function submitJob(transformName: string, jobName: string, jobInput: JobInputUnion, outputAssetName: string) {
+export async function submitJob(transformName: string, jobName: string, jobInput: JobInputUnion, outputAssetName: string, correlationData?:{[propertyname:string]:string}) {
     if (outputAssetName == undefined) {
         throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
     }
     let jobOutputs: JobOutputAsset[] = [
         factory.createJobOutputAsset({
-            assetName: outputAssetName
+            assetName: outputAssetName,
         })
     ];
 
     return await mediaServicesClient.jobs.create(resourceGroup, accountName, transformName, jobName, {
         input: jobInput,
-        outputs: jobOutputs
+        outputs: jobOutputs,
+        // Pass in custom correlation data to match up to your customer tenants, or any custom job tracking information you wish to log in the event grid events
+        correlationData: correlationData
     });
 
 }
