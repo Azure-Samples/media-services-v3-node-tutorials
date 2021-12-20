@@ -33,7 +33,8 @@ import {
     VideoOverlay,
     JobInputSequence,
     CopyVideo,
-    CopyAudio
+    CopyAudio,
+    TransportStreamFormat
 } from "@azure/arm-mediaservices"
 
 
@@ -160,6 +161,13 @@ export function createMp4Format(mp4Format: Omit<Mp4Format, "odataType">): Mp4For
     return {
         odataType: "#Microsoft.Media.Mp4Format",
         ...mp4Format,
+    }
+}
+
+export function createTSFormat(tsFormat: Omit<TransportStreamFormat, "odataType">): TransportStreamFormat {
+    return {
+        odataType: "#Microsoft.Media.TransportStreamFormat",
+        ...tsFormat,
     }
 }
 
