@@ -23,9 +23,6 @@ let mediaServicesClient: AzureMediaServices;
 
 // Copy the samples.env file and rename it to .env first, then populate it's values with the values obtained 
 // from your Media Services account's API Access page in the Azure portal.
-const clientId: string = process.env.AADCLIENTID as string;
-const secret: string = process.env.AADSECRET as string;
-const tenantDomain: string = process.env.AADTENANTDOMAIN as string;
 const subscriptionId: string = process.env.SUBSCRIPTIONID as string;
 const resourceGroup: string = process.env.RESOURCEGROUP as string;
 const accountName: string = process.env.ACCOUNTNAME as string;
@@ -52,8 +49,6 @@ let inputUrl: string = "https://amssamples.streaming.mediaservices.windows.net/2
 // Args
 const outputFolder: string = "./Output";
 const namePrefix: string = "encodeH264";
-let inputExtension: string;
-let blobName: string;
 
 ///////////////////////////////////////////
 //   Main entry point for sample script  //
