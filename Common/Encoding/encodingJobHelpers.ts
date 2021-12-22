@@ -8,7 +8,8 @@ import {
     AssetContainerPermission,
     JobsGetResponse,
     JobInputUnion,
-    PresetUnion
+    PresetUnion,
+    InputDefinitionUnion
 } from "@azure/arm-mediaservices"
 import * as factory  from "../Encoding/TransformFactory";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
@@ -52,6 +53,89 @@ export async function submitJob(transformName: string, jobName: string, jobInput
         // Pass in custom correlation data to match up to your customer tenants, or any custom job tracking information you wish to log in the event grid events
         correlationData: correlationData,
         
+    });
+
+}
+
+export async function submitJobMultiOutputs(transformName: string, jobName: string, jobInput: JobInputUnion, jobOutputs: JobOutputAsset[], correlationData?:{[propertyname:string]:string}) {
+
+    return await mediaServicesClient.jobs.create(resourceGroup, accountName, transformName, jobName, {
+        input: jobInput,
+        outputs: jobOutputs,
+        // Pass in custom correlation data to match up to your customer tenants, or any custom job tracking information you wish to log in the event grid events
+        correlationData: correlationData,
+        
+    });
+
+}
+
+export async function submitJobMultiInputs(transformName: string, jobName: string, jobInputs: JobInputUnion[], outputAssetName: string, correlationData?:{[propertyname:string]:string}, presetOverride?: PresetUnion) {
+    if (outputAssetName == undefined) {
+        throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
+    }
+    let jobOutputs: JobOutputAsset[] = [
+        factory.createJobOutputAsset({
+            assetName: outputAssetName,
+            presetOverride:presetOverride
+        })
+    ];
+
+    return await mediaServicesClient.jobs.create(resourceGroup, accountName, transformName, jobName, {
+        input: factory.createJobInputs({
+            inputs : jobInputs
+        }),
+        outputs: jobOutputs,
+        // Pass in custom correlation data to match up to your customer tenants, or any custom job tracking information you wish to log in the event grid events
+        correlationData: correlationData,
+        
+    });
+
+}
+
+export async function submitJobWithInputSequence(transformName: string, jobName: string, inputAssets: JobInputAsset[], outputAssetName: string) {
+    if (outputAssetName === undefined) {
+        throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
+    }
+
+    let jobOutputs: JobOutputAsset[] = [
+        factory.createJobOutputAsset({
+            assetName: outputAssetName
+        })
+    ];
+
+    // Create the job input sequence passing the list of assets to it.
+    let jobInputSequence = factory.createJobInputSequence({
+        inputs:inputAssets
+    })
+
+    // BUG: This is failing to submit the job currently due to a bug in serialization/deserialization logic in the JS SDK that removes 
+    //      the assetName properties from the JobInputAssets in the JobInputSequence
+    //      This will get fixed with the PR here on the JS SDK - https://github.com/Azure/azure-sdk-for-js/pull/19455
+    
+    return await mediaServicesClient.jobs.create(resourceGroup, accountName, transformName, jobName, {
+        input: jobInputSequence,
+        outputs: jobOutputs
+    });
+
+}
+
+export async function submitJobWithTrackDefinitions(transformName: string, jobName: string, jobInput: JobInputUnion, outputAssetName: string, inputDefinitions: InputDefinitionUnion[]) {
+    if (outputAssetName == undefined) {
+        throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
+    }
+
+    let jobInputWithTrackDefinitions = jobInput as JobInputAsset;
+    jobInputWithTrackDefinitions.inputDefinitions = inputDefinitions;
+
+    let jobOutputs: JobOutputAsset[] = [
+        factory.createJobOutputAsset({
+            assetName: outputAssetName
+        })
+    ];
+
+    return await mediaServicesClient.jobs.create(resourceGroup, accountName, transformName, jobName, {
+        input: jobInputWithTrackDefinitions,
+        outputs: jobOutputs
     });
 
 }
@@ -212,3 +296,37 @@ export async function getJobInputType( inputFile:string, inputUrl:string,namePre
       })
     }
   }
+
+  
+export async function createStreamingLocator(assetName: string, locatorName: string) {
+    let streamingLocator = {
+        assetName: assetName,
+        streamingPolicyName: "Predefined_ClearStreamingOnly"  // no DRM or AES128 encryption protection on this asset. Clear means unencrypted.
+    };
+
+    let locator = await mediaServicesClient.streamingLocators.create(
+        resourceGroup,
+        accountName,
+        locatorName,
+        streamingLocator);
+
+    return locator;
+}
+
+
+  export async function getStreamingUrls(locatorName: string) {
+    // Make sure the streaming endpoint is in the "Running" state on your account
+    let streamingEndpoint = await mediaServicesClient.streamingEndpoints.get(resourceGroup, accountName, "default");
+
+    let paths = await mediaServicesClient.streamingLocators.listPaths(resourceGroup, accountName, locatorName);
+    if (paths.streamingPaths) {
+        paths.streamingPaths.forEach(path => {
+            path.paths?.forEach(formatPath => {
+                let manifestPath = "https://" + streamingEndpoint.hostName + formatPath
+                console.log(manifestPath);
+                console.log(`Click to playback in AMP player: http://ampdemo.azureedge.net/?url=${manifestPath}`)
+            });
+        });
+    }
+}
+

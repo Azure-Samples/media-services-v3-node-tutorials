@@ -14,31 +14,19 @@
 import { DefaultAzureCredential } from "@azure/identity";
 import {
     AzureMediaServices,
-    AssetContainerPermission,
-    JobOutputAsset,
-    JobInputUnion,
-    JobsGetResponse,
     TransformOutput,
     KnownAacAudioProfile,
     KnownOnErrorType,
     KnownPriority,
     Transform,
     KnownH264Complexity,
-    PresetUnion,
     StandardEncoderPreset
 } from '@azure/arm-mediaservices';
 import * as jobHelper from "../../Common/Encoding/encodingJobHelpers";
 import * as factory  from "../../Common/Encoding/TransformFactory";
-import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
-import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
-import * as path from "path";
-import * as url from 'whatwg-url';
-import * as util from 'util';
-import * as fs from 'fs';
 // Load the .env file if it exists
 import * as dotenv from "dotenv";
-import { format } from "path";
 dotenv.config();
 
 // This is the main Media Services client object
@@ -68,16 +56,9 @@ let inputFile: string;
 // This is a hosted sample file to use
 let inputUrl: string = "https://amssamples.streaming.mediaservices.windows.net/2e91931e-0d29-482b-a42b-9aadc93eb825/AzurePromo.mp4";
 
-// Timer values
-const timeoutSeconds: number = 60 * 10;
-const sleepInterval: number = 1000 * 2;
-const setTimeoutPromise = util.promisify(setTimeout);
-
 // Args
 const outputFolder: string = "./Output";
 const namePrefix: string = "emptyTransform";
-let inputExtension: string;
-let blobName: string;
 
 ///////////////////////////////////////////
 //   Main entry point for sample script  //
