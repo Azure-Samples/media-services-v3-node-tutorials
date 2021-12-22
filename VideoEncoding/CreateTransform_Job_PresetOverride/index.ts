@@ -27,6 +27,7 @@ import {
     PresetUnion,
     StandardEncoderPreset
 } from '@azure/arm-mediaservices';
+import * as jobHelper from "../../Common/Encoding/encodingJobHelpers";
 import * as factory  from "../../Common/Encoding/TransformFactory";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
@@ -45,9 +46,6 @@ let mediaServicesClient: AzureMediaServices;
 
 // Copy the samples.env file and rename it to .env first, then populate it's values with the values obtained 
 // from your Media Services account's API Access page in the Azure portal.
-const clientId: string = process.env.AADCLIENTID as string;
-const secret: string = process.env.AADSECRET as string;
-const tenantDomain: string = process.env.AADTENANTDOMAIN as string;
 const subscriptionId: string = process.env.SUBSCRIPTIONID as string;
 const resourceGroup: string = process.env.RESOURCEGROUP as string;
 const accountName: string = process.env.ACCOUNTNAME as string;
@@ -61,8 +59,6 @@ const accountName: string = process.env.ACCOUNTNAME as string;
 
 // const credential = new ManagedIdentityCredential("<USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID>");
 const credential = new DefaultAzureCredential();
-
-
 
 // You can either specify a local input file with the inputFile or an input Url with inputUrl. 
 // Just set the other one to null to have it select the right JobInput class type
@@ -92,6 +88,13 @@ export async function main() {
     const transformName = "EmptyTransform";
 
     mediaServicesClient = new AzureMediaServices(credential, subscriptionId);
+
+    // Configure the jobHelper to simplify the sample code
+    // We use the /Common/Encoding/encodingJobHelpers.ts file to consolidate the code for job creation and submission
+    // This helps to keep the main sample cleaner and avoid so much redundant code in samples
+    jobHelper.setMediaServicesClient(mediaServicesClient);
+    jobHelper.setAccountName(accountName);
+    jobHelper.setResourceGroup(resourceGroup);
 
     // Create a new Standard encoding Transform that is empty
     console.log(`Creating empty, blank, Standard Encoding transform named: ${transformName}`);
@@ -145,7 +148,7 @@ export async function main() {
         });
 
     let uniqueness = uuidv4();
-    let input = await getJobInputType(uniqueness);
+    let input = await jobHelper.getJobInputType(inputFile, inputUrl,namePrefix,uniqueness);
     let outputAssetName = `${namePrefix}-output-${uniqueness}`;
     let jobName = `${namePrefix}-job-${uniqueness}`;
 
@@ -188,7 +191,7 @@ export async function main() {
     });
 
     // Submit the H264 encoding custom job, passing in the preset override defined above.
-    let job = await submitJob(transformName, jobName, input, outputAssetName, standardPreset_H264);
+    let job = await jobHelper.submitJob(transformName, jobName, input, outputAssetName, undefined, standardPreset_H264);
 
     // Next, we will create another preset override that uses HEVC instead and submit it against the same simple transform
      // Create a new Preset Override to define a custom standard encoding preset
@@ -233,22 +236,22 @@ export async function main() {
     await mediaServicesClient.assets.createOrUpdate(resourceGroup, accountName, outputAssetNameHEVC, {});
 
      // Submit the next HEVC custom job, passing in the preset override defined above.
-    let job2 = await submitJob(transformName, jobNameHEVC, input, outputAssetNameHEVC, standardPreset_HEVC);
+    let job2 = await jobHelper.submitJob(transformName, jobNameHEVC, input, outputAssetNameHEVC, undefined, standardPreset_HEVC);
 
 
     console.log(`Waiting for encoding Jobs to finish...`);
-    job = await waitForJobToFinish(transformName, jobName);
-    job2 =await waitForJobToFinish(transformName, jobName);
+    job = await jobHelper.waitForJobToFinish(transformName, jobName);
+    job2 =await jobHelper.waitForJobToFinish(transformName, jobNameHEVC);
 
     // Wait for the first H264 job to finish and then download the output
     if (job.state == "Finished") {
-        await downloadResults(outputAssetName as string, outputFolder);
+        await jobHelper.downloadResults(outputAssetName as string, outputFolder);
         console.log("Downloaded H264 custom job to local folder. Please review the outputs from the encoding job.")
     }
 
     // check on the status of the second HEVC encoding job and then download the output
     if (job2.state == "Finished") {
-        await downloadResults(outputAssetNameHEVC as string, outputFolder);
+        await jobHelper.downloadResults(outputAssetNameHEVC as string, outputFolder);
         console.log("Downloaded HEVC custom job to local folder.")
     }
 }
@@ -265,183 +268,3 @@ main().catch((err) => {
     }
   
   });
-
-
-async function downloadResults(assetName: string, resultsFolder: string) {
-    let date = new Date();
-    let readPermission: AssetContainerPermission = "Read";
-
-    date.setHours(date.getHours() + 1);
-    let input = {
-        permissions: readPermission,
-        expiryTime: date
-    }
-    let listContainerSas = await mediaServicesClient.assets.listContainerSas(resourceGroup, accountName, assetName, input);
-
-    if (listContainerSas.assetContainerSasUrls) {
-        let containerSasUrl = listContainerSas.assetContainerSasUrls[0];
-        let sasUri = url.parseURL(containerSasUrl);
-
-        // Get the Blob service client using the Asset's SAS URL and the Anonymous credential method on the Blob service client
-        const anonymousCredential = new AnonymousCredential();
-        let blobClient = new BlobServiceClient(containerSasUrl, anonymousCredential)
-        // We need to get the containerName here from the SAS URL path to use later when creating the container client
-        let containerName = sasUri?.path[0];
-        let directory = path.join(resultsFolder, assetName);
-        console.log(`Downloading output into ${directory}`);
-
-        // Get the blob container client using the container name on the SAS URL path
-        // to access the blockBlobClient needed to use the uploadFile method
-        let containerClient = blobClient.getContainerClient('');
-
-        try {
-            fs.mkdirSync(directory, { recursive: true });
-        } catch (err) {
-            // directory exists
-            console.log(err);
-        }
-        console.log(`Listing blobs in container ${containerName}...`);
-        console.log("Downloading blobs to local directory in background...");
-        let i = 1;
-        for await (const blob of containerClient.listBlobsFlat()) {
-            console.log(`Blob ${i++}: ${blob.name}`);
-
-            let blockBlobClient = containerClient.getBlockBlobClient(blob.name);
-            await blockBlobClient.downloadToFile(path.join(directory, blob.name), 0, undefined,
-                {
-                    abortSignal: AbortController.timeout(30 * 60 * 1000),
-                    maxRetryRequests: 2,
-                    onProgress: (ev) => console.log(ev)
-                }).then(() => {
-                    console.log(`Download file complete`);
-                });
-
-        }
-    }
-}
-
-async function waitForJobToFinish(transformName: string, jobName: string) {
-    let timeout = new Date();
-    timeout.setSeconds(timeout.getSeconds() + timeoutSeconds);
-
-    async function pollForJobStatus(): Promise<JobsGetResponse> {
-        let job = await mediaServicesClient.jobs.get(resourceGroup, accountName, transformName, jobName);
-        // Note that you can report the progress for each Job output if you have more than one. In this case, we only have one output in the Transform
-        // that we defined in this sample, so we can check that with the job.outputs[0].progress parameter.
-        if (job.outputs != undefined) {
-            console.log(`Job State is : ${job.state},  Progress: ${job.outputs[0].progress}%`);
-        }
-
-        if (job.state == 'Finished' || job.state == 'Error' || job.state == 'Canceled') {
-
-            return job;
-        } else if (new Date() > timeout) {
-            console.log(`Job ${job.name} timed out. Please retry or check the source file.`);
-            return job;
-        } else {
-            await setTimeoutPromise(sleepInterval, null);
-            return pollForJobStatus();
-        }
-    }
-
-    return await pollForJobStatus();
-}
-
-// Selects the JobInput type to use based on the value of inputFile or inputUrl. 
-// Set inputFile to null to create a Job input that sources from an HTTP URL path
-// Creates a new input Asset and uploads the local file to it before returning a JobInputAsset object
-// Returns a JobInputHttp object if inputFile is set to null, and the inputUrl is set to a valid URL
-async function getJobInputType(uniqueness: string): Promise<JobInputUnion> {
-    if (inputFile !== undefined) {
-        let assetName: string = namePrefix + "-input-" + uniqueness;
-        await createInputAsset(assetName, inputFile);
-        return factory.createJobInputAsset({
-            assetName: assetName
-        })
-    } else {
-        return factory.createJobInputHttp({
-            files: [inputUrl]
-        })
-    }
-}
-
-// Creates a new Media Services Asset, which is a pointer to a storage container
-// Uses the Storage Blob npm package to upload a local file into the container through the use 
-// of the SAS URL obtained from the new Asset object.  
-// This demonstrates how to upload local files up to the container without require additional storage credential.
-async function createInputAsset(assetName: string, fileToUpload: string) {
-    let uploadSasUrl: string;
-    let fileName: string;
-    let sasUri: url.URLRecord | null;
-
-    let asset = await mediaServicesClient.assets.createOrUpdate(resourceGroup, accountName, assetName, {});
-    let date = new Date();
-    let readWritePermission: AssetContainerPermission = "ReadWrite";
-
-    date.setHours(date.getHours() + 1);
-    let input = {
-        permissions: readWritePermission,
-        expiryTime: date
-    }
-
-    let listContainerSas = await mediaServicesClient.assets.listContainerSas(resourceGroup, accountName, assetName, input);
-    if (listContainerSas.assetContainerSasUrls) {
-        uploadSasUrl = listContainerSas.assetContainerSasUrls[0];
-        fileName = path.basename(fileToUpload);
-        sasUri = url.parseURL(uploadSasUrl);
-
-        // Get the Blob service client using the Asset's SAS URL and the Anonymous credential method on the Blob service client
-        const anonymousCredential = new AnonymousCredential();
-        let blobClient = new BlobServiceClient(uploadSasUrl, anonymousCredential)
-        // We need to get the containerName here from the SAS URL path to use later when creating the container client
-        let containerName = sasUri?.path[0];
-        console.log(`Uploading file named ${fileName} to blob in the Asset's container...`);
-
-        // Get the blob container client using the empty string to use the same container as the SAS URL points to.
-        // Otherwise, adding a name here creates a sub folder, which will break the analysis. 
-        let containerClient = blobClient.getContainerClient('');
-        // Next gets the blockBlobClient needed to use the uploadFile method
-        let blockBlobClient = containerClient.getBlockBlobClient(fileName);
-
-        console.log(`working directory:${process.cwd()} `)
-        let cwd: string = process.cwd();
-        let filepath: string = path.join(cwd, fileToUpload)
-
-        // Parallel uploading with BlockBlobClient.uploadFile() in Node.js runtime
-        // BlockBlobClient.uploadFile() is only available in Node.js and not in Browser
-        await blockBlobClient.uploadFile(filepath, {
-            blockSize: 4 * 1024 * 1024, // 4MB Block size
-            concurrency: 20, // 20 concurrent
-            onProgress: (ev) => console.log(ev)
-        });
-
-    }
-
-    return asset;
-}
-
-
-async function submitJob(transformName: string, jobName: string, jobInput: JobInputUnion, outputAssetName: string, presetOverride: PresetUnion) {
-    if (outputAssetName === undefined) {
-        throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
-    }
-
-    if (presetOverride === undefined) {
-        throw new Error("Preset override must be supplied in this sample.")
-    }
-
-
-    let jobOutputs: JobOutputAsset[] = [
-        factory.createJobOutputAsset({
-            assetName: outputAssetName,
-            presetOverride: presetOverride
-        })
-    ];
-
-    return await mediaServicesClient.jobs.create(resourceGroup, accountName, transformName, jobName, {
-        input: jobInput,
-        outputs: jobOutputs
-    });
-
-}
-

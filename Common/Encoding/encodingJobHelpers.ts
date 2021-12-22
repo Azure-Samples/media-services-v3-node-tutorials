@@ -7,7 +7,8 @@ import {
     JobOutputAsset,
     AssetContainerPermission,
     JobsGetResponse,
-    JobInputUnion
+    JobInputUnion,
+    PresetUnion
 } from "@azure/arm-mediaservices"
 import * as factory  from "../Encoding/TransformFactory";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
@@ -34,13 +35,14 @@ export function setResourceGroup(groupName:string){
     resourceGroup = groupName
 }
 
-export async function submitJob(transformName: string, jobName: string, jobInput: JobInputUnion, outputAssetName: string, correlationData?:{[propertyname:string]:string}) {
+export async function submitJob(transformName: string, jobName: string, jobInput: JobInputUnion, outputAssetName: string, correlationData?:{[propertyname:string]:string}, presetOverride?: PresetUnion) {
     if (outputAssetName == undefined) {
         throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
     }
     let jobOutputs: JobOutputAsset[] = [
         factory.createJobOutputAsset({
             assetName: outputAssetName,
+            presetOverride:presetOverride
         })
     ];
 
@@ -48,7 +50,8 @@ export async function submitJob(transformName: string, jobName: string, jobInput
         input: jobInput,
         outputs: jobOutputs,
         // Pass in custom correlation data to match up to your customer tenants, or any custom job tracking information you wish to log in the event grid events
-        correlationData: correlationData
+        correlationData: correlationData,
+        
     });
 
 }
