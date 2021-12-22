@@ -330,3 +330,50 @@ export async function createStreamingLocator(assetName: string, locatorName: str
     }
 }
 
+
+// This method builds the manifest URL from the static values used during creation of the Live Output.
+// This allows you to have a deterministic manifest path. <streaming endpoint hostname>/<streaming locator ID>/manifestName.ism/manifest(<format string>)
+export async function buildManifestPaths(streamingLocatorId: string | undefined, manifestName: string, filterName: string | undefined, streamingEndpointName:string) {
+  const hlsFormat: string = "format=m3u8-cmaf";
+  const dashFormat: string = "format=mpd-time-cmaf";
+
+  // Get the default streaming endpoint on the account
+  let streamingEndpoint = await mediaServicesClient.streamingEndpoints.get(resourceGroup, accountName, streamingEndpointName);
+
+  if (streamingEndpoint?.resourceState !== "Running") {
+      console.log(`Streaming endpoint is stopped. Starting the endpoint named ${streamingEndpointName}`);
+      await mediaServicesClient.streamingEndpoints.beginStartAndWait(resourceGroup, accountName, streamingEndpointName, {
+         
+      })
+          .then(() => {
+              console.log("Streaming Endpoint Started.");
+          })
+
+  }
+
+  let manifestBase = `https://${streamingEndpoint.hostName}/${streamingLocatorId}/${manifestName}.ism/manifest`
+
+  let hlsManifest: string;
+
+  if (filterName === undefined) {
+    hlsManifest = `${manifestBase}(${hlsFormat})`;
+  } else {
+    hlsManifest = `${manifestBase}(${hlsFormat},filter=${filterName})`;
+  }
+  console.log(`The HLS (MP4) manifest URL is : ${hlsManifest}`);
+  console.log("Open the following URL to playback the live stream in an HLS compliant player (HLS.js, Shaka, ExoPlayer) or directly in an iOS device");
+  console.log(`${hlsManifest}`);
+  console.log();
+
+  let dashManifest:string;
+  if (filterName === undefined) {
+    dashManifest = `${manifestBase}(${dashFormat})`;
+  } else {
+    dashManifest = `${manifestBase}(${dashFormat},filter=${filterName})`;
+  }
+
+  console.log(`The DASH manifest URL is : ${dashManifest}`);
+  console.log("Open the following URL to playback the live stream from the LiveOutput in the Azure Media Player");
+  console.log(`https://ampdemo.azureedge.net/?url=${dashManifest}&heuristicprofile=lowlatency`);
+  console.log();
+}
