@@ -9,9 +9,10 @@ import {
     JobsGetResponse,
     JobInputUnion,
     PresetUnion,
-    InputDefinitionUnion
+    InputDefinitionUnion,
+    Job
 } from "@azure/arm-mediaservices"
-import * as factory  from "../Encoding/TransformFactory";
+import * as factory from "../Encoding/TransformFactory";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
@@ -20,30 +21,30 @@ import * as url from 'whatwg-url';
 import * as util from 'util';
 import * as fs from 'fs';
 
-let mediaServicesClient :AzureMediaServices;
-let accountName :string;
-let resourceGroup:string
+let mediaServicesClient: AzureMediaServices;
+let accountName: string;
+let resourceGroup: string
 
-export function setMediaServicesClient(client:AzureMediaServices){
- mediaServicesClient = client;
+export function setMediaServicesClient(client: AzureMediaServices) {
+    mediaServicesClient = client;
 }
 
-export function setAccountName(account:string) {
-    accountName= account;
+export function setAccountName(account: string) {
+    accountName = account;
 }
 
-export function setResourceGroup(groupName:string){
+export function setResourceGroup(groupName: string) {
     resourceGroup = groupName
 }
 
-export async function submitJob(transformName: string, jobName: string, jobInput: JobInputUnion, outputAssetName: string, correlationData?:{[propertyname:string]:string}, presetOverride?: PresetUnion) {
+export async function submitJob(transformName: string, jobName: string, jobInput: JobInputUnion, outputAssetName: string, correlationData?: { [propertyname: string]: string }, presetOverride?: PresetUnion): Promise<Job> {
     if (outputAssetName == undefined) {
         throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
     }
     let jobOutputs: JobOutputAsset[] = [
         factory.createJobOutputAsset({
             assetName: outputAssetName,
-            presetOverride:presetOverride
+            presetOverride: presetOverride
         })
     ];
 
@@ -52,42 +53,42 @@ export async function submitJob(transformName: string, jobName: string, jobInput
         outputs: jobOutputs,
         // Pass in custom correlation data to match up to your customer tenants, or any custom job tracking information you wish to log in the event grid events
         correlationData: correlationData,
-        
+
     });
 
 }
 
-export async function submitJobMultiOutputs(transformName: string, jobName: string, jobInput: JobInputUnion, jobOutputs: JobOutputAsset[], correlationData?:{[propertyname:string]:string}) {
+export async function submitJobMultiOutputs(transformName: string, jobName: string, jobInput: JobInputUnion, jobOutputs: JobOutputAsset[], correlationData?: { [propertyname: string]: string }) {
 
     return await mediaServicesClient.jobs.create(resourceGroup, accountName, transformName, jobName, {
         input: jobInput,
         outputs: jobOutputs,
         // Pass in custom correlation data to match up to your customer tenants, or any custom job tracking information you wish to log in the event grid events
         correlationData: correlationData,
-        
+
     });
 
 }
 
-export async function submitJobMultiInputs(transformName: string, jobName: string, jobInputs: JobInputUnion[], outputAssetName: string, correlationData?:{[propertyname:string]:string}, presetOverride?: PresetUnion) {
+export async function submitJobMultiInputs(transformName: string, jobName: string, jobInputs: JobInputUnion[], outputAssetName: string, correlationData?: { [propertyname: string]: string }, presetOverride?: PresetUnion) {
     if (outputAssetName == undefined) {
         throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
     }
     let jobOutputs: JobOutputAsset[] = [
         factory.createJobOutputAsset({
             assetName: outputAssetName,
-            presetOverride:presetOverride
+            presetOverride: presetOverride
         })
     ];
 
     return await mediaServicesClient.jobs.create(resourceGroup, accountName, transformName, jobName, {
         input: factory.createJobInputs({
-            inputs : jobInputs
+            inputs: jobInputs
         }),
         outputs: jobOutputs,
         // Pass in custom correlation data to match up to your customer tenants, or any custom job tracking information you wish to log in the event grid events
         correlationData: correlationData,
-        
+
     });
 
 }
@@ -105,13 +106,13 @@ export async function submitJobWithInputSequence(transformName: string, jobName:
 
     // Create the job input sequence passing the list of assets to it.
     let jobInputSequence = factory.createJobInputSequence({
-        inputs:inputAssets
+        inputs: inputAssets
     })
 
     // BUG: This is failing to submit the job currently due to a bug in serialization/deserialization logic in the JS SDK that removes 
     //      the assetName properties from the JobInputAssets in the JobInputSequence
     //      This will get fixed with the PR here on the JS SDK - https://github.com/Azure/azure-sdk-for-js/pull/19455
-    
+
     return await mediaServicesClient.jobs.create(resourceGroup, accountName, transformName, jobName, {
         input: jobInputSequence,
         outputs: jobOutputs
@@ -200,10 +201,10 @@ export async function waitForJobToFinish(transformName: string, jobName: string)
 
     timeout.setSeconds(timeout.getSeconds() + timeoutSeconds);
 
-    
+
     async function pollForJobStatus(): Promise<JobsGetResponse> {
         let job = await mediaServicesClient.jobs.get(resourceGroup, accountName, transformName, jobName);
-     
+
         // Note that you can report the progress for each Job output if you have more than one. In this case, we only have one output in the Transform
         // that we defined in this sample, so we can check that with the job.outputs[0].progress parameter.
         if (job.outputs != undefined) {
@@ -217,13 +218,55 @@ export async function waitForJobToFinish(transformName: string, jobName: string)
             console.log(`Job ${job.name} timed out. Please retry or check the source file.`);
             return job;
         } else {
-   
+
             await setTimeoutPromise(sleepInterval, null);
             return pollForJobStatus();
         }
     }
 
     return await pollForJobStatus();
+}
+
+export async function waitForAllJobsToFinish(transformName: string, jobQueue: Job[]) {
+
+    const sleepInterval: number = 1000 * 10;
+    const setTimeoutPromise = util.promisify(setTimeout);
+
+    let batchProcessing: boolean = true
+
+    while (batchProcessing) { 
+        let errorCount = 0;
+        let finishedCount = 0;
+        let processingCount = 0;
+
+        for await (const jobItem of jobQueue) {
+            if (jobItem.name !== undefined) {
+                let job =  await mediaServicesClient.jobs.get(resourceGroup, accountName, transformName, jobItem.name);
+                
+                if (job.outputs != undefined) {
+                    console.log(`StartTime:${(job.startTime === undefined) ? "starting..." : job.startTime?.toTimeString()} \t Job: ${job.name}\t State: ${job.state}\t Progress:${job.outputs[0].progress}%\t  EndTime:${(job.endTime === undefined) ? "..." : job.endTime?.toTimeString()}`);
+                }
+
+                if (job.state == 'Error' || job.state== 'Canceled')
+                    errorCount++;
+                else if (job.state == 'Finished')
+                    finishedCount++;
+                else if (job.state == 'Processing' || job.state == 'Scheduled')
+                    processingCount++;
+            }
+        }
+
+        console.log(`----------------------------------------          ENCODING BATCH           -------------------------------------------------------------------`);
+        console.log(`Encoding batch size: ${jobQueue.length}\t Processing: ${processingCount}\t Finished: ${finishedCount}\t Error:${errorCount} `)
+        console.log(`----------------------------------------------------------------------------------------------------------------------------------------------`);
+
+
+        // If the count of finished and errored jobs add up to the length of the queue batch, then break out. 
+        if (finishedCount + errorCount == jobQueue.length)
+            batchProcessing = false;
+
+        await setTimeoutPromise(sleepInterval);
+    }
 }
 
 export async function downloadResults(assetName: string, resultsFolder: string) {
@@ -283,21 +326,21 @@ export async function downloadResults(assetName: string, resultsFolder: string) 
 // Set inputFile to null to create a Job input that sources from an HTTP URL path
 // Creates a new input Asset and uploads the local file to it before returning a JobInputAsset object
 // Returns a JobInputHttp object if inputFile is set to null, and the inputUrl is set to a valid URL
-export async function getJobInputType( inputFile:string, inputUrl:string,namePrefix:string, uniqueness: string): Promise<JobInputUnion> {
+export async function getJobInputType(inputFile: string | undefined, inputUrl: string, namePrefix: string, uniqueness: string): Promise<JobInputUnion> {
     if (inputFile !== undefined) {
-      let assetName: string = namePrefix + "-input-" + uniqueness;
-      await createInputAsset(assetName, inputFile);
-      return factory.createJobInputAsset({
-        assetName: assetName
-      })
+        let assetName: string = namePrefix + "-input-" + uniqueness;
+        await createInputAsset(assetName, inputFile);
+        return factory.createJobInputAsset({
+            assetName: assetName
+        })
     } else {
-      return factory.createJobInputHttp({
-        files: [inputUrl]
-      })
+        return factory.createJobInputHttp({
+            files: [inputUrl]
+        })
     }
-  }
+}
 
-  
+
 export async function createStreamingLocator(assetName: string, locatorName: string) {
     let streamingLocator = {
         assetName: assetName,
@@ -314,7 +357,7 @@ export async function createStreamingLocator(assetName: string, locatorName: str
 }
 
 
-  export async function getStreamingUrls(locatorName: string) {
+export async function getStreamingUrls(locatorName: string) {
     // Make sure the streaming endpoint is in the "Running" state on your account
     let streamingEndpoint = await mediaServicesClient.streamingEndpoints.get(resourceGroup, accountName, "default");
 
@@ -333,47 +376,47 @@ export async function createStreamingLocator(assetName: string, locatorName: str
 
 // This method builds the manifest URL from the static values used during creation of the Live Output.
 // This allows you to have a deterministic manifest path. <streaming endpoint hostname>/<streaming locator ID>/manifestName.ism/manifest(<format string>)
-export async function buildManifestPaths(streamingLocatorId: string | undefined, manifestName: string, filterName: string | undefined, streamingEndpointName:string) {
-  const hlsFormat: string = "format=m3u8-cmaf";
-  const dashFormat: string = "format=mpd-time-cmaf";
+export async function buildManifestPaths(streamingLocatorId: string | undefined, manifestName: string, filterName: string | undefined, streamingEndpointName: string) {
+    const hlsFormat: string = "format=m3u8-cmaf";
+    const dashFormat: string = "format=mpd-time-cmaf";
 
-  // Get the default streaming endpoint on the account
-  let streamingEndpoint = await mediaServicesClient.streamingEndpoints.get(resourceGroup, accountName, streamingEndpointName);
+    // Get the default streaming endpoint on the account
+    let streamingEndpoint = await mediaServicesClient.streamingEndpoints.get(resourceGroup, accountName, streamingEndpointName);
 
-  if (streamingEndpoint?.resourceState !== "Running") {
-      console.log(`Streaming endpoint is stopped. Starting the endpoint named ${streamingEndpointName}`);
-      await mediaServicesClient.streamingEndpoints.beginStartAndWait(resourceGroup, accountName, streamingEndpointName, {
-         
-      })
-          .then(() => {
-              console.log("Streaming Endpoint Started.");
-          })
+    if (streamingEndpoint?.resourceState !== "Running") {
+        console.log(`Streaming endpoint is stopped. Starting the endpoint named ${streamingEndpointName}`);
+        await mediaServicesClient.streamingEndpoints.beginStartAndWait(resourceGroup, accountName, streamingEndpointName, {
 
-  }
+        })
+            .then(() => {
+                console.log("Streaming Endpoint Started.");
+            })
 
-  let manifestBase = `https://${streamingEndpoint.hostName}/${streamingLocatorId}/${manifestName}.ism/manifest`
+    }
 
-  let hlsManifest: string;
+    let manifestBase = `https://${streamingEndpoint.hostName}/${streamingLocatorId}/${manifestName}.ism/manifest`
 
-  if (filterName === undefined) {
-    hlsManifest = `${manifestBase}(${hlsFormat})`;
-  } else {
-    hlsManifest = `${manifestBase}(${hlsFormat},filter=${filterName})`;
-  }
-  console.log(`The HLS (MP4) manifest URL is : ${hlsManifest}`);
-  console.log("Open the following URL to playback the live stream in an HLS compliant player (HLS.js, Shaka, ExoPlayer) or directly in an iOS device");
-  console.log(`${hlsManifest}`);
-  console.log();
+    let hlsManifest: string;
 
-  let dashManifest:string;
-  if (filterName === undefined) {
-    dashManifest = `${manifestBase}(${dashFormat})`;
-  } else {
-    dashManifest = `${manifestBase}(${dashFormat},filter=${filterName})`;
-  }
+    if (filterName === undefined) {
+        hlsManifest = `${manifestBase}(${hlsFormat})`;
+    } else {
+        hlsManifest = `${manifestBase}(${hlsFormat},filter=${filterName})`;
+    }
+    console.log(`The HLS (MP4) manifest URL is : ${hlsManifest}`);
+    console.log("Open the following URL to playback the live stream in an HLS compliant player (HLS.js, Shaka, ExoPlayer) or directly in an iOS device");
+    console.log(`${hlsManifest}`);
+    console.log();
 
-  console.log(`The DASH manifest URL is : ${dashManifest}`);
-  console.log("Open the following URL to playback the live stream from the LiveOutput in the Azure Media Player");
-  console.log(`https://ampdemo.azureedge.net/?url=${dashManifest}&heuristicprofile=lowlatency`);
-  console.log();
+    let dashManifest: string;
+    if (filterName === undefined) {
+        dashManifest = `${manifestBase}(${dashFormat})`;
+    } else {
+        dashManifest = `${manifestBase}(${dashFormat},filter=${filterName})`;
+    }
+
+    console.log(`The DASH manifest URL is : ${dashManifest}`);
+    console.log("Open the following URL to playback the live stream from the LiveOutput in the Azure Media Player");
+    console.log(`https://ampdemo.azureedge.net/?url=${dashManifest}&heuristicprofile=lowlatency`);
+    console.log();
 }
