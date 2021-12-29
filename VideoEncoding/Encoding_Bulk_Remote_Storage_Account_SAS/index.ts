@@ -142,7 +142,10 @@ export async function main() {
 
     containers.forEach(container => {
 
-        let batchSize: number = 10; // This is the batch size we chose for this sample - you can modify based on your own needs, but try not to exceed more than 50 in a batch unless you have contacted support first.
+        // This is the batch size we chose for this sample - you can modify based on your own needs, but try not to exceed more than 50-100 in a batch unless you have contacted support first and let them know what region.
+        // Do that simply by opening a support ticket in the portal for increased quota and describe your scenario.
+        // If you need to process a bunch of staff fast, use a busy region, like one of the major HERO regions (US East, US West, North and West Europe, etc.)
+        let batchSize: number = 10; 
         let jobQueue: Job[] = [];
 
         // This function will scan the remote SAS URL storage account container for files with the defined extensions in fileExtensions filter and then
