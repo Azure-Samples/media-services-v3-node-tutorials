@@ -13,7 +13,7 @@ import {
     KnownComplexity,
     KnownInterleaveOutput
 } from '@azure/arm-mediaservices';
-import * as factory  from "../../Common/Encoding/TransformFactory";
+import * as factory from "../../Common/Encoding/TransformFactory";
 import * as jobHelper from "../../Common/Encoding/encodingJobHelpers";
 import { v4 as uuidv4 } from 'uuid';
 // Load the .env file if it exists
@@ -39,6 +39,8 @@ const accountName: string = process.env.ACCOUNTNAME as string;
 // const credential = new ManagedIdentityCredential("<USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID>");
 const credential = new DefaultAzureCredential();
 
+// ----------- BEGIN SAMPLE SETTINGS -------------------------------
+
 // You can either specify a local input file with the inputFile or an input Url with inputUrl. 
 // Just set the other one to null to have it select the right JobInput class type
 
@@ -51,14 +53,17 @@ let inputUrl: string = "https://amssamples.streaming.mediaservices.windows.net/2
 // Args
 const outputFolder: string = "./Output";
 const namePrefix: string = "contentAwareHEVCConstrained";
+// These are the names used for creating and finding your transforms
+const transformName = "HEVCEncodingContentAwareConstrained";
+
+// ----------- END SAMPLE SETTINGS -------------------------------
 
 ///////////////////////////////////////////
 //   Main entry point for sample script  //
 ///////////////////////////////////////////
 export async function main() {
 
-    // These are the names used for creating and finding your transforms
-    const transformName = "HEVCEncodingContentAwareConstrained";
+
 
     mediaServicesClient = new AzureMediaServices(credential, subscriptionId);
 
@@ -77,7 +82,7 @@ export async function main() {
     // First we will create a PresetConfigurations object to define the constraints that we want to use
     // This allows you to configure the encoder settings to control the balance between speed and quality. Example: set Complexity as Speed for faster encoding but less compression efficiency.
 
-    let presetConfig : PresetConfigurations = {
+    let presetConfig: PresetConfigurations = {
         complexity: KnownComplexity.Speed,
         // The output includes both audio and video.
         interleaveOutput: KnownInterleaveOutput.InterleavedOutput,
@@ -104,8 +109,8 @@ export async function main() {
             presetName: KnownEncoderNamedPreset.H265ContentAwareEncoding,
             // Configurations can be used to control values used by the Content Aware Encoding Preset.
             configurations: presetConfig
-            })
-        }
+        })
+    }
     ];
 
     console.log("Creating encoding transform...");
@@ -125,7 +130,7 @@ export async function main() {
         });
 
     let uniqueness = uuidv4();
-    let input = await jobHelper.getJobInputType(inputFile, inputUrl, namePrefix,uniqueness);
+    let input = await jobHelper.getJobInputType(inputFile, inputUrl, namePrefix, uniqueness);
     let outputAssetName = `${namePrefix}-output-${uniqueness}`;
     let jobName = `${namePrefix}-job-${uniqueness}`;
 
@@ -148,13 +153,13 @@ export async function main() {
 
 
 main().catch((err) => {
-    
+
     console.error("Error running sample:", err.message);
-    console.error (`Error code: ${err.code}`);
-  
-    if (err.name == 'RestError'){
+    console.error(`Error code: ${err.code}`);
+
+    if (err.name == 'RestError') {
         // REST API Error message
         console.error("Error request:\n\n", err.request);
     }
-  
-  });
+
+});

@@ -40,6 +40,8 @@ const credential = new DefaultAzureCredential();
 // You can either specify a local input file with the inputFile or an input Url with inputUrl. 
 // Just set the other one to null to have it select the right JobInput class type
 
+// ----------- BEGIN SAMPLE SETTINGS -------------------------------
+
 // const inputFile = "Media\\<<yourfilepath.mp4>>"; // Place your media in the /Media folder at the root of the samples. Code for upload uses relative path to current working directory for Node;
 let inputFile: string;
 // This is a hosted sample file to use
@@ -48,14 +50,15 @@ let inputUrl: string = "https://amssamples.streaming.mediaservices.windows.net/2
 // Args
 const outputFolder: string = "./Output";
 const namePrefix: string = "encodeH264";
+const transformName = "H264Encoding";
+
+// ----------- END SAMPLE SETTINGS -------------------------------
+
 
 ///////////////////////////////////////////
 //   Main entry point for sample script  //
 ///////////////////////////////////////////
 export async function main() {
-
-    // These are the names used for creating and finding your transforms
-    const transformName = "H264Encoding";
 
     mediaServicesClient = new AzureMediaServices(credential, subscriptionId);
 

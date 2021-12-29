@@ -10,7 +10,7 @@ import {
     Transform,
     KnownEncoderNamedPreset
 } from '@azure/arm-mediaservices';
-import * as factory  from "../../Common/Encoding/TransformFactory";
+import * as factory from "../../Common/Encoding/TransformFactory";
 import * as jobHelper from "../../Common/Encoding/encodingJobHelpers";
 import { v4 as uuidv4 } from 'uuid';
 // Load the .env file if it exists
@@ -36,6 +36,8 @@ const accountName: string = process.env.ACCOUNTNAME as string;
 // const credential = new ManagedIdentityCredential("<USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID>");
 const credential = new DefaultAzureCredential();
 
+// ----------- BEGIN SAMPLE SETTINGS -------------------------------
+
 // You can either specify a local input file with the inputFile or an input Url with inputUrl. 
 // Just set the other one to null to have it select the right JobInput class type
 
@@ -47,14 +49,14 @@ let inputUrl: string = "https://amssamples.streaming.mediaservices.windows.net/2
 // Args
 const outputFolder: string = "./Output";
 const namePrefix: string = "contentAwareHEVC";
+const transformName = "HEVCEncodingContentAware";
+
+// ----------- END SAMPLE SETTINGS -------------------------------
 
 ///////////////////////////////////////////
 //   Main entry point for sample script  //
 ///////////////////////////////////////////
 export async function main() {
-
-    // These are the names used for creating and finding your transforms
-    const transformName = "HEVCEncodingContentAware";
 
     mediaServicesClient = new AzureMediaServices(credential, subscriptionId);
 
@@ -123,13 +125,13 @@ export async function main() {
 
 
 main().catch((err) => {
-    
+
     console.error("Error running sample:", err.message);
-    console.error (`Error code: ${err.code}`);
-  
-    if (err.name == 'RestError'){
+    console.error(`Error code: ${err.code}`);
+
+    if (err.name == 'RestError') {
         // REST API Error message
         console.error("Error request:\n\n", err.request);
     }
-  
-  });
+
+});

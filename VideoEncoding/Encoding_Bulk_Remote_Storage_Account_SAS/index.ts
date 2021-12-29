@@ -42,6 +42,8 @@ const accountName: string = process.env.ACCOUNTNAME as string;
 const credential = new DefaultAzureCredential();
 
 
+// ----------- BEGIN SAMPLE SETTINGS -------------------------------
+
 // A SAS URL to a remote blob storage account that you want to read files from
 // Generate a Read/List SAS token URL in the portal under the storage accounts "shared access signature" menu
 // Grant the allowed resource types : Service, Container, and Object
@@ -55,6 +57,9 @@ const fileExtensionFilters : string[] = [".wmv", ".mov", ".mp4"]
 // Args
 const outputFolder: string = "./Output";
 const namePrefix: string = "encodeH264";
+const transformName = "BatchRemoteH264ContentAware";
+
+// ----------- END SAMPLE SETTINGS -------------------------------
 
 ///////////////////////////////////////////
 //   Main entry point for sample script  //
@@ -62,7 +67,6 @@ const namePrefix: string = "encodeH264";
 export async function main() {
 
     // These are the names used for creating and finding your transforms
-    const transformName = "BatchRemoteH264ContentAware";
 
     mediaServicesClient = new AzureMediaServices(credential, subscriptionId);
 

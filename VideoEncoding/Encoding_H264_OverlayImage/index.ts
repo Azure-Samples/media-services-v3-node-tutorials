@@ -11,7 +11,7 @@ import {
     Transform,
     KnownH264Complexity
 } from '@azure/arm-mediaservices';
-import * as factory  from "../../Common/Encoding/TransformFactory";
+import * as factory from "../../Common/Encoding/TransformFactory";
 import * as jobHelper from "../../Common/Encoding/encodingJobHelpers";
 import { v4 as uuidv4 } from 'uuid';
 // Load the .env file if it exists
@@ -37,6 +37,8 @@ const accountName: string = process.env.ACCOUNTNAME as string;
 // const credential = new ManagedIdentityCredential("<USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID>");
 const credential = new DefaultAzureCredential();
 
+// ----------- BEGIN SAMPLE SETTINGS -------------------------------
+
 // You can either specify a local input file with the inputFile or an input Url with inputUrl. 
 // Just set the other one to null to have it select the right JobInput class type
 
@@ -53,14 +55,17 @@ let overlayLabel = "overlayCloud"
 // Args
 const outputFolder: string = "./Output";
 const namePrefix: string = "encodeOverlayPng";
+const transformName = "H264EncodingOverlayImagePng";
+
+// ----------- END SAMPLE SETTINGS -------------------------------
+
 
 ///////////////////////////////////////////
 //   Main entry point for sample script  //
 ///////////////////////////////////////////
 export async function main() {
 
-    // These are the names used for creating and finding your transforms
-    const transformName = "H264EncodingOverlayImagePng";
+
     mediaServicesClient = new AzureMediaServices(credential, subscriptionId);
 
     // Configure the jobHelper to simplify the sample code
@@ -117,8 +122,8 @@ export async function main() {
                     factory.createVideoOverlay({
                         inputLabel: overlayLabel, // same label that is used in the JobInput to identify which file in the asset is the actual overlay image .png file. 
                         position: {
-                            left:"10%",  // left and top position of the overlay in absolute pixel or percentage relative to the source videos resolution. 
-                            top:"10%", 
+                            left: "10%",  // left and top position of the overlay in absolute pixel or percentage relative to the source videos resolution. 
+                            top: "10%",
                             // You can also set the height and width of the rectangle to draw into, but there is known problem here. 
                             // If you use % for the top and left (or any of these) you have to stick with % for all or you will get a job configuration Error 
                             // Also, it can alter your aspect ratio when using percentages, so you have to know the source video size in relation to the source image to 
@@ -160,16 +165,16 @@ export async function main() {
         });
 
     let uniqueness = uuidv4();
-    let jobVideoInputAsset = await jobHelper.getJobInputType(inputFile,inputUrl,namePrefix,uniqueness);
+    let jobVideoInputAsset = await jobHelper.getJobInputType(inputFile, inputUrl, namePrefix, uniqueness);
     let outputAssetName = `${namePrefix}-output-${uniqueness}`;
     let jobName = `${namePrefix}-job-${uniqueness}`;
 
     // Create the JobInput for the PNG Image overlay
-    let overlayAssetName : string = namePrefix + "-overlay-" + uniqueness;
+    let overlayAssetName: string = namePrefix + "-overlay-" + uniqueness;
     await jobHelper.createInputAsset(overlayAssetName, overlayFile);
     let jobInputOverlay = await factory.createJobInputAsset({
-      assetName: overlayAssetName,
-      label:overlayLabel // This is the same value as the label we set in the Filters of the Transform above. It tells the job that this is the asset that has the PNG image in it to use as the overlay image. 
+        assetName: overlayAssetName,
+        label: overlayLabel // This is the same value as the label we set in the Filters of the Transform above. It tells the job that this is the asset that has the PNG image in it to use as the overlay image. 
     })
 
     console.log("Creating the output Asset (container) to encode the content into...");
@@ -181,7 +186,7 @@ export async function main() {
     ]
 
     console.log(`Submitting the encoding job to the ${transformName} job queue...`);
-  
+
     let job = await jobHelper.submitJobMultiInputs(transformName, jobName, jobInputs, outputAssetName);
 
     console.log(`Waiting for encoding Job - ${job.name} - to finish...`);
@@ -195,13 +200,13 @@ export async function main() {
 
 
 main().catch((err) => {
-    
+
     console.error("Error running sample:", err.message);
-    console.error (`Error code: ${err.code}`);
-  
-    if (err.name == 'RestError'){
+    console.error(`Error code: ${err.code}`);
+
+    if (err.name == 'RestError') {
         // REST API Error message
         console.error("Error request:\n\n", err.request);
     }
-  
-  });
+
+});

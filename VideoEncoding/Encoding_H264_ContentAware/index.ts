@@ -36,6 +36,8 @@ const accountName: string = process.env.ACCOUNTNAME as string;
 // const credential = new ManagedIdentityCredential("<USER_ASSIGNED_MANAGED_IDENTITY_CLIENT_ID>");
 const credential = new DefaultAzureCredential();
 
+// ----------- BEGIN SAMPLE SETTINGS -------------------------------
+
 // You can either specify a local input file with the inputFile or an input Url with inputUrl. 
 // Just set the other one to null to have it select the right JobInput class type
 
@@ -47,14 +49,15 @@ let inputUrl: string = "https://amssamples.streaming.mediaservices.windows.net/2
 // Args
 const outputFolder: string = "./Output";
 const namePrefix: string = "contentAware264";
+const transformName = "H264EncodingContentAware";
+
+// ----------- END SAMPLE SETTINGS -------------------------------
+
 
 ///////////////////////////////////////////
 //   Main entry point for sample script  //
 ///////////////////////////////////////////
 export async function main() {
-
-    // These are the names used for creating and finding your transforms
-    const transformName = "H264EncodingContentAware";
 
     mediaServicesClient = new AzureMediaServices(credential, subscriptionId);
 
