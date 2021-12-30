@@ -13,13 +13,14 @@ import {
     Job
 } from "@azure/arm-mediaservices"
 import * as factory from "../Encoding/TransformFactory";
-import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
+import { BlobServiceClient, AnonymousCredential, BlobLeaseClient } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
 import * as path from "path";
 import * as url from 'whatwg-url';
 import * as util from 'util';
 import * as fs from 'fs';
+import { URLBuilder } from "@azure/core-http";
 
 let mediaServicesClient: AzureMediaServices;
 let accountName: string;
@@ -227,27 +228,27 @@ export async function waitForJobToFinish(transformName: string, jobName: string)
     return await pollForJobStatus();
 }
 
-export async function waitForAllJobsToFinish(transformName: string, jobQueue: Job[]) {
+export async function waitForAllJobsToFinish(transformName: string, jobQueue: Job[], currentContainer: string, batchCounter: number) {
 
     const sleepInterval: number = 1000 * 10;
     const setTimeoutPromise = util.promisify(setTimeout);
 
     let batchProcessing: boolean = true
 
-    while (batchProcessing) { 
+    while (batchProcessing) {
         let errorCount = 0;
         let finishedCount = 0;
         let processingCount = 0;
+        let outputRows: string[] = [];
 
         for await (const jobItem of jobQueue) {
             if (jobItem.name !== undefined) {
-                let job =  await mediaServicesClient.jobs.get(resourceGroup, accountName, transformName, jobItem.name);
-                
-                if (job.outputs != undefined) {
-                    console.log(`StartTime:${(job.startTime === undefined) ? "starting..." : job.startTime?.toTimeString()} \t Job: ${job.name}\t State: ${job.state}\t Progress:${job.outputs[0].progress}%\t  EndTime:${(job.endTime === undefined) ? "..." : job.endTime?.toTimeString()}`);
-                }
+                let job = await mediaServicesClient.jobs.get(resourceGroup, accountName, transformName, jobItem.name);
 
-                if (job.state == 'Error' || job.state== 'Canceled')
+                if (job.outputs != undefined) {
+                    outputRows.push(`${(job.startTime === undefined) ? "starting" : job.startTime.toLocaleTimeString(undefined, {timeStyle:"medium",hour12:false})} \t ${job.name}\t ${job.state}\t ${job.outputs[0].progress}%\t\t\t ${(job.endTime === undefined) ? "---" : job.endTime?.toLocaleTimeString(undefined, {timeStyle:"medium",hour12:false})}`);
+                }
+                if (job.state == 'Error' || job.state == 'Canceled')
                     errorCount++;
                 else if (job.state == 'Finished')
                     finishedCount++;
@@ -256,10 +257,16 @@ export async function waitForAllJobsToFinish(transformName: string, jobQueue: Jo
             }
         }
 
-        console.log(`----------------------------------------          ENCODING BATCH           -------------------------------------------------------------------`);
+        console.log(`\n----------------------------------------\tENCODING BATCH  #${batchCounter}       ----------------------------------------------------`);
+        console.log(`Current Container: ${currentContainer}`)
         console.log(`Encoding batch size: ${jobQueue.length}\t Processing: ${processingCount}\t Finished: ${finishedCount}\t Error:${errorCount} `)
-        console.log(`----------------------------------------------------------------------------------------------------------------------------------------------`);
+        console.log(`-------------------------------------------------------------------------------------------------------------------------------`);
+        console.log(`| StartTime \t| Job \t\t\t\t\t\t\t| State \t| Progress \t\t| EndTime   |`);
+        console.log(`-------------------------------------------------------------------------------------------------------------------------------`);
 
+        outputRows.forEach(row => {
+            console.log(row)
+        });
 
         // If the count of finished and errored jobs add up to the length of the queue batch, then break out. 
         if (finishedCount + errorCount == jobQueue.length)
@@ -344,7 +351,7 @@ export async function getJobInputType(inputFile: string | undefined, inputUrl: s
 export async function createStreamingLocator(assetName: string, locatorName: string) {
     let streamingLocator = {
         assetName: assetName,
-        streamingPolicyName: "Predefined_ClearStreamingOnly"  // no DRM or AES128 encryption protection on this asset. Clear means unencrypted.
+        streamingPolicyName: "Predefined_ClearStreamingOnly"  // no DRM or AES128 encryption protection on this asset. Clear means not encrypted.
     };
 
     let locator = await mediaServicesClient.streamingLocators.create(
@@ -419,4 +426,78 @@ export async function buildManifestPaths(streamingLocatorId: string | undefined,
     console.log("Open the following URL to playback the live stream from the LiveOutput in the Azure Media Player");
     console.log(`https://ampdemo.azureedge.net/?url=${dashManifest}&heuristicprofile=lowlatency`);
     console.log();
+}
+
+export async function moveOutputAssetToSas(assetName: string, sasUrl: string, sourceFilePath: string | undefined, deleteAssetsOnCopy: boolean) {
+    let date = new Date();
+    let readWritePermission: AssetContainerPermission = "ReadWrite";
+
+    try {
+
+        date.setHours(date.getHours() + 1);
+        let listSasInput = {
+            permissions: readWritePermission,
+            expiryTime: date
+        }
+
+        let listContainerSas = await mediaServicesClient.assets.listContainerSas(resourceGroup, accountName, assetName, listSasInput);
+        if (listContainerSas.assetContainerSasUrls) {
+            let assetContainerSas = listContainerSas.assetContainerSasUrls[0];
+
+            // Get the Blob service client using the Asset's SAS URL and the Anonymous credential method on the Blob service client
+            const anonymousCredential = new AnonymousCredential();
+            // Get a Blob client for the source asset container and the provided destination container in the remote storage location
+            let sourceBlobClient = new BlobServiceClient(assetContainerSas, anonymousCredential);
+            let destinationBlobClient = new BlobServiceClient(sasUrl, anonymousCredential);
+
+            console.log(`Moving output from ${assetName}`);
+
+            // Get the blob container client using the empty string to use the same container as the SAS URL points to.
+            // Otherwise, adding a name here creates a sub folder
+            let sourceContainerClient = sourceBlobClient.getContainerClient('');
+            let destinationContainerClient = destinationBlobClient.getContainerClient('');
+
+            for await (const blob of sourceContainerClient.listBlobsFlat()) {
+
+                let blockBlobClient = sourceContainerClient.getBlockBlobClient(blob.name);
+
+                // Lease the blob to prevent anyone else using it... throwing exception here -  UnhandledPromiseRejectionWarning: Unhandled promise rejection
+                //let lease = sourceContainerClient.getBlobLeaseClient(blob.name).acquireLease(60);
+                //console.log ("Lease state:", (await blockBlobClient.getProperties()).leaseState);
+
+                // Create a destination Block Blob with the same name, unless the outputFolder is set to preserve the source hierarchy. 
+                let destinationBlobName: string;
+                if (sourceFilePath) {
+                    destinationBlobName = `${sourceFilePath}/${blob.name}`;
+                } else {
+                    destinationBlobName = blob.name
+                }
+
+                let destinationBlob = destinationContainerClient.getBlockBlobClient(destinationBlobName);
+
+                let sasUrlBuilder = URLBuilder.parse(assetContainerSas);
+                sasUrlBuilder.appendPath(blob.name);
+
+                // Copy the source into the destinationBlob and poll until done
+                const copyPoller = await destinationBlob.beginCopyFromURL(sasUrlBuilder.toString())
+                const result = await copyPoller.pollUntilDone();
+
+                if (result.errorCode)
+                    console.log(`ERROR copying the blob ${blob.name} in asset ${assetName}`)
+                else
+                    console.log(`${date.toLocaleTimeString(undefined, {timeStyle:"medium",hour12:false})} FINISHED copying blob ${blob.name} from asset ${assetName} to destination`)
+            }
+
+            // Once all are copied, we delete the source asset if set to true.
+            if (deleteAssetsOnCopy) {
+                // Delete the source Asset here.
+                await mediaServicesClient.assets.delete(resourceGroup, accountName, assetName);
+                console.log(`${date.toLocaleTimeString(undefined, {timeStyle:"medium",hour12:false})} DELETED the source asset:${assetName}`);
+            }
+        }
+
+    } catch (err) {
+        console.log(err);
+    }
+
 }

@@ -12,14 +12,19 @@ import {
     PresetConfigurations,
     KnownComplexity,
     KnownInterleaveOutput,
-    KnownEncoderNamedPreset
+    KnownEncoderNamedPreset,
+    JobOutputAsset,
+    JobInputHttp
 } from '@azure/arm-mediaservices';
 import * as jobHelper from "../../Common/Encoding/encodingJobHelpers";
 import * as factory from "../../Common/Encoding/TransformFactory";
 import * as blobHelper from "../../Common/Storage/blobStorage";
 import { v4 as uuidv4 } from 'uuid';
+import * as path from "path";
 // Load the .env file if it exists
 import * as dotenv from "dotenv";
+import { URLBuilder } from "@azure/core-http";
+import { resolve } from "path/posix";
 dotenv.config();
 
 // This is the main Media Services client object
@@ -52,12 +57,26 @@ let remoteSasUrl: string = process.env.REMOTESTORAGEACCOUNTSAS as string;
 
 // This is the list of file extension filters we will scan the remote blob storage account SasURL for.
 // The sample can loop through containers looking for assets with these extensions and then submit them to the Transform defined below in batches of 10. 
-const fileExtensionFilters : string[] = [".wmv", ".mov", ".mp4"] 
+const fileExtensionFilters: string[] = [".wmv", ".mov", ".mp4"]
 
 // Args
 const outputFolder: string = "./Output";
 const namePrefix: string = "encodeH264";
 const transformName = "BatchRemoteH264ContentAware";
+
+// Change this flag to output all encoding to the Sas URL provided in the .env setting OUTPUTCONTAINERSAS
+const outputToSas: boolean = true;
+const preserveHierarchy: boolean = true; // this will preserve the source file names and source folder hierarchy in the output container
+const deleteSourceAssets: boolean = true;
+// If you set outputToSas to false, 
+const outputContainerSas: string = process.env.OUTPUTCONTAINERSAS as string;
+const outputContainerName: string = "output" // this should match the container in OUTPUTCONTAINERSAS
+let batchCounter: number = 0;
+// This is the batch size we chose for this sample - you can modify based on your own needs, but try not to exceed more than 50-100 in a batch unless you have contacted support first and let them know what region.
+// Do that simply by opening a support ticket in the portal for increased quota and describe your scenario.
+// If you need to process a bunch of stuff fast, use a busy region, like one of the major HERO regions (US East, US West, North and West Europe, etc.)
+let batchSize: number = 2;
+
 
 // ----------- END SAMPLE SETTINGS -------------------------------
 
@@ -81,7 +100,7 @@ export async function main() {
     // Create a new Standard encoding Transform for H264
     console.log(`Creating Standard Encoding transform named: ${transformName}`);
 
-    let presetConfig : PresetConfigurations = {
+    let presetConfig: PresetConfigurations = {
         complexity: KnownComplexity.Quality,
         // The output includes both audio and video.
         interleaveOutput: KnownInterleaveOutput.InterleavedOutput,
@@ -108,8 +127,8 @@ export async function main() {
             presetName: KnownEncoderNamedPreset.ContentAwareEncoding,
             // Configurations can be used to control values used by the Content Aware Encoding Preset.
             configurations: presetConfig
-            })
-        }
+        })
+    }
     ];
 
     console.log("Creating encoding transform...");
@@ -119,7 +138,7 @@ export async function main() {
         description: "H264 content aware encoding with configuration settings",
         outputs: transformOutput
     }
-   
+
 
     await mediaServicesClient.transforms.createOrUpdate(resourceGroup, accountName, transformName, transform)
         .then((transform) => {
@@ -142,23 +161,43 @@ export async function main() {
 
     // Next we will loop through each container looking for the file types we want to encode and then submit the encoding jobs using JobInputHTTP types
 
-    let token: string | undefined;
+    console.log(`Found total of ${containers.length} containers in the source location`);
 
-    containers.forEach(container => {
+    let continuationToken: string | undefined;
 
-        // This is the batch size we chose for this sample - you can modify based on your own needs, but try not to exceed more than 50-100 in a batch unless you have contacted support first and let them know what region.
-        // Do that simply by opening a support ticket in the portal for increased quota and describe your scenario.
-        // If you need to process a bunch of stuff fast, use a busy region, like one of the major HERO regions (US East, US West, North and West Europe, etc.)
-        let batchSize: number = 10; 
+    for (const container of containers) {
+        console.log("Scanning container:", container)
+        let skipAmsAssets:boolean = true; // set this to skip over any containers that have the AMS default asset prefix of "asset-", which may be necessary if you are writing to the same storage as your AMS account
+
+        const result = await scanContainerBatchSubmitJobs(container, fileExtensionFilters, batchSize, continuationToken, transformName, skipAmsAssets);
+    }
+
+    /*
+    await containers.reduce(async (scanResult, nextContainer) => {
+        console.log(scanResult);
+        console.log(nextContainer);
+        await scanResult;
+
+        console.log("Scanning container:", nextContainer)
+        let jobQueue: Job[] = [];
+        let result = await scanContainerBatchSubmitJobs(nextContainer, fileExtensionFilters, batchSize, continuationToken, transformName, jobQueue)
+        return result;
+    }, Promise.resolve(""))
+    */
+
+    /*
+    for (const container of containers) {
+        console.log("Scanning container:", container)
         let jobQueue: Job[] = [];
 
         // This function will scan the remote SAS URL storage account container for files with the defined extensions in fileExtensions filter and then
         // it will submit an encoding job to the transform created above. It will wait for the batch size to complete encoding before continuing and output the progress
         // to the console. 
-        scanContainerBatchSubmitJobs(container, fileExtensionFilters, batchSize, token, transformName, jobQueue);
+        await scanContainerBatchSubmitJobs(container, fileExtensionFilters, batchSize, token, transformName, jobQueue)
+    }
+    */
 
-    });
-
+    console.log("!!! Exiting the sample main(),  async awaited code paths will continue to complete in background.");
 }
 
 
@@ -183,37 +222,135 @@ main().catch((err) => {
 
 });
 
-async function scanContainerBatchSubmitJobs(container: string, fileExtensionFilters:string[],batchSize: number, token: string | undefined, transformName: string, jobQueue: Job[]) {
-    blobHelper.listBlobsInContainer(container, batchSize, fileExtensionFilters, token).then(value => {
+async function scanContainerBatchSubmitJobs(container: string, fileExtensionFilters: string[], pageSize: number, continuationToken: string | undefined, transformName: string, skipAmsAssets:boolean): Promise<string> {
 
-        if (value !== undefined) {
-            //console.log("Continuation token:", value);
-            if (value.continuationToken !== undefined) {
-                token = value.continuationToken;
-            } 
+    return new Promise(async (resolved, rejected) => {
 
-            value.blobItems.forEach(blob => {
-                blobHelper.getSasUrlForBlob(container, blob.name).then(sasUrl => {
-                    //console.log(sasUrl);
-                    SubmitJobWithSaSUrlInput(sasUrl, transformName).then(job => {
-                        jobQueue.push(job);
+        let currentContainerFileCount: number = 0;
+        let currentQueueLength: number = 0;
+        let nextMarker: string | undefined;
 
-                        if (jobQueue.length == batchSize) {
-                            // Wait for jobs in queue to finish before proceeding with next batch
-                            jobHelper.waitForAllJobsToFinish(transformName, jobQueue).then(() => {
-                                scanContainerBatchSubmitJobs(container, fileExtensionFilters, batchSize,token,transformName, []);
-                            });
-                        }
-                    });
-
-                });
-            });
-
-
+        // If skip AMS Assets is set to true, this will resolve the promise and move to the next container that does not have the prefix name of "asset-"
+        // Keep in mind that you may have asset containers with custom names defined. If so, modify the prefix to match the prefix you are using in your own input and output Asset creation code.
+        // Also skip anything that matches outputContainerName - so we don't re-encode our outputs if we are outputting to the same storage account
+        if (skipAmsAssets || container == outputContainerName){
+            if (container== outputContainerName) {
+                console.log (`Skipping over the defined output container: ${outputContainerName} to avoid re-encoding your outputs`);
+                resolved(container);
+                return;
+            }
+            if (container.startsWith("asset-")){
+                console.log(`Skipping over container ${container} because it matches an AMS asset container with prefix "asset-" and skip AMS assets is set to ${skipAmsAssets}.`)
+                resolved(container);
+                return;
+            }  
         }
 
-    });
-    return { token };
+        console.log(`Now scanning container ${container} for matching blobs...`)
+
+        try {
+            let blobMatches = await blobHelper.listBlobsInContainer(container, pageSize, fileExtensionFilters, continuationToken);
+
+            if (blobMatches !== undefined) {
+                //console.log("Continuation token:", value.continuationToken);
+                if (blobMatches.continuationToken !== undefined) {
+                    continuationToken = blobMatches.continuationToken;
+                }
+
+                if (blobMatches.marker) {
+                    nextMarker = blobMatches.marker;
+                    console.log("Marker:", blobMatches.marker);
+                }
+
+                currentContainerFileCount = blobMatches.matchCount;
+                currentQueueLength = currentContainerFileCount
+
+                // If we have no matches, continue scanning the container by pageSize
+                if (blobMatches.matchCount == 0) {
+                    scanContainerBatchSubmitJobs(container, fileExtensionFilters, pageSize, continuationToken, transformName, skipAmsAssets);
+                }
+
+                // Create a job queue
+                let jobQueue:Job[] = [];
+
+                // Lets Encode the current batch of blobs that we found in the current container page
+                for await (const blob of blobMatches.blobItems) {
+                    //console.log ("Getting SAS for:", blob.name)
+                    blobHelper.getSasUrlForBlob(container, blob.name).then(sasUrl => {
+                        //console.log(sasUrl);
+                        SubmitJobWithSaSUrlInput(sasUrl, transformName).then(job => {
+                            jobQueue.push(job);
+
+                            console.log(`The current container file match count: ${currentContainerFileCount}, currentQueueLength: ${currentQueueLength}`);
+
+                            if (jobQueue.length == currentQueueLength) {
+                                batchCounter++; // increment the batch count
+                                // Wait for jobs in queue to finish before proceeding with next batch
+                                jobHelper.waitForAllJobsToFinish(transformName, jobQueue, container, batchCounter).then(() => {
+
+                                    if (outputContainerSas) {
+                                        copyJobOutputsToDestination(jobQueue, container);
+                                    }
+
+                                    // Resolve the promise here if the pages are all completed...We know this because the next Marker will be undefined. 
+                                    // If there were more pages of blobs in the current container, the next marker would contain a continuation token string 
+                                    if (nextMarker === undefined) {
+                                        resolved(container);
+                                        return;
+                                    }
+                                    else {
+                                        // Recurse with the continuation token for the next page of blobs in this container until complete...
+                                        scanContainerBatchSubmitJobs(container, fileExtensionFilters, pageSize, continuationToken, transformName, skipAmsAssets);
+                                    }
+                                });
+                            }
+                        });
+                    });
+                }
+            }
+        } catch (err) {
+            rejected(err)
+        }
+
+    })
+}
+
+function copyJobOutputsToDestination(jobQueue: Job[], container: string) {
+    for (const job of jobQueue) {
+        if (job.outputs) {
+            let jobOutput = job.outputs[0] as JobOutputAsset; // required to cast to JobOutputAsset to access the assetName property
+
+            let sourceFilePath: string | undefined;
+            if (preserveHierarchy) {
+                let inputAsset = job.input as JobInputHttp;
+                sourceFilePath = getSourceFolderPathHierarchy(inputAsset, sourceFilePath, true);  // if you want to preserve the root container name in the output blob name set this to true. 
+            }
+
+            // Next we move the contents of the JobOutputAssets to the container SAS location, optional to delete Assets
+            // Keep in mind that you need to use Assets for streaming - so your choice what to do here...
+            //console.log(`Moving the output of job:${job.name} named: ${jobOutput.assetName} to the output container SAS location. Delete assets is set to : ${deleteSourceAssets}`)
+            jobHelper.moveOutputAssetToSas(jobOutput.assetName, outputContainerSas, sourceFilePath, deleteSourceAssets).then(() => {
+                console.log("Done moving assets");
+            });
+        }
+    }
+
+    function getSourceFolderPathHierarchy(inputAsset: JobInputHttp, sourceFilePath: string | undefined, preserveContainerPath: boolean) {
+        if (inputAsset.files === undefined)
+            throw (new Error("InputAssets files collection is empty."));
+
+        let inputPath = inputAsset.files[0];
+        sourceFilePath = URLBuilder.parse(decodeURIComponent(inputPath)).getPath();
+        if (!preserveContainerPath) {
+            sourceFilePath = sourceFilePath?.split("/" + container + "/")[1];  // this will optionally remove the source root container path from the output name if required
+        }else
+        {
+            sourceFilePath = sourceFilePath?.slice(1); // remove the root "/"
+        }
+        sourceFilePath = sourceFilePath?.slice(0, sourceFilePath.lastIndexOf("/")); // remove the last part of the path with the file name
+        console.log("SourceFilePath=", sourceFilePath);
+        return sourceFilePath;
+    }
 }
 
 async function SubmitJobWithSaSUrlInput(sasUrl: string, transformName: string): Promise<Job> {
@@ -226,13 +363,7 @@ async function SubmitJobWithSaSUrlInput(sasUrl: string, transformName: string): 
     let outputAssetName = `${namePrefix}-output-${uniqueness}`;
     let jobName = `${namePrefix}-job-${uniqueness}`;
 
-    console.log("Creating the output Asset (container) to encode the content into...");
-    console.log("Output Asset Name:", outputAssetName);
-    console.log("JobName:", jobName);
-
     await mediaServicesClient.assets.createOrUpdate(resourceGroup, accountName, outputAssetName, {});
-
-    console.log(`Submitting the encoding job to the ${transformName} job queue...`);
 
     return await jobHelper.submitJob(
         transformName,

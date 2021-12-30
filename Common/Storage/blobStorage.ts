@@ -29,15 +29,13 @@ export async function listStorageContainers() {
         },
     )
     ) {
-        console.log("Container name:", container.name)
-        console.log("Last Modified on:", container.properties.lastModified)
         blobContainers.push(container.name);
     }
 
     return blobContainers;
 }
 
-export async function getSasUrlForBlob(containerName:string, blobPath:string):Promise<string>{
+export async function getSasUrlForBlob(containerName: string, blobPath: string): Promise<string> {
     let sasUrl = client.url;
     let urlBuilder = new URLBuilder();
     urlBuilder.setPath(sasUrl);
@@ -50,51 +48,67 @@ export async function getSasUrlForBlob(containerName:string, blobPath:string):Pr
     return urlBuilder.toString();
 }
 
-export async function listBlobsInContainer(container: string, pageSize:number, extensions?: string[], continuationToken?:string): Promise<BlobMatches> {
+export async function listBlobsInContainer(container: string, pageSize: number, extensions?: string[], continuationToken?: string): Promise<BlobMatches |undefined> {
 
     let containerClient = client.getContainerClient(container);
 
     let i = 0;
-    let blobList :BlobItem[] = [];
+    let blobList: BlobItem[] = [];
     let blobMatches: BlobMatches;
-    let iterator :AsyncIterableIterator<ContainerListBlobFlatSegmentResponse>;
+    let iterator: AsyncIterableIterator<ContainerListBlobFlatSegmentResponse>;
 
-    if (continuationToken){
-        iterator = containerClient.listBlobsFlat().byPage({ maxPageSize:pageSize, continuationToken: continuationToken});
-    }else {
-         iterator = containerClient.listBlobsFlat().byPage({ maxPageSize:pageSize});
-    }
+    try {
 
-    let response: ContainerListBlobFlatSegmentResponse = (await iterator.next()).value;
-
-    // Scan for blobs which match the extensions
-    for (const blob of response.segment.blobItems) {
-
-        if (extensions !== undefined) {
-            extensions.forEach(element => {
-                if (blob.name.indexOf(element) > -1)
-                {
-                    console.log("Found blob with extension: ",element)
-                    blobList.push(blob);
-                    i++
-                }
-            });
+        if (continuationToken) {
+            iterator = containerClient.listBlobsFlat().byPage({ maxPageSize: pageSize, continuationToken: continuationToken });
+        } else {
+            iterator = containerClient.listBlobsFlat().byPage({ maxPageSize: pageSize });
         }
+
+
+        let response: ContainerListBlobFlatSegmentResponse = (await iterator.next()).value;
+
+        if (response.errorCode !== undefined)
+            throw (new Error(response.errorCode));
+
+        // Scan for blobs which match the extensions
+        for (const blob of response.segment.blobItems) {
+
+            if (extensions !== undefined) {
+                extensions.forEach(element => {
+                    if (blob.name.indexOf(element) > -1) {
+                        console.log(`Found blob ${blob.name} with extension:${element} in container:${container}`)
+                        blobList.push(blob);
+                        i++
+                    }
+                });
+            }
+        }
+
+        blobMatches = {
+            blobItems: blobList,
+            matchCount: i,
+            continuationToken: response.continuationToken,
+            marker: response.marker,
+            errorCode: response.errorCode
+        }
+
+        return blobMatches;
+
+    } catch (err) {
+        console.error("ERROR: in listBlobsInContainer - iterator.next()")
+        console.error(err);
     }
 
-    blobMatches = {
-        blobItems: blobList,
-        matchCount:i,
-        continuationToken: response.continuationToken
-    }
-    
-    return blobMatches
+    return;
 
 }
 
 
-export interface BlobMatches{
-    blobItems: BlobItem[],
-    matchCount:number
-    continuationToken: string |undefined
+export interface BlobMatches {
+    blobItems: BlobItem[];
+    matchCount: number;
+    continuationToken: string | undefined;
+    marker:string | undefined;
+    errorCode: string | undefined
 }
