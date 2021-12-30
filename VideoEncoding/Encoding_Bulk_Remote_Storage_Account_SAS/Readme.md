@@ -50,7 +50,7 @@ The workflow is as follows:
 1. An optional flag will delete the intermediate JobOutput assets after copying the results to the output. Set the deleteSourceAssets boolean to false if you do not wish to have the generated assets deleted.  This may be desired if you want to use AMS for streaming the assets through the dynamic packager.
 1. If you do not want to output the content to a remote SAS, but just generate Assets for AMS, set the *outputToSas* flag to false in the sample settings.
 
-### .env
+### Setting up the .env variables file
 
 Use [sample.env](../../sample.env) as a template for the .env file to be created. The .env file must be placed at the root of the sample (same location than sample.env).
 Connect to the Azure portal with your browser and go to your media services account / API access to get the .ENV data to store to the .env file.
