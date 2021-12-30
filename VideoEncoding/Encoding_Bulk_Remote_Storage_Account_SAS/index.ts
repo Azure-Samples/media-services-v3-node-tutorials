@@ -60,7 +60,6 @@ let remoteSasUrl: string = process.env.REMOTESTORAGEACCOUNTSAS as string;
 const fileExtensionFilters: string[] = [".wmv", ".mov", ".mp4"]
 
 // Args
-const outputFolder: string = "./Output";
 const namePrefix: string = "encodeH264";
 const transformName = "BatchRemoteH264ContentAware";
 
@@ -68,14 +67,14 @@ const transformName = "BatchRemoteH264ContentAware";
 const outputToSas: boolean = true;
 const preserveHierarchy: boolean = true; // this will preserve the source file names and source folder hierarchy in the output container
 const deleteSourceAssets: boolean = true;
-// If you set outputToSas to false, 
+// If you set outputToSas to true, 
 const outputContainerSas: string = process.env.OUTPUTCONTAINERSAS as string;
 const outputContainerName: string = "output" // this should match the container in OUTPUTCONTAINERSAS
 let batchCounter: number = 0;
 // This is the batch size we chose for this sample - you can modify based on your own needs, but try not to exceed more than 50-100 in a batch unless you have contacted support first and let them know what region.
 // Do that simply by opening a support ticket in the portal for increased quota and describe your scenario.
 // If you need to process a bunch of stuff fast, use a busy region, like one of the major HERO regions (US East, US West, North and West Europe, etc.)
-let batchSize: number = 2;
+let batchSize: number = 5;
 
 
 // ----------- END SAMPLE SETTINGS -------------------------------
@@ -172,30 +171,6 @@ export async function main() {
         const result = await scanContainerBatchSubmitJobs(container, fileExtensionFilters, batchSize, continuationToken, transformName, skipAmsAssets);
     }
 
-    /*
-    await containers.reduce(async (scanResult, nextContainer) => {
-        console.log(scanResult);
-        console.log(nextContainer);
-        await scanResult;
-
-        console.log("Scanning container:", nextContainer)
-        let jobQueue: Job[] = [];
-        let result = await scanContainerBatchSubmitJobs(nextContainer, fileExtensionFilters, batchSize, continuationToken, transformName, jobQueue)
-        return result;
-    }, Promise.resolve(""))
-    */
-
-    /*
-    for (const container of containers) {
-        console.log("Scanning container:", container)
-        let jobQueue: Job[] = [];
-
-        // This function will scan the remote SAS URL storage account container for files with the defined extensions in fileExtensions filter and then
-        // it will submit an encoding job to the transform created above. It will wait for the batch size to complete encoding before continuing and output the progress
-        // to the console. 
-        await scanContainerBatchSubmitJobs(container, fileExtensionFilters, batchSize, token, transformName, jobQueue)
-    }
-    */
 
     console.log("!!! Exiting the sample main(),  async awaited code paths will continue to complete in background.");
 }
@@ -252,7 +227,6 @@ async function scanContainerBatchSubmitJobs(container: string, fileExtensionFilt
             let blobMatches = await blobHelper.listBlobsInContainer(container, pageSize, fileExtensionFilters, continuationToken);
 
             if (blobMatches !== undefined) {
-                //console.log("Continuation token:", value.continuationToken);
                 if (blobMatches.continuationToken !== undefined) {
                     continuationToken = blobMatches.continuationToken;
                 }
@@ -275,9 +249,7 @@ async function scanContainerBatchSubmitJobs(container: string, fileExtensionFilt
 
                 // Lets Encode the current batch of blobs that we found in the current container page
                 for await (const blob of blobMatches.blobItems) {
-                    //console.log ("Getting SAS for:", blob.name)
                     blobHelper.getSasUrlForBlob(container, blob.name).then(sasUrl => {
-                        //console.log(sasUrl);
                         SubmitJobWithSaSUrlInput(sasUrl, transformName).then(job => {
                             jobQueue.push(job);
 
@@ -288,7 +260,7 @@ async function scanContainerBatchSubmitJobs(container: string, fileExtensionFilt
                                 // Wait for jobs in queue to finish before proceeding with next batch
                                 jobHelper.waitForAllJobsToFinish(transformName, jobQueue, container, batchCounter).then(() => {
 
-                                    if (outputContainerSas) {
+                                    if (outputToSas) {
                                         copyJobOutputsToDestination(jobQueue, container);
                                     }
 
