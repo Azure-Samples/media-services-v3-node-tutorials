@@ -7,7 +7,7 @@ products:
 description: "This sample demonstrates how to batch encode from a remote storage URL, preserving the source hierarchy and output the encoded results to another storage account using SAS URL."
 ---
 
-# Encode from a remote Storage account using SAS URL
+# Encode from a remote storage account using SAS Url
 
 This sample shows how you can encode an entire remote Azure Storage account using a SAS URL to the account. 
 In addition, this sample allows you to specify the source file extensions (e.g. .mp4, .mov) that you are scanning for in the remote storage account. The sample will
