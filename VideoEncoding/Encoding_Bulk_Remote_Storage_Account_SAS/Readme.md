@@ -23,6 +23,8 @@ The workflow is as follows:
 1. Set the **REMOTESTORAGEACCOUNTSAS** environment variable to the generated SAS URL - this is where the sample will "crawl" for content
 1. Generate a seconds SAS URL for the **OUTPUTCONTAINERSAS** environment variable.  This can be a storage account root, or a specific container in a storage account to write the output hierarchy into.
    The sample can preserve virtual folder hierarchy, as well as re-use the container names that it finds in the remote storage account using the configuration settings at the top of the sample.
+   Grant the SAS allowed resource types:Service, Container, and Object
+   Grant the SAS allowed permissions: Read, List, Write, Add, Create
 1. Set the desired configuration settings in the Sample Settings section (lines 58-80). 
 1. Pay close attention to the settings for the file extension mappings in the variable *fileExtensionFilters*, as this will control the files that are submitted to the encoding Transform.
 1. Adjust the *batchSize* setting to set the size of the page read during listing of blobs from a container.  This will also control the max batch size submitted for encoding.
