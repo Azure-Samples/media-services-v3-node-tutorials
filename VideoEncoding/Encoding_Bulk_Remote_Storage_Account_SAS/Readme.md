@@ -9,7 +9,7 @@ description: "This sample demonstrates how to batch encode from a remote storage
 
 # Encode from a remote storage account using SAS Url
 
-This sample shows how you can encode an entire remote Azure Storage account using a SAS URL to the account. 
+This sample shows how you can encode an entire remote Azure Storage account using a SAS URL to the account.
 In addition, this sample allows you to specify the source file extensions (e.g. .mp4, .mov) that you are scanning for in the remote storage account. The sample will
 crawl the hierarchy (if there are virtual folders) of the remote storage account and submit a defined Transform (content aware in this sample) job, wait for the job to complete and copy the outputs 
 to a final output SAS URL container.  
@@ -25,7 +25,7 @@ The workflow is as follows:
    The sample can preserve virtual folder hierarchy, as well as re-use the container names that it finds in the remote storage account using the configuration settings at the top of the sample.
    Grant the SAS allowed resource types:Service, Container, and Object
    Grant the SAS allowed permissions: Read, List, Write, Add, Create
-1. Set the desired configuration settings in the Sample Settings section (lines 58-80). 
+1. Set the desired configuration settings in the Sample Settings section (lines 58-80).
 1. Pay close attention to the settings for the file extension mappings in the variable *fileExtensionFilters*, as this will control the files that are submitted to the encoding Transform.
 1. Adjust the *batchSize* setting to set the size of the page read during listing of blobs from a container.  This will also control the max batch size submitted for encoding.
 1. The sample will first create a new Transform with the desired encoding settings.  This Transform is the only one used for each matching source file, but if you wanted to modify this sample you could add some more logic to submit jobs based on the extension type or source folder names, etc.
@@ -62,8 +62,7 @@ This sample requires you to set the following environment variables for it to wo
 * **REMOTESTORAGEACCOUNTSAS** - this can point to the root of a storage account, or to a specific container in a remote account. It can point to any account that you have a SAS URL with the following grant permissions -  Grant the allowed resource types : Service, Container, and Object, Grant the allowed permissions: Read, List
 * **OUTPUTCONTAINERSAS** - this points to the container that you want to write all of the outputs back into after encoding job is complete. The sample will preserve the original source hierarchy and virtual folders when writing the output. This can be modified or configured in the sample using the settings at the head of the sample configuration.
 
-
-### Troubleshooting and Mods
+### Troubleshooting and Suggested Improvements (Mods)
 
 If you find that the folder naming in the output folder is not working for your specific situation, be sure to look closely at the code for *getSourceFolderPathHierarchy*, where the output folder naming is determined. There are some string functions in here that are trimming the source virtual folder path to make it appropriate for the output naming. The sample does not explore all possible source folder hierarchy possibilities, but only provides a basis to get started from.
 
@@ -76,4 +75,4 @@ Other modifications that could be made to this sample (contributions or addition
 1. Add more business logic to choose which Transform to submit the job to based on input location and folder
 1. Add multi-region encoding support - distributing the encoding job across regions can help with speed and reliability
 1. Add more logging of results and failed jobs, and provide a way to resume or re-submit errored jobs from the resulting log file
-1. Add support for adding metadata or tags on the source file processed to identify the items that were already encoded, the date it was encoded, and the transform used. Add code to the sample to skip over any source files that were already encoded with the same Transform version or have a flag that they were already encoded in a certain time period (using date ranges in the metadata for example.)
+1. Add support for adding metadata or tags on the source file processed to identify the items that were already encoded, the date it was encoded, and the transform used. Add code to the sample to skip over any source files that were already encoded with the same Transform version or have a flag that they were already encoded in a certain time period (using date ranges in the metadata for example)
