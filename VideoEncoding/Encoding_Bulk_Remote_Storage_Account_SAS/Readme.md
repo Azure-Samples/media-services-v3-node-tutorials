@@ -74,5 +74,6 @@ Other modifications that could be made to this sample (contributions or addition
 1. Add support for private storage accounts
 1. Add support for non SAS based authentication if a higher level of secure auth is required
 1. Add more business logic to choose which Transform to submit the job to based on input location and folder
-1. Add multi-region encoding support - distributing the encoding job across regions can help with speed and reliability.
-1. Add more logging of results and failed jobs, and provide a way to resume or re-submit errored jobs from the resulting log file.
+1. Add multi-region encoding support - distributing the encoding job across regions can help with speed and reliability
+1. Add more logging of results and failed jobs, and provide a way to resume or re-submit errored jobs from the resulting log file
+1. Add support for adding metadata or tags on the source file processed to identify the items that were already encoded, the date it was encoded, and the transform used. Add code to the sample to skip over any source files that were already encoded with the same Transform version or have a flag that they were already encoded in a certain time period (using date ranges in the metadata for example.)
