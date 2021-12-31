@@ -57,7 +57,7 @@ let remoteSasUrl: string = process.env.REMOTESTORAGEACCOUNTSAS as string;
 
 // This is the list of file extension filters we will scan the remote blob storage account SasURL for.
 // The sample can loop through containers looking for assets with these extensions and then submit them to the Transform defined below in batches of 10. 
-const fileExtensionFilters: string[] = [".wmv", ".mov", ".mp4"]
+const fileExtensionFilters: string[] = [".wmv", ".mov", ".mp4", ".mts"]
 
 // Args
 const namePrefix: string = "encodeH264";
@@ -164,11 +164,16 @@ export async function main() {
 
     let continuationToken: string | undefined;
 
+    console.clear();
+
     for (const container of containers) {
-        console.log("Scanning container:", container)
+        console.log("Scanning container: ", container)
         let skipAmsAssets:boolean = true; // set this to skip over any containers that have the AMS default asset prefix of "asset-", which may be necessary if you are writing to the same storage as your AMS account
 
+        console.group(container);
+        (<any>process.stdout).cursorTo(0);
         const result = await scanContainerBatchSubmitJobs(container, fileExtensionFilters, batchSize, continuationToken, transformName, skipAmsAssets);
+        console.groupCollapsed(container);
     }
 
 
@@ -221,7 +226,8 @@ async function scanContainerBatchSubmitJobs(container: string, fileExtensionFilt
             }  
         }
 
-        console.log(`Now scanning container ${container} for matching blobs...`)
+        (<any>process.stdout).moveCursor(-1);
+        process.stdout.write(`=>`);
 
         try {
             let blobMatches = await blobHelper.listBlobsInContainer(container, pageSize, fileExtensionFilters, continuationToken);
@@ -233,7 +239,6 @@ async function scanContainerBatchSubmitJobs(container: string, fileExtensionFilt
 
                 if (blobMatches.marker) {
                     nextMarker = blobMatches.marker;
-                    console.log("Marker:", blobMatches.marker);
                 }
 
                 currentContainerFileCount = blobMatches.matchCount;

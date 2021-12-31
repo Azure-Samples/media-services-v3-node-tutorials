@@ -239,14 +239,21 @@ export async function waitForAllJobsToFinish(transformName: string, jobQueue: Jo
         let errorCount = 0;
         let finishedCount = 0;
         let processingCount = 0;
-        let outputRows: string[] = [];
+        let outputRows = [];
 
         for await (const jobItem of jobQueue) {
             if (jobItem.name !== undefined) {
                 let job = await mediaServicesClient.jobs.get(resourceGroup, accountName, transformName, jobItem.name);
 
                 if (job.outputs != undefined) {
-                    outputRows.push(`${(job.startTime === undefined) ? "starting" : job.startTime.toLocaleTimeString(undefined, {timeStyle:"medium",hour12:false})} \t ${job.name}\t ${job.state}\t ${job.outputs[0].progress}%\t\t\t ${(job.endTime === undefined) ? "---" : job.endTime?.toLocaleTimeString(undefined, {timeStyle:"medium",hour12:false})}`);
+                    outputRows.push(
+                        { 
+                            Start: (job.startTime === undefined) ? "starting" : job.startTime.toLocaleTimeString(undefined, {timeStyle:"medium",hour12:false}),
+                            Job: job.name,
+                            State: job.state,
+                            Progress: job.outputs[0].progress,
+                            End : (job.endTime === undefined)? "---" : job.endTime?.toLocaleTimeString(undefined, {timeStyle:"medium",hour12:false})
+                        });
                 }
                 if (job.state == 'Error' || job.state == 'Canceled')
                     errorCount++;
@@ -261,12 +268,8 @@ export async function waitForAllJobsToFinish(transformName: string, jobQueue: Jo
         console.log(`Current Container: ${currentContainer}`)
         console.log(`Encoding batch size: ${jobQueue.length}\t Processing: ${processingCount}\t Finished: ${finishedCount}\t Error:${errorCount} `)
         console.log(`-------------------------------------------------------------------------------------------------------------------------------`);
-        console.log(`| StartTime \t| Job \t\t\t\t\t\t\t| State \t| Progress \t\t| EndTime   |`);
-        console.log(`-------------------------------------------------------------------------------------------------------------------------------`);
+        console.table(outputRows);
 
-        outputRows.forEach(row => {
-            console.log(row)
-        });
 
         // If the count of finished and errored jobs add up to the length of the queue batch, then break out. 
         if (finishedCount + errorCount == jobQueue.length)
