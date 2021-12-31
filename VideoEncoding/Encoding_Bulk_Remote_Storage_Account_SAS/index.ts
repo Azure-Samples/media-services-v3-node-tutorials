@@ -59,6 +59,9 @@ let remoteSasUrl: string = process.env.REMOTESTORAGEACCOUNTSAS as string;
 // The sample can loop through containers looking for assets with these extensions and then submit them to the Transform defined below in batches of 10. 
 const fileExtensionFilters: string[] = [".wmv", ".mov", ".mp4", ".mts"]
 
+// If you want to optionally avoid copying specific output file types, you can set the postfix and extension to match in this array.
+const noCopyExtensionFilters: string[] = [".ism", ".ismc", ".mpi", "_metadata.json"]
+
 // Args
 const namePrefix: string = "encodeH264";
 const transformName = "BatchRemoteH264ContentAware";
@@ -74,8 +77,7 @@ let batchCounter: number = 0;
 // This is the batch size we chose for this sample - you can modify based on your own needs, but try not to exceed more than 50-100 in a batch unless you have contacted support first and let them know what region.
 // Do that simply by opening a support ticket in the portal for increased quota and describe your scenario.
 // If you need to process a bunch of stuff fast, use a busy region, like one of the major HERO regions (US East, US West, North and West Europe, etc.)
-let batchSize: number = 5;
-
+let batchSize: number = 10;
 
 // ----------- END SAMPLE SETTINGS -------------------------------
 
@@ -306,7 +308,8 @@ function copyJobOutputsToDestination(jobQueue: Job[], container: string) {
             // Next we move the contents of the JobOutputAssets to the container SAS location, optional to delete Assets
             // Keep in mind that you need to use Assets for streaming - so your choice what to do here...
             //console.log(`Moving the output of job:${job.name} named: ${jobOutput.assetName} to the output container SAS location. Delete assets is set to : ${deleteSourceAssets}`)
-            jobHelper.moveOutputAssetToSas(jobOutput.assetName, outputContainerSas, sourceFilePath, deleteSourceAssets).then(() => {
+            // To avoid copying certain files, set the noCopyExtensionFilters array to contain the list of file extensions to ignore. 
+            jobHelper.moveOutputAssetToSas(jobOutput.assetName, outputContainerSas, sourceFilePath, noCopyExtensionFilters, deleteSourceAssets).then(() => {
                 console.log("Done moving assets");
             });
         }

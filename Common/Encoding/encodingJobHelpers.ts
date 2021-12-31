@@ -431,7 +431,7 @@ export async function buildManifestPaths(streamingLocatorId: string | undefined,
     console.log();
 }
 
-export async function moveOutputAssetToSas(assetName: string, sasUrl: string, sourceFilePath: string | undefined, deleteAssetsOnCopy: boolean) {
+export async function moveOutputAssetToSas(assetName: string, sasUrl: string, sourceFilePath: string | undefined, noCopyExtensionFilters:string[], deleteAssetsOnCopy: boolean) {
     let date = new Date();
     let readWritePermission: AssetContainerPermission = "ReadWrite";
 
@@ -462,8 +462,18 @@ export async function moveOutputAssetToSas(assetName: string, sasUrl: string, so
 
             for await (const blob of sourceContainerClient.listBlobsFlat()) {
 
-                let blockBlobClient = sourceContainerClient.getBlockBlobClient(blob.name);
+                let skipCopy:boolean = false;
+                // if the blob is on the no copy list, skip it...don't copy to output
+                for (const noCopyExtension of noCopyExtensionFilters) {
+                    if (blob.name.endsWith(noCopyExtension)){
+                        skipCopy = true;
+                    }
+                }
 
+                if (skipCopy) // if we found an extension above, continue withe the next blob
+                    continue;
+
+                //let blockBlobClient = sourceContainerClient.getBlockBlobClient(blob.name);
                 // Lease the blob to prevent anyone else using it... throwing exception here -  UnhandledPromiseRejectionWarning: Unhandled promise rejection
                 //let lease = sourceContainerClient.getBlobLeaseClient(blob.name).acquireLease(60);
                 //console.log ("Lease state:", (await blockBlobClient.getProperties()).leaseState);
