@@ -56,17 +56,15 @@ export async function listBlobsInContainer(container: string, pageSize: number, 
     let blobList: BlobItem[] = [];
     let blobMatches: BlobMatches;
     let iterator: AsyncIterableIterator<ContainerListBlobFlatSegmentResponse>;
+    let response: ContainerListBlobFlatSegmentResponse
+
+    if (continuationToken == ''){
+        continuationToken = undefined;
+    }
 
     try {
-
-        if (continuationToken) {
-            iterator = containerClient.listBlobsFlat().byPage({ maxPageSize: pageSize, continuationToken: continuationToken });
-        } else {
-            iterator = containerClient.listBlobsFlat().byPage({ maxPageSize: pageSize });
-        }
-
-
-        let response: ContainerListBlobFlatSegmentResponse = (await iterator.next()).value;
+        iterator = containerClient.listBlobsFlat().byPage({ maxPageSize: pageSize, continuationToken: continuationToken });
+        response = (await iterator.next()).value;
 
         if (response.errorCode !== undefined)
             throw (new Error(response.errorCode));

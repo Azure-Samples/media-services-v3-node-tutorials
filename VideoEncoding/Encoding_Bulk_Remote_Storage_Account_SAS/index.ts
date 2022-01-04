@@ -77,7 +77,9 @@ let batchCounter: number = 0;
 // This is the batch size we chose for this sample - you can modify based on your own needs, but try not to exceed more than 50-100 in a batch unless you have contacted support first and let them know what region.
 // Do that simply by opening a support ticket in the portal for increased quota and describe your scenario.
 // If you need to process a bunch of stuff fast, use a busy region, like one of the major HERO regions (US East, US West, North and West Europe, etc.)
-let batchSize: number = 10;
+let batchJobSize: number = 10; // this controls how many concurrent jobs we want to submit and wait to complete processing. . 
+let pageSize: number = 100 // This controls how many blobs we read in the container per "page". 
+let jobInputQueue: string[] = [];
 
 // ----------- END SAMPLE SETTINGS -------------------------------
 
@@ -165,17 +167,13 @@ export async function main() {
     console.log(`Found total of ${containers.length} containers in the source location`);
 
     let continuationToken: string | undefined;
-
     console.clear();
 
     for (const container of containers) {
         console.log("Scanning container: ", container)
-        let skipAmsAssets:boolean = true; // set this to skip over any containers that have the AMS default asset prefix of "asset-", which may be necessary if you are writing to the same storage as your AMS account
-
-        console.group(container);
+        let skipAmsAssets: boolean = true; // set this to skip over any containers that have the AMS default asset prefix of "asset-", which may be necessary if you are writing to the same storage as your AMS account
         (<any>process.stdout).cursorTo(0);
-        const result = await scanContainerBatchSubmitJobs(container, fileExtensionFilters, batchSize, continuationToken, transformName, skipAmsAssets);
-        console.groupCollapsed(container);
+        const result = await scanContainerBatchSubmitJobs(container, fileExtensionFilters, pageSize, continuationToken, transformName, skipAmsAssets);
     }
 
 
@@ -204,28 +202,26 @@ main().catch((err) => {
 
 });
 
-async function scanContainerBatchSubmitJobs(container: string, fileExtensionFilters: string[], pageSize: number, continuationToken: string | undefined, transformName: string, skipAmsAssets:boolean): Promise<string> {
+async function scanContainerBatchSubmitJobs(container: string, fileExtensionFilters: string[], pageSize: number, continuationToken: string | undefined, transformName: string, skipAmsAssets: boolean): Promise<string> {
 
     return new Promise(async (resolved, rejected) => {
 
-        let currentContainerFileCount: number = 0;
-        let currentQueueLength: number = 0;
         let nextMarker: string | undefined;
 
         // If skip AMS Assets is set to true, this will resolve the promise and move to the next container that does not have the prefix name of "asset-"
         // Keep in mind that you may have asset containers with custom names defined. If so, modify the prefix to match the prefix you are using in your own input and output Asset creation code.
         // Also skip anything that matches outputContainerName - so we don't re-encode our outputs if we are outputting to the same storage account
-        if (skipAmsAssets || container == outputContainerName){
-            if (container== outputContainerName) {
-                console.log (`Skipping over the defined output container: ${outputContainerName} to avoid re-encoding your outputs`);
+        if (skipAmsAssets || container == outputContainerName) {
+            if (container == outputContainerName) {
+                console.log(`Skipping over the defined output container: ${outputContainerName} to avoid re-encoding your outputs`);
                 resolved(container);
                 return;
             }
-            if (container.startsWith("asset-")){
+            if (container.startsWith("asset-")) {
                 console.log(`Skipping over container ${container} because it matches an AMS asset container with prefix "asset-" and skip AMS assets is set to ${skipAmsAssets}.`)
                 resolved(container);
                 return;
-            }  
+            }
         }
 
         (<any>process.stdout).moveCursor(-1);
@@ -237,14 +233,12 @@ async function scanContainerBatchSubmitJobs(container: string, fileExtensionFilt
             if (blobMatches !== undefined) {
                 if (blobMatches.continuationToken !== undefined) {
                     continuationToken = blobMatches.continuationToken;
+                    if (blobMatches.marker) {
+                        nextMarker = blobMatches.marker;
+                    }else {
+                        nextMarker = continuationToken;
+                    }
                 }
-
-                if (blobMatches.marker) {
-                    nextMarker = blobMatches.marker;
-                }
-
-                currentContainerFileCount = blobMatches.matchCount;
-                currentQueueLength = currentContainerFileCount
 
                 // If we have no matches, continue scanning the container by pageSize
                 if (blobMatches.matchCount == 0) {
@@ -252,45 +246,58 @@ async function scanContainerBatchSubmitJobs(container: string, fileExtensionFilt
                 }
 
                 // Create a job queue
-                let jobQueue:Job[] = [];
+                let jobQueue: Job[] = [];
 
                 // Lets Encode the current batch of blobs that we found in the current container page
                 for await (const blob of blobMatches.blobItems) {
                     blobHelper.getSasUrlForBlob(container, blob.name).then(sasUrl => {
-                        SubmitJobWithSaSUrlInput(sasUrl, transformName).then(job => {
-                            jobQueue.push(job);
-
-                            console.log(`The current container file match count: ${currentContainerFileCount}, currentQueueLength: ${currentQueueLength}`);
-
-                            if (jobQueue.length == currentQueueLength) {
-                                batchCounter++; // increment the batch count
-                                // Wait for jobs in queue to finish before proceeding with next batch
-                                jobHelper.waitForAllJobsToFinish(transformName, jobQueue, container, batchCounter).then(() => {
-
-                                    if (outputToSas) {
-                                        copyJobOutputsToDestination(jobQueue, container);
-                                    }
-
-                                    // Resolve the promise here if the pages are all completed...We know this because the next Marker will be undefined. 
-                                    // If there were more pages of blobs in the current container, the next marker would contain a continuation token string 
-                                    if (nextMarker === undefined) {
-                                        resolved(container);
-                                        return;
-                                    }
-                                    else {
-                                        // Recurse with the continuation token for the next page of blobs in this container until complete...
-                                        scanContainerBatchSubmitJobs(container, fileExtensionFilters, pageSize, continuationToken, transformName, skipAmsAssets);
-                                    }
-                                });
-                            }
-                        });
+                        // Add this blob's SAS URL to the joblist to be done.
+                        jobInputQueue.push(sasUrl);
                     });
+                };
+
+                let jobSasList: string[] = [];
+
+                // if the job list is > batch size, remove a batch from the end of the array and submit it for encoding.
+                // if the next marker is empty also finish out the job batch in this container
+                if (jobInputQueue.length >= batchJobSize || (nextMarker == '' || nextMarker=== undefined)) {
+
+                    // Submit a batch from the job input queue
+                    // I think there are going to be some edge cases here that need to be explored still.
+                    if (jobInputQueue.length - batchJobSize >0){
+                        jobSasList = jobInputQueue.splice(jobInputQueue.length - batchJobSize, batchJobSize);
+                    }else{
+                        jobSasList = jobInputQueue.splice(0,batchJobSize);
+                    }
+
+                    for (const sasUrl in jobSasList) {
+                        let job = await SubmitJobWithSaSUrlInput(jobSasList[sasUrl], transformName);
+                        jobQueue.push(job);
+                    }
+
+                    batchCounter++;
+                    await jobHelper.waitForAllJobsToFinish(transformName, jobQueue, container, batchCounter); // block (await) here for the current Job batch to complete
+
+                    if (outputToSas) {
+                        copyJobOutputsToDestination(jobQueue, container); // don't await this, just let it happen, let it happen...
+                    }
+
+                    // if there is no nextMarker or if it is empty string, we have reached the end of this container's blobs
+                    // resolve the Promise so the next container will be scanned. 
+                    if (nextMarker === undefined || nextMarker === '') {
+                        resolved(container);
+                        return;
+                    }
+
                 }
+
+                // Recurse with the continuation token for the next page of blobs in this container until complete...
+                scanContainerBatchSubmitJobs(container, fileExtensionFilters, pageSize, continuationToken, transformName, skipAmsAssets);
             }
+
         } catch (err) {
             rejected(err)
         }
-
     })
 }
 
@@ -323,8 +330,7 @@ function copyJobOutputsToDestination(jobQueue: Job[], container: string) {
         sourceFilePath = URLBuilder.parse(decodeURIComponent(inputPath)).getPath();
         if (!preserveContainerPath) {
             sourceFilePath = sourceFilePath?.split("/" + container + "/")[1];  // this will optionally remove the source root container path from the output name if required
-        }else
-        {
+        } else {
             sourceFilePath = sourceFilePath?.slice(1); // remove the root "/"
         }
         sourceFilePath = sourceFilePath?.slice(0, sourceFilePath.lastIndexOf("/")); // remove the last part of the path with the file name
