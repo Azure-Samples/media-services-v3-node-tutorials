@@ -98,6 +98,7 @@ export async function main() {
     jobHelper.setMediaServicesClient(mediaServicesClient);
     jobHelper.setAccountName(accountName);
     jobHelper.setResourceGroup(resourceGroup);
+    jobHelper.setRemoteStorageSas(remoteSasUrl);
 
 
     // Create a new Standard encoding Transform for H264
@@ -241,7 +242,7 @@ async function scanContainerBatchSubmitJobs(container: string, fileExtensionFilt
                 }
 
                 // If we have no matches, continue scanning the container by pageSize
-                if (blobMatches.matchCount == 0) {
+                if (blobMatches.matchCount == 0 && continuationToken != '') {
                     scanContainerBatchSubmitJobs(container, fileExtensionFilters, pageSize, continuationToken, transformName, skipAmsAssets);
                 }
 

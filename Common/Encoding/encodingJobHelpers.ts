@@ -13,7 +13,8 @@ import {
     Job
 } from "@azure/arm-mediaservices"
 import * as factory from "../Encoding/TransformFactory";
-import { BlobServiceClient, AnonymousCredential, BlobLeaseClient } from "@azure/storage-blob";
+import { createBlobClient } from "../Storage/blobStorage";
+import { BlobServiceClient, AnonymousCredential,  Metadata} from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
 import * as path from "path";
@@ -22,9 +23,12 @@ import * as util from 'util';
 import * as fs from 'fs';
 import { URLBuilder } from "@azure/core-http";
 
+
 let mediaServicesClient: AzureMediaServices;
 let accountName: string;
 let resourceGroup: string
+let remoteStorageSas:string;
+
 
 export function setMediaServicesClient(client: AzureMediaServices) {
     mediaServicesClient = client;
@@ -36,6 +40,10 @@ export function setAccountName(account: string) {
 
 export function setResourceGroup(groupName: string) {
     resourceGroup = groupName
+}
+
+export function setRemoteStorageSas(remoteSasUrl:string){
+    remoteStorageSas = remoteSasUrl;
 }
 
 export async function submitJob(transformName: string, jobName: string, jobInput: JobInputUnion, outputAssetName: string, correlationData?: { [propertyname: string]: string }, presetOverride?: PresetUnion): Promise<Job> {
@@ -247,18 +255,33 @@ export async function waitForAllJobsToFinish(transformName: string, jobQueue: Jo
 
                 if (job.outputs != undefined) {
                     outputRows.push(
-                        { 
-                            Start: (job.startTime === undefined) ? "starting" : job.startTime.toLocaleTimeString(undefined, {timeStyle:"medium",hour12:false}),
+                        {
+                            Start: (job.startTime === undefined) ? "starting" : job.startTime.toLocaleTimeString(undefined, { timeStyle: "medium", hour12: false }),
                             Job: job.name,
                             State: job.state,
                             Progress: job.outputs[0].progress,
-                            End : (job.endTime === undefined)? "---" : job.endTime?.toLocaleTimeString(undefined, {timeStyle:"medium",hour12:false})
+                            End: (job.endTime === undefined) ? "---" : job.endTime?.toLocaleTimeString(undefined, { timeStyle: "medium", hour12: false })
                         });
                 }
-                if (job.state == 'Error' || job.state == 'Canceled')
+                if (job.state == 'Error' || job.state == 'Canceled') {
+                    if (job.input) {
+                        updateJobInputMetadata(job.input, { "ams_encoded": "false", "ams_status": job.state});
+                    }
                     errorCount++;
-                else if (job.state == 'Finished')
+                }
+                else if (job.state == 'Finished') {
+                    // Update the source blob metadata to note that we encoded it already, the date it was encoded, and the transform name used
+                    if (job.input) {
+                        updateJobInputMetadata(job.input, 
+                            { 
+                            "ams_encoded": "true", 
+                            "ams_status": job.state, 
+                            "ams_encodedDate": new Date().toUTCString(),
+                            "ams_transform" : transformName
+                        });
+                    }
                     finishedCount++;
+                }
                 else if (job.state == 'Processing' || job.state == 'Scheduled')
                     processingCount++;
             }
@@ -276,6 +299,33 @@ export async function waitForAllJobsToFinish(transformName: string, jobQueue: Jo
             batchProcessing = false;
 
         await setTimeoutPromise(sleepInterval);
+    }
+}
+
+export async function updateJobInputMetadata(jobInput: JobInputHttp | JobInputAsset | JobInputUnion, metadata: Metadata) {
+
+    if (jobInput as JobInputHttp) {
+        let input = jobInput as JobInputHttp;
+        if (input.files) {
+
+            let sasUri =  URLBuilder.parse(remoteStorageSas);
+            let sasQuery = sasUri.getQuery()?.toString();
+            let blobUri = URLBuilder.parse(input.files[0]);
+            blobUri.setQuery(sasQuery);
+
+            // This sample assumes that the input files URL [0] is a SAS URL.
+            // Get the Blob service client using the Asset's SAS URL and the Anonymous credential method on the Blob service client
+            let blobClient = createBlobClient(blobUri.toString()); // at this point we are assuming this is a SAS URL and not just any HTTPS URL. 
+
+
+            try {
+                await blobClient.setMetadata(metadata);
+            } catch (error) {
+                console.error(`Error updating the metadata on the JobInput.  Please check to make sure that the source SAS URL allows writes to update metadata`);
+                console.log (error);
+            }
+           
+        }
     }
 }
 
@@ -315,7 +365,7 @@ export async function downloadResults(assetName: string, resultsFolder: string) 
         console.log(`Listing blobs in container ${containerName}...`);
         console.log("Downloading blobs to local directory in background...");
         let i = 1;
-        for await (const blob of containerClient.listBlobsFlat()) {
+        for await (const blob of containerClient.listBlobsFlat({includeMetadata:true})) {
             console.log(`Blob ${i++}: ${blob.name}`);
 
             let blockBlobClient = containerClient.getBlockBlobClient(blob.name);
@@ -431,7 +481,7 @@ export async function buildManifestPaths(streamingLocatorId: string | undefined,
     console.log();
 }
 
-export async function moveOutputAssetToSas(assetName: string, sasUrl: string, sourceFilePath: string | undefined, noCopyExtensionFilters:string[], deleteAssetsOnCopy: boolean) {
+export async function moveOutputAssetToSas(assetName: string, sasUrl: string, sourceFilePath: string | undefined, noCopyExtensionFilters: string[], deleteAssetsOnCopy: boolean) {
     let date = new Date();
     let readWritePermission: AssetContainerPermission = "ReadWrite";
 
@@ -462,10 +512,10 @@ export async function moveOutputAssetToSas(assetName: string, sasUrl: string, so
 
             for await (const blob of sourceContainerClient.listBlobsFlat()) {
 
-                let skipCopy:boolean = false;
+                let skipCopy: boolean = false;
                 // if the blob is on the no copy list, skip it...don't copy to output
                 for (const noCopyExtension of noCopyExtensionFilters) {
-                    if (blob.name.endsWith(noCopyExtension)){
+                    if (blob.name.endsWith(noCopyExtension)) {
                         skipCopy = true;
                     }
                 }
@@ -498,14 +548,14 @@ export async function moveOutputAssetToSas(assetName: string, sasUrl: string, so
                 if (result.errorCode)
                     console.log(`ERROR copying the blob ${blob.name} in asset ${assetName}`)
                 else
-                    console.log(`${date.toLocaleTimeString(undefined, {timeStyle:"medium",hour12:false})} FINISHED copying blob ${blob.name} from asset ${assetName} to destination`)
+                    console.log(`${date.toLocaleTimeString(undefined, { timeStyle: "medium", hour12: false })} FINISHED copying blob ${blob.name} from asset ${assetName} to destination`)
             }
 
             // Once all are copied, we delete the source asset if set to true.
             if (deleteAssetsOnCopy) {
                 // Delete the source Asset here.
                 await mediaServicesClient.assets.delete(resourceGroup, accountName, assetName);
-                console.log(`${date.toLocaleTimeString(undefined, {timeStyle:"medium",hour12:false})} DELETED the source asset:${assetName}`);
+                console.log(`${date.toLocaleTimeString(undefined, { timeStyle: "medium", hour12: false })} DELETED the source asset:${assetName}`);
             }
         }
 

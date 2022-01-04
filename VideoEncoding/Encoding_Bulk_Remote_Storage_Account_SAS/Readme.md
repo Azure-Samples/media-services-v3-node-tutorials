@@ -18,8 +18,9 @@ The workflow is as follows:
 
 1. Configure the .env file settings for this sample
 1. Generate a Read/List SAS token URL in the portal under the storage accounts "shared access signature" menu.  This operation requires you to have the right permissions in the remote account.
-   Grant the SAS allowed resource types : Service, Container, and Object.
-   Grant the SAS allowed permissions: Read, List.
+   Grant the SAS allowed services : Blob only
+   The allowed resource types can be restricted to : Service, Container and Object
+   Grant the SAS allowed permissions: Read, List. If you wish to use the metadata feature to update which source files were encoded by setting the "ams_encoded":"true" metadata property, you should also include Write permission. Do not allow Delete, Create, or Add
 1. Set the **REMOTESTORAGEACCOUNTSAS** environment variable to the generated SAS URL - this is where the sample will "crawl" for content
 1. Generate a seconds SAS URL for the **OUTPUTCONTAINERSAS** environment variable.  This can be a storage account root, or a specific container in a storage account to write the output hierarchy into.
    The sample can preserve virtual folder hierarchy, as well as re-use the container names that it finds in the remote storage account using the configuration settings at the top of the sample.
@@ -61,6 +62,37 @@ This sample requires you to set the following environment variables for it to wo
 
 * **REMOTESTORAGEACCOUNTSAS** - this can point to the root of a storage account, or to a specific container in a remote account. It can point to any account that you have a SAS URL with the following grant permissions -  Grant the allowed resource types : Service, Container, and Object, Grant the allowed permissions: Read, List
 * **OUTPUTCONTAINERSAS** - this points to the container that you want to write all of the outputs back into after encoding job is complete. The sample will preserve the original source hierarchy and virtual folders when writing the output. This can be modified or configured in the sample using the settings at the head of the sample configuration.
+
+
+### Using Blob Metadata to track status and skip encoded files
+
+This sample makes use of the blob Metadata features to store the status results of the encoding job on the source blobs. This is helpful if you want to skip over any files that were previous encoded already by AMS and just continue encoding new ones or ones that the job may have missed due to error or failure in running the script.
+
+You can see an example of how the metadata is stored in the "encodingJobHelpers.ts" function called "waitForAllJobsToFinish".  In this function, we update the metadata on the input blob if the job has an error or succeeds. 
+In order to support this, the source "remote" SAS URL must have Write permission granted.
+
+```typescript
+    if (job.state == 'Error' || job.state == 'Canceled') {
+        if (job.input) {
+            // If we fail, set the ams_encoded metadata flag to false, and update the status
+            updateJobInputMetadata(job.input, { "ams_encoded": "false", "ams_status": job.state});
+        }
+        errorCount++;
+    }
+    else if (job.state == 'Finished') {
+        // Update the source blob metadata to note that we encoded it already, the date it was encoded, and the transform name used
+        if (job.input) {
+            updateJobInputMetadata(job.input, 
+                { 
+                "ams_encoded": "true", 
+                "ams_status": job.state, 
+                "ams_encodedDate": new Date().toUTCString(),
+                "ams_transform" : transformName
+            });
+        }
+        finishedCount++;
+    }
+```
 
 ### Troubleshooting and Suggested Improvements (Mods)
 

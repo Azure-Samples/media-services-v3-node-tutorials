@@ -1,4 +1,4 @@
-import { BlobServiceClient, AnonymousCredential, BlobItem, ContainerListBlobFlatSegmentResponse } from "@azure/storage-blob";
+import { BlobServiceClient, AnonymousCredential, BlobItem, ContainerListBlobFlatSegmentResponse, BlobClient, Metadata } from "@azure/storage-blob";
 import { v4 as uuidv4 } from 'uuid';
 import * as path from "path";
 import * as url from 'whatwg-url';
@@ -14,6 +14,12 @@ let client: BlobServiceClient;
 export function createBlobServiceClient(sasUrl: string): BlobServiceClient {
     client = new BlobServiceClient(sasUrl);
     return client
+}
+
+
+export function createBlobClient(sasUrl: string): BlobClient {
+    let blobClient = new BlobClient(sasUrl);
+    return blobClient;
 }
 
 export async function listStorageContainers() {
@@ -48,7 +54,7 @@ export async function getSasUrlForBlob(containerName: string, blobPath: string):
     return urlBuilder.toString();
 }
 
-export async function listBlobsInContainer(container: string, pageSize: number, extensions?: string[], continuationToken?: string): Promise<BlobMatches |undefined> {
+export async function listBlobsInContainer(container: string, pageSize: number, extensions?: string[], continuationToken?: string): Promise<BlobMatches | undefined> {
 
     let containerClient = client.getContainerClient(container);
 
@@ -58,12 +64,12 @@ export async function listBlobsInContainer(container: string, pageSize: number, 
     let iterator: AsyncIterableIterator<ContainerListBlobFlatSegmentResponse>;
     let response: ContainerListBlobFlatSegmentResponse
 
-    if (continuationToken == ''){
+    if (continuationToken == '') {
         continuationToken = undefined;
     }
 
     try {
-        iterator = containerClient.listBlobsFlat().byPage({ maxPageSize: pageSize, continuationToken: continuationToken });
+        iterator = containerClient.listBlobsFlat({includeMetadata:true}).byPage({ maxPageSize: pageSize, continuationToken: continuationToken });
         response = (await iterator.next()).value;
 
         if (response.errorCode !== undefined)
@@ -72,12 +78,21 @@ export async function listBlobsInContainer(container: string, pageSize: number, 
         // Scan for blobs which match the extensions
         for (const blob of response.segment.blobItems) {
 
+            // If this blob already has metadata saying it was encoded by AMS, skip it. 
+            if (blob.metadata) {
+                if (blob.metadata["ams_encoded"] == "true") {
+                    console.log(`Blob ${blob.name} already encoded by AMS, skipping.`);
+                    continue;
+                }
+            }
+
             if (extensions !== undefined) {
                 extensions.forEach(element => {
                     if (blob.name.indexOf(element) > -1) {
                         console.log(`Found blob ${blob.name} with extension:${element} in container:${container}`)
                         blobList.push(blob);
                         i++
+
                     }
                 });
             }
@@ -107,6 +122,6 @@ export interface BlobMatches {
     blobItems: BlobItem[];
     matchCount: number;
     continuationToken: string | undefined;
-    marker:string | undefined;
+    marker: string | undefined;
     errorCode: string | undefined
 }

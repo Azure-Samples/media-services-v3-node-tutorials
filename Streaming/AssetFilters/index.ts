@@ -218,7 +218,7 @@ async function downloadResults(assetName: string, resultsFolder: string) {
     console.log(`Listing blobs in container ${containerName}...`);
     console.log("Downloading blobs to local directory in background...");
     let i = 1;
-    for await (const blob of containerClient.listBlobsFlat()) {
+    for await (const blob of containerClient.listBlobsFlat({includeMetadata:true})) {
       console.log(`Blob ${i++}: ${blob.name}`);
 
       let blockBlobClient = containerClient.getBlockBlobClient(blob.name);
