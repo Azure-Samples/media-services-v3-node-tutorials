@@ -84,8 +84,9 @@ export async function main() {
     throw({message:availability.message});
   }
 
-   // Create a new Media Services account
-   mediaServicesClient.mediaservices.createOrUpdate(resourceGroup, accountName, parameters);
+  // Create a new Media Services account
+  let response = await mediaServicesClient.mediaservices.createOrUpdate(resourceGroup, accountName, parameters);
+  console.log(`Successfully created account ${response.name}`)
 
 
 }
