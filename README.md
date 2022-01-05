@@ -30,7 +30,8 @@ The projects in this repository were created using Visual Studio Code.
 
 |Project name|Description|
 |---|---|
-|[Create an account from code](/Account/CreateAccount/create-account.ts)|The sample shows how to create a Media Services account and set the primary storage account, in addition to advanced configuration settings including Key Delivery IP allowlist, Managed Identity, storage auth, and bring your own encryption key.|
+|[Create an account from code](/Account/CreateAccount/create-account.ts)|The sample shows how to create a Media Services account and set the primary storage account, in addition to advanced configuration settings including Key Delivery IP allowlist, storage auth, and bring your own encryption key.|
+|[Create an account with user assigned managed identity code](/Account/CreateAccount/create-account_with_managed_identity.ts)|The sample shows how to create a Media Services account and set the primary storage account, in addition to advanced configuration settings including Key Delivery IP allowlist, user or system assigned Managed Identity, storage auth, and bring your own encryption key.|
 |[Hello World - list assets](/HelloWorld-ListAssets/list-assets.ts)|Basic example on how to connect and list assets |
 |[Live streaming with Standard Passthrough](/Live/Standard_Passthrough_Live_Event/index.ts)| Standard passthrough live streaming example. **WARNING**, make sure to check that all resources are cleaned up and no longer billing in portal when using live|
 |[Live streaming with Standard Passthrough with EventHub](/Live/Standard_Passthrough_Live_Event_with_EventHub/index.ts)| Demonstrates how to use Event Hub to subscribe to events on the live streaming channel. Events include encoder connections, disconnections, heartbeat, latency, discontinuity and drift issues.  **WARNING**, make sure to check that all resources are cleaned up and no longer billing in portal when using live|
