@@ -78,7 +78,7 @@ let batchCounter: number = 0;
 // Do that simply by opening a support ticket in the portal for increased quota and describe your scenario.
 // If you need to process a bunch of stuff fast, use a busy region, like one of the major HERO regions (US East, US West, North and West Europe, etc.)
 let batchJobSize: number = 10; // this controls how many concurrent jobs we want to submit and wait to complete processing. . 
-let pageSize: number = 100 // This controls how many blobs we read in the container per "page". 
+let pageSize: number = 500 // This controls how many blobs we read in the container per "page". 
 let jobInputQueue: string[] = [];
 
 // ----------- END SAMPLE SETTINGS -------------------------------
@@ -244,6 +244,7 @@ async function scanContainerBatchSubmitJobs(container: string, fileExtensionFilt
                 // If we have no matches, continue scanning the container by pageSize
                 if (blobMatches.matchCount == 0 && continuationToken != '') {
                     scanContainerBatchSubmitJobs(container, fileExtensionFilters, pageSize, continuationToken, transformName, skipAmsAssets);
+                    return;
                 }
 
                 // Create a job queue

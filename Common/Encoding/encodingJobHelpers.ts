@@ -322,7 +322,7 @@ export async function updateJobInputMetadata(jobInput: JobInputHttp | JobInputAs
                 await blobClient.setMetadata(metadata);
             } catch (error) {
                 console.error(`Error updating the metadata on the JobInput.  Please check to make sure that the source SAS URL allows writes to update metadata`);
-                console.log (error);
+                // console.log (error);
             }
            
         }
@@ -360,7 +360,7 @@ export async function downloadResults(assetName: string, resultsFolder: string) 
             fs.mkdirSync(directory, { recursive: true });
         } catch (err) {
             // directory exists
-            console.log(err);
+            // console.log(err);
         }
         console.log(`Listing blobs in container ${containerName}...`);
         console.log("Downloading blobs to local directory in background...");
