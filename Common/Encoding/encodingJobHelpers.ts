@@ -14,7 +14,7 @@ import {
 } from "@azure/arm-mediaservices"
 import * as factory from "../Encoding/TransformFactory";
 import { createBlobClient } from "../Storage/blobStorage";
-import { BlobServiceClient, AnonymousCredential,  Metadata} from "@azure/storage-blob";
+import { BlobServiceClient, AnonymousCredential,  Metadata, BlobItem} from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
 import * as path from "path";
@@ -484,6 +484,7 @@ export async function buildManifestPaths(streamingLocatorId: string | undefined,
 export async function moveOutputAssetToSas(assetName: string, sasUrl: string, sourceFilePath: string | undefined, noCopyExtensionFilters: string[], deleteAssetsOnCopy: boolean) {
     let date = new Date();
     let readWritePermission: AssetContainerPermission = "ReadWrite";
+    let baseFileName :string = "";
 
     try {
 
@@ -510,7 +511,20 @@ export async function moveOutputAssetToSas(assetName: string, sasUrl: string, so
             let sourceContainerClient = sourceBlobClient.getContainerClient('');
             let destinationContainerClient = destinationBlobClient.getContainerClient('');
 
-            for await (const blob of sourceContainerClient.listBlobsFlat()) {
+            let blobs = await sourceContainerClient.listBlobsFlat({includeCopy:true, includeUncommitedBlobs:true});
+            
+            let blobItemsFiltered :BlobItem []= [];
+
+            // First we loop through the asset blobs and do our business logic
+            // We want to filter out the unwanted blobs, and also store the base file name to use 
+            // when renaming the default Content Aware Encoding preset Thumbnail if it exists. 
+            for await (const blob of blobs){
+                // This will grab the GUID on the metadata file and use it for the Thumbnail file name if that exists.
+                // This is mostly a workaround to deal with the fact that the CAE preset outputs the same Thumbnail000001.jpg name for every encode
+    
+                if (blob.name.indexOf('_manifest') >-1) {
+                    baseFileName = blob.name.split("_manifest")[0];
+                }
 
                 let skipCopy: boolean = false;
                 // if the blob is on the no copy list, skip it...don't copy to output
@@ -523,6 +537,12 @@ export async function moveOutputAssetToSas(assetName: string, sasUrl: string, so
                 if (skipCopy) // if we found an extension above, continue withe the next blob
                     continue;
 
+                blobItemsFiltered.push(blob);
+            };
+
+            
+            for await (const blob of blobItemsFiltered) {
+
                 //let blockBlobClient = sourceContainerClient.getBlockBlobClient(blob.name);
                 // Lease the blob to prevent anyone else using it... throwing exception here -  UnhandledPromiseRejectionWarning: Unhandled promise rejection
                 //let lease = sourceContainerClient.getBlobLeaseClient(blob.name).acquireLease(60);
@@ -530,10 +550,21 @@ export async function moveOutputAssetToSas(assetName: string, sasUrl: string, so
 
                 // Create a destination Block Blob with the same name, unless the outputFolder is set to preserve the source hierarchy. 
                 let destinationBlobName: string;
+                let blobCopyName:string;
+
+                // Special case to rename the CAE preset default thumbnail, which cannot be changed in the preset transform settings. 
+                // This will use the GUID from the metadata file as the prefix name instead
+                if (blob.name.indexOf("Thumbnail000001") >-1 && baseFileName !==""){
+                    blobCopyName = baseFileName +"_thumbnail000001.jpg";
+                }else{
+                    blobCopyName = blob.name;
+                }
+
                 if (sourceFilePath) {
-                    destinationBlobName = `${sourceFilePath}/${blob.name}`;
+                    destinationBlobName = `${sourceFilePath}/${blobCopyName}`;
+                    
                 } else {
-                    destinationBlobName = blob.name
+                    destinationBlobName =blobCopyName;
                 }
 
                 let destinationBlob = destinationContainerClient.getBlockBlobClient(destinationBlobName);
@@ -548,7 +579,7 @@ export async function moveOutputAssetToSas(assetName: string, sasUrl: string, so
                 if (result.errorCode)
                     console.log(`ERROR copying the blob ${blob.name} in asset ${assetName}`)
                 else
-                    console.log(`${date.toLocaleTimeString(undefined, { timeStyle: "medium", hour12: false })} FINISHED copying blob ${blob.name} from asset ${assetName} to destination`)
+                    console.log(`${date.toLocaleTimeString(undefined, { timeStyle: "medium", hour12: false })} FINISHED copying blob ${destinationBlobName} from asset ${assetName} to destination`)
             }
 
             // Once all are copied, we delete the source asset if set to true.
