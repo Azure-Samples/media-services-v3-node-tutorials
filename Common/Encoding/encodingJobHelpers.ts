@@ -118,9 +118,6 @@ export async function submitJobWithInputSequence(transformName: string, jobName:
         inputs: inputAssets
     })
 
-    // BUG: This is failing to submit the job currently due to a bug in serialization/deserialization logic in the JS SDK that removes 
-    //      the assetName properties from the JobInputAssets in the JobInputSequence
-    //      This will get fixed with the PR here on the JS SDK - https://github.com/Azure/azure-sdk-for-js/pull/19455
 
     return await mediaServicesClient.jobs.create(resourceGroup, accountName, transformName, jobName, {
         input: jobInputSequence,
