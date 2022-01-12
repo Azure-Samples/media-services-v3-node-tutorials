@@ -144,37 +144,83 @@ export async function main() {
     // Create a second  Asset and upload the 2nd specified local video file into it.
     let input2: Asset = await jobHelper.createInputAsset("bumper" + uniqueness, bumperFile); // This creates and uploads the second video file.
 
-    // Create a Job Input Sequence with the two assets to stitch together
-    // In this sample we will stitch a bumper into the main video asset at the head, 6 seconds, and at the tail. We end the main video at 12s total. 
-    // TIMELINE :   | Bumper | Main video -----> 6 s | Bumper | Main Video 6s -----------> 12s | Bumper |s
-    // You can extend this sample to stitch any number of assets together and adjust the time offsets to create custom edits
+
 
     if (input.name === undefined || input2.name === undefined) {
         throw new Error("Error: Input assets were not created properly");
     }
 
-    let bumperJobInputAsset = factory.createJobInputAsset(
+    // Create a Job Input Sequence with the two assets to stitch together
+    // In this sample we will stitch a bumper into the main video asset at the head, 6 seconds, and at the tail. We end the main video at 12s total. 
+    // TIMELINE :   | Bumper | Main video -----> 6 s | Bumper | Main Video 6s -----------> 12s | Bumper |s
+    // You can extend this sample to stitch any number of assets together and adjust the time offsets to create custom edits
+    let jobInputSequence = factory.createJobInputSequence(
         {
-            assetName: input2.name,
-            start: {
-                odataType: "#Microsoft.Media.AbsoluteClipTime",
-                time: "PT0S"
-            },
-            label: "bumper"
+            inputs: [
+                // Start with the bumper video full...
+                {
+                    
+                    odataType:"#Microsoft.Media.JobInputAsset",
+                    assetName: input2.name,
+                    start : {
+                        odataType: "#Microsoft.Media.AbsoluteClipTime",
+                        time: "PT0S"
+                    }, 
+                    label: "bumper"
+                },
+                // Cut to 6 seconds of the main video
+                {
+                    odataType:"#Microsoft.Media.JobInputAsset",
+                    assetName: input2.name,
+                    start : {
+                        odataType: "#Microsoft.Media.AbsoluteClipTime",
+                        time: "PT0S"
+                    }, 
+                    end: {
+                        odataType : "#Microsoft.Media.AbsoluteClipTime",
+                        time: "PT6S"
+                    },
+                    label: "main"
+                },
+                // mid-roll the bumper again just to annoy people...
+                {
+                    
+                    odataType:"#Microsoft.Media.JobInputAsset",
+                    assetName: input2.name,
+                    start : {
+                        odataType: "#Microsoft.Media.AbsoluteClipTime",
+                        time: "PT0S"
+                    }, 
+                    label: "bumper"
+                },
+                // Go back to main video for 6 seconds
+                {
+                    odataType:"#Microsoft.Media.JobInputAsset",
+                    assetName: input2.name,
+                    start : {
+                        odataType: "#Microsoft.Media.AbsoluteClipTime",
+                        time: "PT6S"
+                    }, 
+                    end: {
+                        odataType : "#Microsoft.Media.AbsoluteClipTime",
+                        time: "PT12S"
+                    },
+                    label: "main"
+                },
+                 // post-roll the bumper again just to annoy people even more, as though this was Hulu with ads and their inventory
+                 {
+                    
+                    odataType:"#Microsoft.Media.JobInputAsset",
+                    assetName: input2.name,
+                    start : {
+                        odataType: "#Microsoft.Media.AbsoluteClipTime",
+                        time: "PT0S"
+                    }, 
+                    label: "bumper"
+                },
+            ]
         }
-    );
-
-    let mainJobInputAsset = factory.createJobInputAsset(
-        {
-            assetName: input.name,
-            start: {
-                odataType: "#Microsoft.Media.AbsoluteClipTime",
-                time: "PT0S"
-            },
-            label: "main"
-        }
-    );
-
+    )
 
     let outputAssetName = `${namePrefix}-output-${uniqueness}`;
     let jobName = `${namePrefix}-job-${uniqueness}`;
@@ -186,7 +232,7 @@ export async function main() {
     console.log(`Submitting the encoding job to the ${transformName} job queue...`);
 
     // This submit Job method was modified to take the inputSequence instead of a single input
-    let job = await jobHelper.submitJobWithInputSequence(transformName, jobName, [bumperJobInputAsset, mainJobInputAsset], outputAssetName);
+    let job = await jobHelper.submitJobWithInputSequence(transformName, jobName, jobInputSequence, outputAssetName);
 
     console.log(`Waiting for encoding Job - ${job.name} - to finish...`);
     job = await jobHelper.waitForJobToFinish(transformName, jobName);

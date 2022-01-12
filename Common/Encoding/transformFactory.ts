@@ -34,7 +34,10 @@ import {
     JobInputSequence,
     CopyVideo,
     CopyAudio,
-    TransportStreamFormat
+    TransportStreamFormat,
+    JobInputClip,
+    JobInputClipUnion,
+    JobInputUnion
 } from "@azure/arm-mediaservices"
 
 
@@ -192,14 +195,22 @@ export function createInputFile(inputFile: Omit<InputFile, "odataType">): InputF
     }
 }
 
-export function createJobInputAsset(inputAsset: Omit<JobInputAsset, "odataType">): JobInputAsset {
+export function createJobInputAsset(inputAsset: Omit<JobInputAsset, "odataType">): JobInputAsset  {
     return {
         odataType: "#Microsoft.Media.JobInputAsset",
         ...inputAsset,
     }
 }
 
-export function createJobInputHttp(inputHttp: Omit<JobInputHttp, "odataType">): JobInputHttp {
+export function createJobInputClip(inputAsset: Omit<JobInputClip, "odataType">): JobInputClip {
+    return {
+        odataType: "#Microsoft.Media.JobInputClip",
+        ...inputAsset,
+    }
+}
+
+
+export function createJobInputHttp(inputHttp: Omit<JobInputHttp, "odataType">): JobInputHttp{
     return {
         odataType: "#Microsoft.Media.JobInputHttp",
         ...inputHttp,

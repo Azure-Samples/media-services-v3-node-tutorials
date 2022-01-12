@@ -10,7 +10,8 @@ import {
     JobInputUnion,
     PresetUnion,
     InputDefinitionUnion,
-    Job
+    Job,
+    JobInputSequence
 } from "@azure/arm-mediaservices"
 import * as factory from "../Encoding/TransformFactory";
 import { createBlobClient } from "../Storage/blobStorage";
@@ -102,7 +103,7 @@ export async function submitJobMultiInputs(transformName: string, jobName: strin
 
 }
 
-export async function submitJobWithInputSequence(transformName: string, jobName: string, inputAssets: JobInputAsset[], outputAssetName: string) {
+export async function submitJobWithInputSequence(transformName: string, jobName: string, inputSequence: JobInputSequence, outputAssetName: string) {
     if (outputAssetName === undefined) {
         throw new Error("OutputAsset Name is not defined. Check creation of the output asset");
     }
@@ -113,14 +114,9 @@ export async function submitJobWithInputSequence(transformName: string, jobName:
         })
     ];
 
-    // Create the job input sequence passing the list of assets to it.
-    let jobInputSequence = factory.createJobInputSequence({
-        inputs: inputAssets
-    })
-
 
     return await mediaServicesClient.jobs.create(resourceGroup, accountName, transformName, jobName, {
-        input: jobInputSequence,
+        input: inputSequence,
         outputs: jobOutputs
     });
 
