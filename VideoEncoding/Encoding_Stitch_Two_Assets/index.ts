@@ -171,7 +171,7 @@ export async function main() {
                 // Cut to 6 seconds of the main video
                 {
                     odataType:"#Microsoft.Media.JobInputAsset",
-                    assetName: input2.name,
+                    assetName: input.name,
                     start : {
                         odataType: "#Microsoft.Media.AbsoluteClipTime",
                         time: "PT0S"
@@ -196,7 +196,7 @@ export async function main() {
                 // Go back to main video for 6 seconds
                 {
                     odataType:"#Microsoft.Media.JobInputAsset",
-                    assetName: input2.name,
+                    assetName: input.name,
                     start : {
                         odataType: "#Microsoft.Media.AbsoluteClipTime",
                         time: "PT6S"
