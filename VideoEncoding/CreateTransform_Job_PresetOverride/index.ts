@@ -183,7 +183,7 @@ export async function main() {
      let standardPreset_HEVC: StandardEncoderPreset = factory.createStandardEncoderPreset({
         codecs: [
             factory.createH265Video({
-                // Next, add a H264Video for the video encoding
+                // Next, add a H265Video for the video encoding
                 keyFrameInterval: "PT2S", //ISO 8601 format supported
                 complexity: KnownH264Complexity.Speed,
                 layers: [
