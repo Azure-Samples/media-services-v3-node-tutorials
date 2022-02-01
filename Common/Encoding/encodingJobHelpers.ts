@@ -63,8 +63,8 @@ export async function submitJob(transformName: string, jobName: string, jobInput
         outputs: jobOutputs,
         // Pass in custom correlation data to match up to your customer tenants, or any custom job tracking information you wish to log in the event grid events
         correlationData: correlationData,
-
-    });
+        
+    },);
 
 }
 
