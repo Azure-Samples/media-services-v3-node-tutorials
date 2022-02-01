@@ -32,10 +32,10 @@ export async function main() {
   const clientId: string = process.env.AZURE_CLIENT_ID as string;
   const secret: string = process.env.AZURE_CLIENT_SECRET as string;
   const tenantDomain: string = process.env.AZURE_TENANT_DOMAIN as string;
-  const subscriptionId: string = process.env.SUBSCRIPTIONID as string;
-  const resourceGroup: string = process.env.RESOURCEGROUP as string;
-  const storageAccountName: string = process.env.STORAGEACCOUNTNAME as string;
-  const managedIdentityName: string = process.env.USERASSIGNEDIDENTITY as string;
+  const subscriptionId: string = process.env.AZURE_SUBSCRIPTION_ID as string;
+  const resourceGroup: string = process.env.AZURE_RESOURCE_GROUP as string;
+  const storageAccountName: string = process.env.AZURE_STORAGE_ACCOUNT_NAME as string;
+  const managedIdentityName: string = process.env.AZURE_USER_ASSIGNED_IDENTITY as string;
 
   // This sample uses the default Azure Credential object, which relies on the environment variable settings.
   // If you wish to use User assigned managed identity, see the samples for v2 of @azure/identity
