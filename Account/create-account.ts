@@ -18,7 +18,6 @@ export async function main() {
   // from your Media Services account's API Access page in the Azure portal.
   const clientId: string = process.env.AZURE_CLIENT_ID as string;
   const secret: string = process.env.AZURE_CLIENT_SECRET as string;
-  const tenantDomain: string = process.env.AZURE_TENANT_DOMAIN as string;
   const subscriptionId: string = process.env.AZURE_SUBSCRIPTION_ID as string;
   const resourceGroup: string = process.env.AZURE_RESOURCE_GROUP as string;
   const storageAccountName: string = process.env.AZURE_STORAGE_ACCOUNT_NAME as string;
