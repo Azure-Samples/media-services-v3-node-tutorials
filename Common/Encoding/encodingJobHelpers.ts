@@ -13,7 +13,7 @@ import {
     Job,
     JobInputSequence
 } from "@azure/arm-mediaservices"
-import * as factory from "../Encoding/TransformFactory";
+import * as factory from "../Encoding/transformFactory";
 import { createBlobClient } from "../Storage/blobStorage";
 import { BlobServiceClient, AnonymousCredential,  Metadata, BlobItem} from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";

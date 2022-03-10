@@ -50,7 +50,7 @@
     "url": "https://github.com/azure/azures-sdk-for-node/issues"
   },
   "scripts": {
-    "build": "build:tsc",
+    "build": "npm run build:tsc",
     "build:tsc": "tsc -p ./tsconfig.json"
   }
 }

@@ -17,7 +17,7 @@ import {
     JobInputHttp
 } from '@azure/arm-mediaservices';
 import * as jobHelper from "../../Common/Encoding/encodingJobHelpers";
-import * as factory from "../../Common/Encoding/TransformFactory";
+import * as factory from "../../Common/Encoding/transformFactory";
 import * as blobHelper from "../../Common/Storage/blobStorage";
 import { v4 as uuidv4 } from 'uuid';
 import * as path from "path";
