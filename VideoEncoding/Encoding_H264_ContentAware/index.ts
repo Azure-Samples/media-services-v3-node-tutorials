@@ -10,7 +10,7 @@ import {
     Transform,
     KnownEncoderNamedPreset
 } from '@azure/arm-mediaservices';
-import * as factory  from "../../Common/Encoding/TransformFactory";
+import * as factory  from "../../Common/Encoding/transformFactory";
 import * as jobHelper from "../../Common/Encoding/encodingJobHelpers";
 import { v4 as uuidv4 } from 'uuid';
 // Load the .env file if it exists

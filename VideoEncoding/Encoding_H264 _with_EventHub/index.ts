@@ -22,7 +22,7 @@ import {
     Transform,
     KnownH264Complexity
 } from '@azure/arm-mediaservices';
-import * as factory  from "../../Common/Encoding/TransformFactory";
+import * as factory  from "../../Common/Encoding/transformFactory";
 import * as jobHelper from "../../Common/Encoding/encodingJobHelpers";
 import { EventHubConsumerClient, earliestEventPosition } from "@azure/event-hubs";
 import { EventProcessor } from "../../Common/EventHub/eventProcessor";

@@ -13,7 +13,7 @@ import {
   KnownAudioAnalysisMode,
   JobOutputUnion,
 } from '@azure/arm-mediaservices';
-import * as factory  from "../Common/Encoding/TransformFactory";
+import * as factory  from "../Common/Encoding/transformFactory";
 import { BlobServiceClient, AnonymousCredential } from "@azure/storage-blob";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
