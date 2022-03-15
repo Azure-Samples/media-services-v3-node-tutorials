@@ -41,6 +41,7 @@
     "VideoAnalytics/*.ts",
     "AudioAnalytics/*.ts",
     "VideoEncoding/*/*.ts",
-    "Account/*.ts"
-,   "Live/*/*.ts"  ]
+    "Account/*.ts",
+    "Assets/*.ts",
+    "Live/*/*.ts"  ]
 }
