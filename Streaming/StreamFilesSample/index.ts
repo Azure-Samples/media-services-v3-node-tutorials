@@ -14,7 +14,7 @@ import {
   BlobServiceClient, 
   AnonymousCredential
 } from "@azure/storage-blob";
-import * as factory  from "../Common/Encoding/transformFactory";
+import * as factory  from "../../Common/Encoding/transformFactory";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
 import * as path from "path";
