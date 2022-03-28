@@ -45,6 +45,7 @@ import { DefaultAzureCredential } from "@azure/identity";
 import {
     AzureMediaServices,
     IPRange,
+    KnownLiveEventEncodingType,
     LiveEvent,
     LiveEventInputAccessControl,
     LiveEventPreview,
@@ -214,12 +215,12 @@ export async function main() {
                 // Set this to Basic pass-through, Standard pass-through, Standard or Premium1080P to use the cloud live encoder.
                 // See https://go.microsoft.com/fwlink/?linkid=2095101 for more information
                 // Otherwise, leave as "None" to use pass-through mode
-                encodingType: "PassthroughStandard",
+                encodingType: KnownLiveEventEncodingType.PassthroughStandard,
                 // OPTIONS for encoding type you can use:
-                // encodingType: "PassthroughBasic", // Basic pass-through mode - the cheapest option!
-                // encodingType: "PassthroughStandard", // also known as standard pass-through mode (formerly "none")
-                // encodingType: "Premium1080p",// live transcoding up to 1080P 30fps with adaptive bitrate set
-                // encodingType: "Standard",// use live transcoding in the cloud for 720P 30fps with adaptive bitrate set
+                // encodingType: KnownLiveEventEncodingType.PassthroughBasic, // Basic pass-through mode - the cheapest option!
+                // encodingType: KnownLiveEventEncodingType.PassthroughStandard, // also known as standard pass-through mode (formerly "none")
+                // encodingType: KnownLiveEventEncodingType.Premium1080p,// live transcoding up to 1080P 30fps with adaptive bitrate set
+                // encodingType: KnownLiveEventEncodingType.Standard,// use live transcoding in the cloud for 720P 30fps with adaptive bitrate set
                 //
                 // OPTIONS using live cloud encoding type:
                 // keyFrameInterval: "PT2S", //If this value is not set for an encoding live event, the fragment duration defaults to 2 seconds. The value cannot be set for pass-through live events.
