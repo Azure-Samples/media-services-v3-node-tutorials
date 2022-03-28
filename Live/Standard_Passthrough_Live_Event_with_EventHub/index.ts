@@ -46,6 +46,8 @@ import {
     AzureMediaServices,
     IPRange,
     KnownLiveEventEncodingType,
+    KnownLiveEventInputProtocol,
+    KnownStreamingPolicyStreamingProtocol,
     LiveEvent,
     LiveEventInputAccessControl,
     LiveEventPreview,
@@ -204,7 +206,7 @@ export async function main() {
             //hostnamePrefix: "somethingstatic", /// When using Static host name true, you can control the host prefix name here if desired 
             // 1) Set up the input settings for the Live event...
             input: {
-                streamingProtocol: "RTMP", // options are RTMP or Smooth Streaming ingest format.
+                streamingProtocol: KnownLiveEventInputProtocol.Rtmp, // options are RTMP or Smooth Streaming ingest format.
                 accessControl: liveEventInputAccess,  // controls the IP restriction for the source encoder. 
                 // keyFrameIntervalDuration: "PT2S",  // Set this to match the ingest encoder's settings. This should not be used for encoding channels  
                 accessToken: "9eb1f703b149417c8448771867f48501" // Use this value when you want to make sure the ingest URL is static and always the same. If omitted, the service will generate a random GUID value.
