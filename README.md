@@ -26,7 +26,8 @@ See [TypeScript Design Guidelines](https://azure.github.io/azure-sdk/typescript_
 
 ## Overview
 
-The projects in this repository were created using Visual Studio Code.
+The projects in this repository were created using Visual Studio Code with Node.js version 12.18 or higher
+
 
 |Project name|Description|
 |---|---|

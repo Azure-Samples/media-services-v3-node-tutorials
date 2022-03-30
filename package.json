@@ -5,11 +5,12 @@
     "John Deutscher <johndeu@microsoft.com>"
   ],
   "version": "0.2.0",
-  "description": "A sample to demonstrate using the media services api using Nodejs",
+  "description": "A sample to demonstrate using the media services api using Nodejs, created using Node.js version 12.x",
   "keywords": [
     "node",
     "microsoft",
-    "azure"
+    "azure", 
+    "typescript"
   ],
   "main": "index.ts",
   "license": "MIT",
