@@ -212,7 +212,14 @@ export async function main() {
                 //
                 // OPTIONS using live cloud encoding type:
                 // keyFrameInterval: "PT2S", //If this value is not set for an encoding live event, the fragment duration defaults to 2 seconds. The value cannot be set for pass-through live events.
-                // presetName: null, // only used for custom defined presets. 
+
+                // For Low Latency HLS live streaming there are two new custom presets available: 
+                // "720p-3-Layer":  For use with a Standard 720P encodingType live event
+                //      {"ElementaryStreams":[{"Type":"Video","BitRate":2500000,"Width":1280,"Height":720},{"Type":"Video","BitRate":1000000,"Width":960,"Height":540},{"Type":"Video","BitRate":400000,"Width":640,"Height":360}]}"
+                // "1080p-4-Layer":  For use with a Premium1080p encodingType live event
+                //      {"ElementaryStreams":[{"Type":"Video","BitRate":4500000,"Width":1920,"Height":1080},{"Type":"Video","BitRate":2200000,"Width":1280,"Height":720},{"Type":"Video","BitRate":1000000,"Width":960,"Height":540},{"Type":"Video","BitRate":400000,"Width":640,"Height":360}]}
+                presetName: "720p-3-Layer",  // Encodes to 3 layers as defined above. 
+                
                 //stretchMode: "None" // can be used to determine stretch on encoder mode
             },
             // 3) Set up the Preview endpoint for monitoring based on the settings above we already set. 
