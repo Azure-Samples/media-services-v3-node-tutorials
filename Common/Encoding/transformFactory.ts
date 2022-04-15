@@ -36,8 +36,6 @@ import {
     CopyAudio,
     TransportStreamFormat,
     JobInputClip,
-    JobInputClipUnion,
-    JobInputUnion
 } from "@azure/arm-mediaservices"
 
 
@@ -64,7 +62,7 @@ export function createH264Video(video: Omit<H264Video, "odataType">): H264Video 
 
 export function createH264Layer(layer: Omit<H264Layer, "odataType">): H264Layer {
     return {
-        odataType: "#Microsoft.Media.H264Layer",
+        //odataType: "#Microsoft.Media.H264Layer",
         ...layer,
     }
 }
@@ -78,7 +76,7 @@ export function createH265Video(video: Omit<H265Video, "odataType">): H265Video 
 
 export function createH265Layer(layer: Omit<H265Layer, "odataType">): H265Layer {
     return {
-        odataType: "#Microsoft.Media.H265Layer",
+        //odataType: "#Microsoft.Media.H265Layer",
         ...layer,
     }
 }
@@ -99,7 +97,7 @@ export function createPngImage(image: Omit<PngImage, "odataType">): PngImage {
 
 export function createPngLayer(image: Omit<PngLayer, "odataType">): PngLayer {
     return {
-        odataType: "#Microsoft.Media.PngLayer",
+        //odataType: "#Microsoft.Media.PngLayer",
         ...image,
     }
 }
@@ -120,7 +118,7 @@ export function createJpgImage(image: Omit<JpgImage, "odataType">): JpgImage {
 
 export function createJpgLayer(image: Omit<JpgLayer, "odataType">): JpgLayer {
     return {
-        odataType: "#Microsoft.Media.JpgLayer",
+        //odataType: "#Microsoft.Media.JpgLayer",
         ...image,
     }
 }

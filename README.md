@@ -12,7 +12,7 @@ description: "This repository contains samples showing how to use Azure Media Se
 urlFragment: media-services-v3-node-tutorials
 ---
 
-# Azure Media Services v3 Node samples (JavaScript SDK version 10.0.0 or higher)
+# Azure Media Services v3 Node samples (JavaScript SDK version 11.0.0 or higher)
 
 This repository contains samples showing how to use the [Azure Media Services v3](https://docs.microsoft.com/azure/media-services/latest/media-services-overview) API using the [@azure/arm-mediaservices](https://www.npmjs.com/package/@azure/arm-mediaservices) package for node.js.
 
@@ -22,12 +22,16 @@ See [TypeScript Design Guidelines](https://azure.github.io/azure-sdk/typescript_
 
 > [!NOTE]
 > To make sure you are using the latest package, check [@azure/arm-mediaservices](https://www.npmjs.com/package/@azure/arm-mediaservices).
-> Version 10.0.0 of *@azure/arm-mediaservices* supports the [Media Services ARM API version 2021-06-01](https://github.com/Azure/azure-rest-api-specs/tree/main/specification/mediaservices/resource-manager/Microsoft.Media/stable/2021-06-01)
+> Version 11.0.0 of *@azure/arm-mediaservices* supports the [Media Services ARM API version 2021-11-01](https://github.com/Azure/azure-rest-api-specs/tree/main/specification/mediaservices/resource-manager/Microsoft.Media/stable/2021-11-01)
 
 ## Overview
 
+
+### Node.js Version
+
 The projects in this repository were created using Visual Studio Code with Node.js version 12.18 or higher
 
+### Projects
 
 |Project name|Description|
 |---|---|
@@ -35,8 +39,8 @@ The projects in this repository were created using Visual Studio Code with Node.
 |[Create an account with user assigned managed identity code](/Account/CreateAccount/create-account_with_managed_identity.ts)|The sample shows how to create a Media Services account and set the primary storage account, in addition to advanced configuration settings including Key Delivery IP allowlist, user or system assigned Managed Identity, storage auth, and bring your own encryption key.|
 |[Hello World - list assets](/HelloWorld-ListAssets/list-assets.ts)|Basic example on how to connect and list assets |
 |[Live streaming with Standard Passthrough](/Live/Standard_Passthrough_Live_Event/index.ts)| Standard passthrough live streaming example. **WARNING**, make sure to check that all resources are cleaned up and no longer billing in portal when using live|
-|[Live streaming with Standard Passthrough with EventHub](/Live/Standard_Passthrough_Live_Event_with_EventHub/index.ts)| Demonstrates how to use Event Hub to subscribe to events on the live streaming channel. Events include encoder connections, disconnections, heartbeat, latency, discontinuity and drift issues.  **WARNING**, make sure to check that all resources are cleaned up and no longer billing in portal when using live|
-|[Live streaming with Basic Passthrough](/Live/Basic_Passthrough_Live_Event/index.ts)| Shows how to set up the basic passthrough live event if you only need to broadcast a low cost UGC channel. **WARNING**, make sure to check that all resources are cleaned up and no longer billing in portal when using live|
+|[Live streaming with Standard Passthrough with EventHub](/Live/Standard_Passthrough_Live_Event_with_EventHub/index.ts)| Demonstrates how to use Event Hub to subscribe to events on the live event. Events include encoder connections, disconnections, heartbeat, latency, discontinuity and drift issues.  **WARNING**, make sure to check that all resources are cleaned up and no longer billing in portal when using live|
+|[Live streaming with Basic Passthrough](/Live/Basic_Passthrough_Live_Event/index.ts)| Shows how to set up the basic passthrough live event if you only need to broadcast a low cost UGC live event. **WARNING**, make sure to check that all resources are cleaned up and no longer billing in portal when using live|
 |[Low Latency Live (LL-HLS) with 720P Standard encoding](/Live/720P_Low_Latency_Encoding_Live_Event/index.ts)| Enable low latency live streaming with Apple's LL-HLS protocol and encode with the new 3-layer 720P HD adaptive bitrate encoding preset. **WARNING**, make sure to check that all resources are cleaned up and no longer billing in portal when using live|
 |[Live streaming with 720P Standard encoding](/Live/720P_Encoding_Live_Event/index.ts)| Use live encoding in the cloud with the 720P HD adaptive bitrate encoding preset. **WARNING**, make sure to check that all resources are cleaned up and no longer billing in portal when using live|
 |[Live streaming with 1080P encoding](/Live/720P_Encoding_Live_Event/index.ts)| Use live encoding in the cloud with the 1080P HD adaptive bitrate encoding preset. **WARNING**, make sure to check that all resources are cleaned up and no longer billing in portal when using live|
@@ -64,7 +68,7 @@ The projects in this repository were created using Visual Studio Code with Node.
 ## Prerequisites
 
 1. Download and install [Visual Studio Code](https://code.visualstudio.com/Download)
-2. Install [Node.js](https://nodejs.org/en/download/)
+2. Install [Node.js](https://nodejs.org/en/download/) version 12.18 or higher
 3. Download and install [TypeScript](https://www.typescriptlang.org/download)
 
 ### Install TypeScript via npm

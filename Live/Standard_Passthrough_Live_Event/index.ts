@@ -198,7 +198,7 @@ export async function main() {
             input: {
                 streamingProtocol: KnownLiveEventInputProtocol.Rtmp, // options are RTMP or Smooth Streaming ingest format.
                 accessControl: liveEventInputAccess,  // controls the IP restriction for the source encoder. 
-                // keyFrameIntervalDuration: "PT2S",  // Set this to match the ingest encoder's settings. This should not be used for encoding channels  
+                // keyFrameIntervalDuration: "PT2S",  // Set this to match the ingest encoder's settings. This should not be used for encoding live events  
                 accessToken: "9eb1f703b149417c8448771867f48501" // Use this value when you want to make sure the ingest URL is static and always the same. If omitted, the service will generate a random GUID value.
             },
 
@@ -356,7 +356,7 @@ export async function main() {
         // Lets patch something on the fly before starting, just to show whe can modify things in Stopped state. 
         // With the Channel stopped I should be able to update a few things as needed...
         // Lets just modify the accessToken on the ingest endpoint and the hostname prefix used. 
-        // These should be unique per channel in your account 
+        // These should be unique per live event in your account 
         if (liveEventCreate.input != null) {
             liveEventCreate.input.accessToken = "8257f1d1-8247-4318-b743-f541c20ea7a6";
             liveEventCreate.hostnamePrefix = `${liveEventName}-updated`;
