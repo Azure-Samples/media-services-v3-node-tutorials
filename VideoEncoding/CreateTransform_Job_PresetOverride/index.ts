@@ -149,7 +149,7 @@ export async function main() {
             factory.createH264Video({
                 // Next, add a H264Video for the video encoding
                 keyFrameInterval: "PT2S", //ISO 8601 format supported
-                complexity: KnownH264Complexity.Speed,
+                complexity: KnownH264Complexity.Speed, // this is the cheapest setting. Set to Balanced or Quality as needed.
                 layers: [
                     factory.createH264Layer({
                         bitrate: 3600000, // Units are in bits per second and not kbps or Mbps - 3.6 Mbps or 3,600 kbps
@@ -185,7 +185,7 @@ export async function main() {
             factory.createH265Video({
                 // Next, add a H265Video for the video encoding
                 keyFrameInterval: "PT2S", //ISO 8601 format supported
-                complexity: KnownH264Complexity.Speed,
+                complexity: KnownH264Complexity.Speed, // this is the cheapest setting. Set to Balanced or Quality as needed.
                 layers: [
                     factory.createH265Layer({
                         bitrate: 1800000, // Units are in bits per second and not kbps or Mbps - 3.6 Mbps or 3,600 kbps
