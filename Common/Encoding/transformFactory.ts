@@ -36,6 +36,8 @@ import {
     CopyAudio,
     TransportStreamFormat,
     JobInputClip,
+    FromAllInputFile,
+    FromEachInputFile,
 } from "@azure/arm-mediaservices"
 
 
@@ -193,6 +195,21 @@ export function createInputFile(inputFile: Omit<InputFile, "odataType">): InputF
     }
 }
 
+export function createFromAllInputFile(fromAllInputFile: Omit<FromAllInputFile, "odataType">): FromAllInputFile {
+    return {
+        odataType: "#Microsoft.Media.FromAllInputFile",
+        ...fromAllInputFile,
+    }
+}
+
+export function createFromEachInputFile(fromEachInputFile: Omit<FromEachInputFile, "odataType">): FromEachInputFile {
+    return {
+        odataType: "#Microsoft.Media.FromEachInputFile",
+        ...fromEachInputFile,
+    }
+}
+
+
 export function createJobInputAsset(inputAsset: Omit<JobInputAsset, "odataType">): JobInputAsset  {
     return {
         odataType: "#Microsoft.Media.JobInputAsset",
@@ -243,3 +260,5 @@ export function createVideoOverlay(videoOverlay: Omit<VideoOverlay, "odataType">
         ...videoOverlay,
     }
 }
+
+
