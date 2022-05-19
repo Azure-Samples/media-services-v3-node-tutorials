@@ -83,7 +83,7 @@ export async function main() {
     // This allows you to configure the encoder settings to control the balance between speed and quality. Example: set Complexity as Speed for faster encoding but less compression efficiency.
 
     let presetConfig: PresetConfigurations = {
-        complexity: KnownComplexity.Speed,
+        complexity: KnownComplexity.Speed, // set this to Speed, Balanced, or Quality. Speed is the cheapest option.
         // The output includes both audio and video.
         interleaveOutput: KnownInterleaveOutput.InterleavedOutput,
         // The key frame interval in seconds. Example: set as 2 to reduce the playback buffering for some players.

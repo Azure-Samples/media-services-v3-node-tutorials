@@ -8,7 +8,8 @@ import {
     KnownOnErrorType,
     KnownPriority,
     Transform,
-    KnownEncoderNamedPreset
+    KnownEncoderNamedPreset,
+    KnownComplexity
 } from '@azure/arm-mediaservices';
 import * as factory  from "../../Common/Encoding/transformFactory";
 import * as jobHelper from "../../Common/Encoding/encodingJobHelpers";
@@ -77,7 +78,9 @@ export async function main() {
             presetName: KnownEncoderNamedPreset.ContentAwareEncoding,
             // Configurations can be used to control values used by the Content Aware Encoding Preset.
             // See the next sample for Encoding_H264_ContentAware_Constrained for an example of using this property
-            configurations: {}
+            configurations: {
+                complexity:KnownComplexity.Speed // Set this to Speed, Balanced or Quality.  Speed is the cheapest option.
+            }
         }),
         // What should we do with the job if there is an error?
         onError: KnownOnErrorType.StopProcessingJob,
