@@ -79,7 +79,7 @@ export async function main() {
             // Configurations can be used to control values used by the Content Aware Encoding Preset.
             // See the next sample for Encoding_H264_ContentAware_Constrained for an example of using this property
             configurations: {
-                complexity:KnownComplexity.Speed // Set this to Speed, Balanced or Quality.  Speed is the cheapest option.
+                complexity:KnownComplexity.Balanced // Content Aware encoding is the same rate for Speed, Balanced or Quality, unlike custom presets with Speed.
             }
         }),
         // What should we do with the job if there is an error?
