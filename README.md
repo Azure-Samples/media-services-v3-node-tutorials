@@ -40,6 +40,9 @@ The projects in this repository were created using Visual Studio Code with Node.
 |[Create an account with user assigned managed identity code](/Account/CreateAccount/create-account_with_managed_identity.ts)|The sample shows how to create a Media Services account and set the primary storage account, in addition to advanced configuration settings including Key Delivery IP allowlist, user or system assigned Managed Identity, storage auth, and bring your own encryption key.|
 | **Assets** ||
 |[Hello World - list assets](/HelloWorld-ListAssets/list-assets.ts)|Basic example on how to connect and list assets |
+|[Get the storage container from an asset](/Assets/get-container-from-assets.ts)|Demonstrates how to find the Azure storage account container used to store the contents of this asset. This can be used to then edit sources, modify, or copy contents using the Azure storage SDK library |
+|[List assets using filters](/Assets/list-assets-filtered.ts)| Use filters in your list assets calls to find assets by date and order them.|
+|[List tracks in an asset](/Assets/list-tracks-in-assets.ts)| Use the tracks collection to list all of the track names and track types (audio, video, or text) available on an asset|
 | **Streaming** ||
 |[Live streaming with standard passthrough](/Live/Standard_Passthrough_Live_Event/index.ts)| Standard passthrough live streaming example. **WARNING**, make sure to check that all resources are cleaned up and no longer billing in portal when using live|
 |[Live streaming with standard passthrough with EventHubs](/Live/Standard_Passthrough_Live_Event_with_EventHub/index.ts)| Demonstrates how to use Event Hub to subscribe to events on the live event. Events include encoder connections, disconnections, heartbeat, latency, discontinuity and drift issues.  **WARNING**, make sure to check that all resources are cleaned up and no longer billing in portal when using live|
