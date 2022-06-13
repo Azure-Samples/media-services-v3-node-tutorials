@@ -26,8 +26,14 @@ See [TypeScript Design Guidelines](https://azure.github.io/azure-sdk/typescript_
 
 ## Overview
 
+### Requirements 
 
-### Node.js Version
+- Node 12+ 
+- NPM 6+
+- Azure CLI is required for some samples [Install the Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
+- Visual Studio Code
+
+### Node.js Version note
 
 The projects in this repository were created using Visual Studio Code with Node.js version 12.18 or higher
 
