@@ -56,6 +56,7 @@ import {
     KnownLiveEventInputProtocol,
     KnownStreamOptionsFlag
 } from "@azure/arm-mediaservices";
+import moment from "moment";
 
 // </ImportMediaServices>
 
@@ -220,7 +221,7 @@ export async function main() {
                 // "1080p-4-Layer":  For use with a Premium1080p encodingType live event
                 //      {"ElementaryStreams":[{"Type":"Video","BitRate":4500000,"Width":1920,"Height":1080},{"Type":"Video","BitRate":2200000,"Width":1280,"Height":720},{"Type":"Video","BitRate":1000000,"Width":960,"Height":540},{"Type":"Video","BitRate":400000,"Width":640,"Height":360}]}
                 presetName: "720p-3-Layer",  // Encodes to 3 layers as defined above. 
-                
+
                 //stretchMode: "None" // can be used to determine stretch on encoder mode
             },
             // 3) Set up the Preview endpoint for monitoring based on the settings above we already set. 
@@ -234,7 +235,7 @@ export async function main() {
                 "LowLatencyV2" // Enables Low latency HLS (LL-HLS) streaming
             ],
             // </EnableLowLatencyLive>
-            
+
             // 5) Optionally enable live transcriptions if desired. 
             // WARNING : This is extra cost ($$$), so please check pricing before enabling. Transcriptions are not supported on PassthroughBasic.
             //           switch this sample to use encodingType: "PassthroughStandard" first before un-commenting the transcriptions object below. 
@@ -406,15 +407,30 @@ export async function main() {
             console.log();
         })
 
-
-        // <GetIngestURL>
-
         // Refresh the liveEvent object's settings after starting it...
         let liveEvent = await mediaServicesClient.liveEvents.get(
             resourceGroup,
             accountName,
             liveEventName
         )
+
+        // Set some tags on this live event for later usage. 
+        // You can put anything you want on here, like a customer tenant name, id, etc.
+        // One nice trick is to set the startTime, and use that in an Azure Function to shut down any long running events that you 
+        // may have forgot about and left going for too long. 
+        liveEvent.tags = {
+            "startTime": moment().format()
+        }
+
+        await mediaServicesClient.liveEvents.beginUpdateAndWait(
+            resourceGroup,
+            accountName,
+            liveEventName,
+            liveEvent,
+            { updateIntervalInMs: longRunningOperationUpdateIntervalMs }
+        )
+
+        // <GetIngestURL>
 
         // Get the RTMP ingest URL to configure in OBS Studio. 
         // The endpoints is a collection of RTMP primary and secondary, and RTMPS primary and secondary URLs. 

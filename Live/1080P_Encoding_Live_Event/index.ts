@@ -54,6 +54,7 @@ import {
     KnownLiveEventEncodingType,
     KnownLiveEventInputProtocol
 } from "@azure/arm-mediaservices";
+import moment from "moment";
 
 // </ImportMediaServices>
 
@@ -364,12 +365,12 @@ export async function main() {
                 // The liveEvent returned here contains all of the updated properties you made above, and you can use the details in here to log or adjust your code. 
                 console.log(`Updated the Live Event accessToken for live event named: ${liveEvent.name}`);
             })
-            .catch((reason) => {
-                // Check for ErrorResponse object
-                if (reason.error && reason.error.message) {
-                    console.info(`Live Event Update failed: ${reason.message}`);
-                }
-            });
+                .catch((reason) => {
+                    // Check for ErrorResponse object
+                    if (reason.error && reason.error.message) {
+                        console.info(`Live Event Update failed: ${reason.message}`);
+                    }
+                });
         }
 
         console.log(`Starting the Live Event operation... please stand by`);
@@ -392,15 +393,30 @@ export async function main() {
             console.log();
         })
 
-
-        // <GetIngestURL>
-
         // Refresh the liveEvent object's settings after starting it...
         let liveEvent = await mediaServicesClient.liveEvents.get(
             resourceGroup,
             accountName,
             liveEventName
         )
+
+        // Set some tags on this live event for later usage. 
+        // You can put anything you want on here, like a customer tenant name, id, etc.
+        // One nice trick is to set the startTime, and use that in an Azure Function to shut down any long running events that you 
+        // may have forgot about and left going for too long. 
+        liveEvent.tags = {
+            "startTime": moment().format()
+        }
+
+        await mediaServicesClient.liveEvents.beginUpdateAndWait(
+            resourceGroup,
+            accountName,
+            liveEventName,
+            liveEvent,
+            { updateIntervalInMs: longRunningOperationUpdateIntervalMs }
+        )
+        
+        // <GetIngestURL>
 
         // Get the RTMP ingest URL to configure in OBS Studio. 
         // The endpoints is a collection of RTMP primary and secondary, and RTMPS primary and secondary URLs. 
@@ -507,8 +523,8 @@ export async function main() {
 
 main().catch((err) => {
     console.error("Error running live streaming sample:", err.message);
-    
-    if (err.name == 'RestError'){
+
+    if (err.name == 'RestError') {
         // REST API Error message
         console.error("Error request:\n\n", err.request);
     }

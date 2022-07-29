@@ -46,7 +46,8 @@ export async function main() {
   let filterOdata = "properties/created gt 2022-01-01T12:00:00Z";
   for await (const locator of mediaServicesClient.streamingLocators.list(resourceGroup, accountName, 
     { 
-      filter : filterOdata
+      filter : filterOdata,
+      orderby : "properties/created asc"
     })){
     
     if (locator.name){
