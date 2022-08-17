@@ -249,11 +249,11 @@ export async function waitForAllJobsToFinish(transformName: string, jobQueue: Jo
                 if (job.outputs != undefined) {
                     outputRows.push(
                         {
-                            Start: (job.startTime === undefined) ? "starting" : job.startTime.toLocaleTimeString(undefined, { timeStyle: "medium", hour12: false }),
+                            Start: (job.startTime === undefined) ? "starting" : job.startTime.toLocaleTimeString('en-US', { hour12: false}),
                             Job: job.name,
                             State: job.state,
                             Progress: job.outputs[0].progress,
-                            End: (job.endTime === undefined) ? "---" : job.endTime?.toLocaleTimeString(undefined, { timeStyle: "medium", hour12: false })
+                            End: (job.endTime === undefined) ? "---" : job.endTime?.toLocaleTimeString('en-US', { hour12: false })
                         });
                 }
                 if (job.state == 'Error' || job.state == 'Canceled') {
@@ -572,14 +572,14 @@ export async function moveOutputAssetToSas(assetName: string, sasUrl: string, so
                 if (result.errorCode)
                     console.log(`ERROR copying the blob ${blob.name} in asset ${assetName}`)
                 else
-                    console.log(`${date.toLocaleTimeString(undefined, { timeStyle: "medium", hour12: false })} FINISHED copying blob ${destinationBlobName} from asset ${assetName} to destination`)
+                    console.log(`${date.toLocaleTimeString(undefined, { hour12: false })} FINISHED copying blob ${destinationBlobName} from asset ${assetName} to destination`)
             }
 
             // Once all are copied, we delete the source asset if set to true.
             if (deleteAssetsOnCopy) {
                 // Delete the source Asset here.
                 await mediaServicesClient.assets.delete(resourceGroup, accountName, assetName);
-                console.log(`${date.toLocaleTimeString(undefined, { timeStyle: "medium", hour12: false })} DELETED the source asset:${assetName}`);
+                console.log(`${date.toLocaleTimeString(undefined, { hour12: false })} DELETED the source asset:${assetName}`);
             }
         }
 

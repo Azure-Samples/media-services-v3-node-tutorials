@@ -12,7 +12,7 @@ description: "This repository contains samples showing how to use Azure Media Se
 urlFragment: media-services-v3-node-tutorials
 ---
 
-# Azure Media Services v3 Node samples (JavaScript SDK version 11.0.0 or higher)
+# Azure Media Services v3 Node samples (@azure/arm-mediaservices version 12.1.0 or higher)
 
 This repository contains samples showing how to use the [Azure Media Services](https://media.microsoft.com) V3 API using the [@azure/arm-mediaservices](https://www.npmjs.com/package/@azure/arm-mediaservices) package for node.js.
 
@@ -22,7 +22,7 @@ See [TypeScript Design Guidelines](https://azure.github.io/azure-sdk/typescript_
 
 > [!NOTE]
 > To make sure you are using the latest package, check [@azure/arm-mediaservices](https://www.npmjs.com/package/@azure/arm-mediaservices).
-> Version 11.0.0 of *@azure/arm-mediaservices* supports the [Media Services ARM API version 2021-11-01](https://github.com/Azure/azure-rest-api-specs/tree/main/specification/mediaservices/resource-manager/Microsoft.Media/stable/2021-11-01)
+> Version 12.1.0 of *@azure/arm-mediaservices* supports the [Media Services ARM API version 2021-11-01](https://github.com/Azure/azure-rest-api-specs/tree/main/specification/mediaservices/resource-manager/Microsoft.Media/stable/2021-11-01) and the 2022-08-01 API updates for streaming and live events.
 
 ## Overview
 

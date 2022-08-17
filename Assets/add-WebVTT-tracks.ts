@@ -155,7 +155,7 @@ export async function main() {
 
       //Now that we have a file uploaded, we need 
       console.log("Using the tracks api to add the new VTT file to the asset")
-      mediaServicesClient.tracks.beginCreateOrUpdateAndWait(
+      await mediaServicesClient.tracks.beginCreateOrUpdateAndWait(
         resourceGroup,
         accountName,
         outputAsset.name,
