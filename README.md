@@ -48,6 +48,7 @@ The projects in this repository were created using Visual Studio Code with Node.
 |[Hello World - list assets](/HelloWorld-ListAssets/list-assets.ts)|Basic example on how to connect and list assets |
 |[Get the storage container from an asset](/Assets/get-container-from-assets.ts)|Demonstrates how to find the Azure storage account container used to store the contents of this asset. This can be used to then edit sources, modify, or copy contents using the Azure storage SDK library |
 |[List assets using filters](/Assets/list-assets-filtered.ts)| Use filters in your list assets calls to find assets by date and order them.|
+|[List the streaming locators on an asset using filters](/Assets/list-assets-filtered.ts)| Use filters to list the streaming locators attached to your assets.|
 |[List tracks in an asset](/Assets/list-tracks-in-assets.ts)| Use the tracks collection to list all of the track names and track types (audio, video, or text) available on an asset|
 |[Add a WebVTT/IMSC1/TTML subtitle or caption to an existing asset](/Assets/add-WebVTT-tracks.ts)| Use the tracks API on an Asset to add a new WebVTT or TTML/IMSC1 text profile caption or subtitle to an existing asset|
 | **Streaming** ||
