@@ -14,7 +14,7 @@ urlFragment: media-services-v3-node-tutorials
 
 # Azure Media Services v3 Node samples (JavaScript SDK version 11.0.0 or higher)
 
-This repository contains samples showing how to use the [Azure Media Services v3](https://docs.microsoft.com/azure/media-services/latest/media-services-overview) API using the [@azure/arm-mediaservices](https://www.npmjs.com/package/@azure/arm-mediaservices) package for node.js.
+This repository contains samples showing how to use the [Azure Media Services](https://media.microsoft.com) V3 API using the [@azure/arm-mediaservices](https://www.npmjs.com/package/@azure/arm-mediaservices) package for node.js.
 
 These tutorials work with the new [JavaScript next generation Azure SDK](https://github.com/Azure/azure-sdk-for-js/blob/main/documentation/next-generation-quickstart.md).
 The new SDKs for JavaScript supports Azure Identity, HTTP pipeline, error-handling.,etc, and they also follow the new Azure SDK guidelines which create easy-to-use APIs that are idiomatic, compatible, and dependable.
