@@ -525,7 +525,7 @@ async function getToken(issuer: string, audience: string, keyIdentifier: string,
   // For example, "urn:microsoft:azure:mediaservices:maxuses", 2));
 
   let claims = {
-    "urn:microsoft:azure:mediaservices:contentkeyidentifier": keyIdentifier,
+    // "urn:microsoft:azure:mediaservices:contentkeyidentifier": keyIdentifier,
     // "urn:microsoft:azure:mediaservices:maxuses": 2 // optional feature for token replay prevention
     "exp": endDate,
     "nbf": startDate
