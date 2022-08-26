@@ -376,11 +376,15 @@ async function createOrUpdateContentKeyPolicy(policyName: string, tokenSigningKe
 
   let requiredClaims: ContentKeyPolicyTokenClaim[] = [
     // Add any number of custom claims that you may want to apply to your key policy here.
-    // Example :   
+    // Example  1:   
     // {
-    //    claimType: "urn:microsoft:azure:mediaservices:contentkeyidentifier"
-    // }
- ];
+    //    claimType: "urn:microsoft:azure:mediaservices:maxuses"  // use this to require the max users claim
+    // },
+    // Example  2:   
+    // {
+    //    claimType: "userProfile" // Require your own custom user profile claim type or whatever you want.
+    // },
+  ];
 
   let restriction: ContentKeyPolicyTokenRestriction = {
     odataType: "#Microsoft.Media.ContentKeyPolicyTokenRestriction",
@@ -488,8 +492,8 @@ async function getToken(issuer: string, audience: string, keyIdentifier: string,
   // For example, "urn:microsoft:azure:mediaservices:maxuses", 2));
 
   let claims = {
-    // "urn:microsoft:azure:mediaservices:contentkeyidentifier": keyIdentifier, //optional for advanced scenarios
-    // "urn:microsoft:azure:mediaservices:maxuses": 2 // optional feature for token replay prevention
+    // "userProfile" : "Admin", // This is a custom claim example. Use anything you want, but specify it first in the policy as required.
+    // "urn:microsoft:azure:mediaservices:maxuses": 2 // optional feature for token replay prevention built into AMS
     "exp": endDate,
     "nbf": startDate
   }

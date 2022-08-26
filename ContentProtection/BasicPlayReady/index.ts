@@ -2,7 +2,7 @@
 // Licensed under the MIT license.
 
 import { DefaultAzureCredential } from "@azure/identity";
-import {AzureLogLevel,setLogLevel} from "@azure/logger";
+import { AzureLogLevel, setLogLevel } from "@azure/logger";
 import {
   AzureMediaServices,
   BuiltInStandardEncoderPreset,
@@ -23,7 +23,7 @@ import {
   BlobServiceClient,
   AnonymousCredential
 } from "@azure/storage-blob";
-import * as factory  from "../../Common/Encoding/transformFactory";
+import * as factory from "../../Common/Encoding/transformFactory";
 import { AbortController } from "@azure/abort-controller";
 import { v4 as uuidv4 } from 'uuid';
 import * as path from "path";
@@ -222,7 +222,7 @@ async function downloadResults(assetName: string, resultsFolder: string) {
     console.log(`Listing blobs in container ${containerName}...`);
     console.log("Downloading blobs to local directory in background...");
     let i = 1;
-    for await (const blob of containerClient.listBlobsFlat({includeMetadata:true})) {
+    for await (const blob of containerClient.listBlobsFlat({ includeMetadata: true })) {
       console.log(`Blob ${i++}: ${blob.name}`);
 
       let blockBlobClient = containerClient.getBlockBlobClient(blob.name);
@@ -367,9 +367,15 @@ async function createOrUpdateContentKeyPolicy(policyName: string, tokenSigningKe
   }
 
   let requiredClaims: ContentKeyPolicyTokenClaim[] = [
-    {
-      claimType: "urn:microsoft:azure:mediaservices:contentkeyidentifier" // contentKeyIdentifierClaim
-    }
+    // Add any number of custom claims that you may want to apply to your key policy here.
+    // Example  1:   
+    // {
+    //    claimType: "urn:microsoft:azure:mediaservices:maxuses"  // use this to require the max users claim
+    // },
+    // Example  2:   
+    // {
+    //    claimType: "userProfile" // Require your own custom user profile claim type or whatever you want.
+    // },
   ];
 
   let restriction: ContentKeyPolicyTokenRestriction = {
@@ -382,7 +388,7 @@ async function createOrUpdateContentKeyPolicy(policyName: string, tokenSigningKe
     requiredClaims: requiredClaims
   }
 
-   //   Creates a PlayReady License Template with the following settings
+  //   Creates a PlayReady License Template with the following settings
   //    - sl2000
   //    - license type = non-persistent
   //    - content type = unspecified
@@ -397,7 +403,7 @@ async function createOrUpdateContentKeyPolicy(policyName: string, tokenSigningKe
         contentKeyLocation: {
           odataType: "#Microsoft.Media.ContentKeyPolicyPlayReadyContentEncryptionKeyFromHeader"
         },
-        
+
         playRight: {
           allowPassingVideoContentToUnknownOutput: "Allowed",
           imageConstraintForAnalogComponentVideoRestriction: true,
@@ -475,8 +481,8 @@ async function getToken(issuer: string, audience: string, keyIdentifier: string,
   // For example, "urn:microsoft:azure:mediaservices:maxuses", 2));
 
   let claims = {
-    "urn:microsoft:azure:mediaservices:contentkeyidentifier": keyIdentifier,
-    // "urn:microsoft:azure:mediaservices:maxuses": 2 // optional feature for token replay prevention
+    // "userProfile" : "Admin", // This is a custom claim example. Use anything you want, but specify it first in the policy as required.
+    // "urn:microsoft:azure:mediaservices:maxuses": 2 // optional feature for token replay prevention built into AMS
     "exp": endDate,
     "nbf": startDate
   }
