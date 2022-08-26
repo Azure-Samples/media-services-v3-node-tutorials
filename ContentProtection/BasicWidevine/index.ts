@@ -375,10 +375,12 @@ async function createOrUpdateContentKeyPolicy(policyName: string, tokenSigningKe
   }
 
   let requiredClaims: ContentKeyPolicyTokenClaim[] = [
-    {
-      claimType: "urn:microsoft:azure:mediaservices:contentkeyidentifier" // contentKeyIdentifierClaim
-    }
-  ];
+    // Add any number of custom claims that you may want to apply to your key policy here.
+    // Example :   
+    // {
+    //    claimType: "urn:microsoft:azure:mediaservices:contentkeyidentifier"
+    // }
+ ];
 
   let restriction: ContentKeyPolicyTokenRestriction = {
     odataType: "#Microsoft.Media.ContentKeyPolicyTokenRestriction",
