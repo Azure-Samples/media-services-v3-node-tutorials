@@ -86,7 +86,6 @@ The projects in this repository were created using Visual Studio Code with Node.
 The standard encoder is limited to outputting 1 Stereo track, followed by a 5.1 surround sound audio track in AAC format.|
 | [Stitch and edit two assets together](/VideoEncoding/Encoding_Stitch_Two_Assets/) | This sample demonstrates how to stitch and edit together two or more assets into a single MP4 file using the JobInputSequence as part of a job submission.|
 | **Analytics** ||
-| [Video Analytics](/VideoAnalytics/index.ts)|This sample illustrates how to create a video and audio analyzer transform, upload a video file to an input asset, submit a job with the transform and download the results for verification.|
 | [Audio Analytics basic with per-job language override](/AudioAnalytics/index.ts)|This sample illustrates how to create a audio analyzer transform using the basic mode.  It also shows how you can override the preset language on a per-job basis to avoid creating a transform for every language.  It also shows how to upload a media file to an input asset, submit a job with the transform and download the results for verification.|
 
 ## Prerequisites
