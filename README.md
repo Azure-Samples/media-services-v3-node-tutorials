@@ -30,7 +30,7 @@ See [TypeScript Design Guidelines](https://azure.github.io/azure-sdk/typescript_
 
 - Node 12+ 
 - NPM 6+
-- Azure CLI is required for some samples [Install the Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
+- Azure CLI is required for some samples [Install the Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli)
 - Visual Studio Code
 
 ### Node.js Version note
@@ -113,7 +113,9 @@ To do this, run ```npm install -g typescript```. This will install the latest ve
 
 4. Rename the 'sample.env' file to '.env' and fill out the details from your Azure Media Services account portal API Access page. If you have not yet created an AMS account, first go into the Azure portal and search for Media Services and create a new account in the region of your choice. After creating the account, navigate to the API Access page and create an Azure Active Directory(AAD) Service Principal to generate the connection details required for the .env file. Copy the settings from the API Access blade that are required in the .env file.
 If you plan to use the DRM sample, you will need to generate a random base64 "DRM_SYMMETRIC_KEY" to use in the .env file as well. 
-To get the exact values, follow [Access APIs](https://docs.microsoft.com/azure/media-services/latest/access-api-cli-how-to).
+To get the exact values, follow [Access APIs](https://learn.microsoft.com/azure/media-services/latest/access-api-cli-how-to).
+
+Also review the details on how to authenticate using the[ Azure Identity library](https://learn.microsoft.com/en-us/javascript/api/overview/azure/identity-readme?view=azure-node-latest) and the DefaultAzureCredentials
 
 5. Open **Terminal** in VS Code (Ctrl+Shift+`), make sure you are in the root folder with the package.json file and execute the following command to download all the required npm packages.
 
@@ -127,7 +129,7 @@ The output from the HelloWorld-ListAssets may be empty if this is a new Media Se
 
 ## Common Issues and Troubleshooting
 
-* Assets in Media Services have naming conventions that must be adhered to in order to avoid errors. For example the client.Assets.CreateOrUpdateAsync can fail with message "The resource type is invalid" if the name does not match the [naming conventions listed in this article](https://docs.microsoft.com/azure/media-services/latest/media-services-apis-overview#naming-conventions)
+* Assets in Media Services have naming conventions that must be adhered to in order to avoid errors. For example the client.Assets.CreateOrUpdateAsync can fail with message "The resource type is invalid" if the name does not match the [naming conventions listed in this article](https://learn.microsoft.com/azure/media-services/latest/media-services-apis-overview#naming-conventions)
 
 ## Azure Logger client library for JavaScript
 
