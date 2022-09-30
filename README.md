@@ -91,8 +91,9 @@ The standard encoder is limited to outputting 1 Stereo track, followed by a 5.1 
 ## Prerequisites
 
 1. Download and install [Visual Studio Code](https://code.visualstudio.com/Download)
-2. Install [Node.js](https://nodejs.org/en/download/) version 12.18 or higher
-3. Download and install [TypeScript](https://www.typescriptlang.org/download)
+1. Install [Node.js](https://nodejs.org/en/download/) version 12.18 or higher
+1. Download and install [TypeScript](https://www.typescriptlang.org/download)
+1. Install the [Azure CLI](https://aka.ms/azure-cli) and login to Azure using 'az login' before starting
 
 ### Install TypeScript via npm
 
