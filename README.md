@@ -12,7 +12,7 @@ description: "This repository contains samples showing how to use Azure Media Se
 urlFragment: media-services-v3-node-tutorials
 ---
 
-# Azure Media Services v3 Node samples (@azure/arm-mediaservices version 12.1.0 or higher)
+# Azure Media Services v3 Node samples (@azure/arm-mediaservices version 13 or higher)
 
 This repository contains samples showing how to use the [Azure Media Services](https://media.microsoft.com) V3 API using the [@azure/arm-mediaservices](https://www.npmjs.com/package/@azure/arm-mediaservices) package for node.js.
 
@@ -26,7 +26,7 @@ See [TypeScript Design Guidelines](https://azure.github.io/azure-sdk/typescript_
 
 ## Overview
 
-### Requirements 
+### Requirements
 
 - Node 12+ 
 - NPM 6+
@@ -110,10 +110,7 @@ To do this, run ```npm install -g typescript```. This will install the latest ve
 
     ``` code . ```
 
-4. Rename the 'sample.env' file to '.env' and fill out the details from your Azure Media Services account portal API Access page. If you have not yet created an AMS account, first go into the Azure portal and search for Media Services and create a new account in the region of your choice. After creating the account, navigate to the API Access page and create an Azure Active Directory(AAD) Service Principal to generate the connection details required for the .env file. Copy the settings from the API Access blade that are required in the .env file.
-If you plan to use the DRM sample, you will need to generate a random base64 "DRM_SYMMETRIC_KEY" to use in the .env file as well. 
-To get the exact values, follow [Access APIs](https://learn.microsoft.com/azure/media-services/latest/access-api-cli-how-to).
-Also review the details on how to authenticate using the[ Azure Identity library](https://learn.microsoft.com/en-us/javascript/api/overview/azure/identity-readme?view=azure-node-latest) and the DefaultAzureCredentials
+4. Rename the 'sample.env' file to '.env' and fill out the details from your Azure Media Services account portal API Access page. If you have not yet created an AMS account, first go into the Azure portal and search for Media Services and create a new account in the region of your choice. Copy the settings from the API Access blade that are required in the .env file. Review the details on how to authenticate using the[ Azure Identity library](https://learn.microsoft.com/en-us/javascript/api/overview/azure/identity-readme?view=azure-node-latest) and the DefaultAzureCredentials.
 
 5. Open **Terminal** in VS Code (Ctrl+Shift+`), make sure you are in the root folder with the package.json file and execute the following command to download all the required npm packages.
 
