@@ -16,7 +16,6 @@ import {
   ContentKeyPolicyTokenClaim,
   ContentKeyPolicyTokenRestriction,
   ContentKeyPolicyOption,
-  ContentKeyPolicyPlayReadyConfiguration,
   ContentKeyPolicyWidevineConfiguration,
 } from '@azure/arm-mediaservices';
 import {

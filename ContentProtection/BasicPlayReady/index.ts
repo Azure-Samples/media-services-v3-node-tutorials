@@ -16,8 +16,7 @@ import {
   ContentKeyPolicyTokenClaim,
   ContentKeyPolicyTokenRestriction,
   ContentKeyPolicyOption,
-  ContentKeyPolicyPlayReadyConfiguration,
-  ContentKeyPolicyWidevineConfiguration,
+  ContentKeyPolicyPlayReadyConfiguration
 } from '@azure/arm-mediaservices';
 import {
   BlobServiceClient,
