@@ -49,8 +49,6 @@ let mediaServicesClient: AzureMediaServices;
 
 // Copy the samples.env file and rename it to .env first, then populate it's values with the values obtained 
 // from your Media Services account's API Access page in the Azure portal.
-const clientId: string = process.env.AZURE_CLIENT_ID as string;
-const secret: string = process.env.AZURE_CLIENT_SECRET as string;
 const subscriptionId: string = process.env.AZURE_SUBSCRIPTION_ID as string;
 const resourceGroup: string = process.env.AZURE_RESOURCE_GROUP as string;
 const accountName: string = process.env.AZURE_MEDIA_SERVICES_ACCOUNT_NAME as string;
@@ -137,7 +135,7 @@ export async function main() {
       console.log(`Waiting for Job - ${job.name} - to finish encoding`);
       job = await waitForJobToFinish(encodingTransformName, jobName);
 
-      console.log("Encoding Finshed. Now setting up DRM for streaming");
+      console.log("Encoding Finished. Now setting up DRM for streaming");
 
       // Set a token signing key that you want to use from the env file
       // WARNING: This is an important secret when moving to a production system and should be kept in a Key Vault.
@@ -151,21 +149,7 @@ export async function main() {
 
       let locator = await createStreamingLocator(outputAsset.name, locatorName, contentKeyPolicyName);
 
-      let keyIdentifier: string;
-      // In order to generate our test token we must get the ContentKeyId from the streaming locator to put in the ContentKeyIdentifierClaim claim used when creating the JWT test token 
-
-      // We are using the ContentKeyIdentifierClaim in the ContentKeyPolicy which means that the token presented
-      // to the Key Delivery Component must have the identifier of the content key in it.  Since we didn't specify
-      // a content key when creating the StreamingLocator, the service created a random GUID for us.  In order to 
-      // generate our JWT test token we must get the ContentKeyId to put in the ContentKeyIdentifierClaim claim.
-
-      if (locator.contentKeys !== undefined) {
-        keyIdentifier = locator.contentKeys[0].id;
-        console.log(`The ContentKey for this streaming locator is : ${keyIdentifier}`);
-
-      } else throw new Error("Locator and content keys are undefined.")
-
-      let token: string = await getToken(issuer, audience, keyIdentifier, tokenSigningKey);
+      let token: string = await getToken(issuer, audience,  tokenSigningKey);
 
       console.log(`The JWT token used is : ${token}`);
       console.log("You can decode the token using a tool like https://www.jsonwebtoken.io/ with the symmetric encryption key to view the decoded results.");
@@ -472,7 +456,7 @@ async function getStreamingUrls(locatorName: string, token: string) {
   }
 }
 
-async function getToken(issuer: string, audience: string, keyIdentifier: string, tokenSigningKey: Uint8Array): Promise<any> {
+async function getToken(issuer: string, audience: string,tokenSigningKey: Uint8Array): Promise<any> {
   let startDate: number = moment().subtract(5, "minutes").unix()  // Get the current time and subtract 5 minutes, then return as a Unix timestamp
   let endDate: number = moment().add(1, "day").unix() // Expire the token in 1 day, return Unix timestamp.
 
