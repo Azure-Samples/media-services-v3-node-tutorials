@@ -196,6 +196,7 @@ export async function main() {
                 accessControl: liveEventInputAccess,  // controls the IP restriction for the source encoder. 
                 // keyFrameIntervalDuration: "PT2S",  // Set this to match the ingest encoder's settings. This should not be used for encoding live event  
                 accessToken: "9eb1f703b149417c8448771867f48501" // Use this value when you want to make sure the ingest URL is static and always the same. If omitted, the service will generate a random GUID value.
+            
             },
 
             // 2) Set the live event to use pass-through or cloud encoding modes...
@@ -328,7 +329,8 @@ export async function main() {
                 description: "Optional description when using more than one live output",
                 assetName: asset.name,
                 manifestName: manifestName, // The HLS and DASH manifest file name. This is recommended to set if you want a deterministic manifest path up front.
-                archiveWindowLength: "PT1H", // sets a one hour time-shift DVR window. Uses ISO 8601 format string.
+                archiveWindowLength: "PT30M", // sets a 30 minute time-shift DVR window. Uses ISO 8601 format string.
+
                 hls: {
                     fragmentsPerTsSegment: 1 // Advanced setting when using HLS TS output only.
                 },

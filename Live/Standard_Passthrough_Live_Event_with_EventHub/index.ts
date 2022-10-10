@@ -329,7 +329,7 @@ export async function main() {
                 description: "Optional description when using more than one live output",
                 assetName: asset.name,
                 manifestName: manifestName, // The HLS and DASH manifest file name. This is recommended to set if you want a deterministic manifest path up front.
-                archiveWindowLength: "PT1H", // sets a one hour time-shift DVR window. Uses ISO 8601 format string.
+                archiveWindowLength: "PT30M", // sets the asset archive window to 30 minutes. Uses ISO 8601 format string.
                 hls: {
                     fragmentsPerTsSegment: 1 // Advanced setting when using HLS TS output only.
                 },
