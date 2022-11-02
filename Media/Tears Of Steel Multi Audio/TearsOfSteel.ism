@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<smil xmlns="http://www.w3.org/2001/SMIL20/Language">
+  <head>
+    <meta name="formats" content="mp4" />
+  </head>
+  <body>
+    <switch>
+      <video src="TearsOfSteel_H264_1000kbps_AAC_und_ch2_128kbps.mp4" />
+      <video src="TearsOfSteel_H264_650kbps_AAC_und_ch2_128kbps.mp4" />
+      <video src="TearsOfSteel_H264_400kbps_AAC_und_ch2_128kbps.mp4" />
+      <audio src="TearsOfSteel_AAC_und_ch2_128kbps.mp4" title="AAC_und_ch2_128kbps" />
+      <audio src="TearsOfSteel_AAC_und_ch2_56kbps.mp4" title="AAC_und_ch2_56kbps" />
+    </switch>
+  </body>
+</smil>

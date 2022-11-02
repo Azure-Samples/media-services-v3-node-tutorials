@@ -19,3 +19,10 @@
     LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE
+
+
+
+    Tears of Steel video used under Creative Commons Attribution license
+    Tears of Steel is copyright Blender.org 2012
+    License: CC-BY - Blender Foundation - studio.blender.org
+    https://creativecommons.org/licenses/by/4.0/
