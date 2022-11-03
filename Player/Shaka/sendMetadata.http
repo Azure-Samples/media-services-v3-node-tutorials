@@ -1,0 +1,6 @@
+POST https://<<LIVEEVENTNAME>>.channel.media.azure.net/<<LIVE_INGEST_ID>>/ingest.isml/eventdata
+Content-Type: application/json
+
+{
+    "message": "Yo world",
+}

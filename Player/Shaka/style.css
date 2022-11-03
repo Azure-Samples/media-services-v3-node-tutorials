@@ -1,0 +1,62 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+label {
+    font-size: 1em;
+}
+
+input {
+    font-size: 0.75em;
+}
+
+.metadata-show {
+    font-size: 1em;
+    font-weight: 700;
+    position: absolute;
+    padding-left: 10px;
+    background-color: rgba(255, 255, 255, 1);
+    width: 80%;
+    height: 1.2em;
+    top: 30px;
+    left: 20px;
+    animation: 1.2s slidein ease-in;
+}
+
+@keyframes slidein {
+    from {
+        left: -300px;
+        opacity: 0;
+    }
+
+    to {
+        left: 20px;
+        opacity: 1;
+        background-color: rgba(255, 255, 255, 1);
+    }
+}
+
+.metadata-hide {
+    font-size: 1em;
+    font-weight: 700;
+    position: absolute;
+    padding-left: 10px;
+    width: 80%;
+    opacity: 0;
+    height: 1.2em;
+    top: 30px;
+    left: 20px;
+    animation: 1.2s fadeout ease-out;
+}
+
+@keyframes fadeout {
+    from {
+        opacity: 1;
+        background-color: rgba(255, 255, 255, 1);
+    }
+
+    to {
+        opacity: 0;
+        background-color: rgba(255, 255, 255, 0);
+    }
+}
