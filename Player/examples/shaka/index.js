@@ -210,7 +210,7 @@ function onEventMessage(event) {
                 metadataDiv.innerText = message;
                 let logLine = document.createElement('p');
                 logLine.innerText = JSON.stringify(jsonPayload);
-                document.getElementById('eventLog').appendChild(logLine);
+                document.getElementById('eventLog').appendChild(logLine).scrollIntoView(false);
                 metadataDiv.className = 'metadata-show';
                 setTimeout(() => {
                     metadataDiv.className = 'metadata-hide';
