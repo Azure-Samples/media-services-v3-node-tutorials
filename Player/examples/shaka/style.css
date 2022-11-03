@@ -12,9 +12,9 @@ input {
 
 .eventLog{
     border:2px solid black;
-    width:80vw;
+    width:95vw;
     background: #000;
-    color:greenyellow;
+    color:lightblue;
     font-weight: 400;
     font-family: 'Consolas',monospace;
     height:200px;
