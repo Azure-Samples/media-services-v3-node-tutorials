@@ -29,4 +29,4 @@ Steps:
 
 ## Running the sample on StackBlitz
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/fork/github/___YOUR_PATH___)
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/edit/azure-samples-media-services-v3-node-tutorials-nk3aeu?file=index.html&title=AMS%20Shaka%20Player%20Timed%20Metadata%20Sample)
