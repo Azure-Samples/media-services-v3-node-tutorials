@@ -202,11 +202,15 @@ function onEventMessage(event) {
 
             if (frames[0].mimeType === 'application/json') {
                 const jsonPayload = JSON.parse(frames[0].data);
-                console.log('message=' + jsonPayload.message);
+                let message = jsonPayload.message;
+                console.log('message=' + message);
 
                 // Now do something with your custom JSON payload
                 let metadataDiv = document.getElementById('metadata');
-                metadataDiv.innerText = jsonPayload.message;
+                metadataDiv.innerText = message;
+                let logLine = document.createElement('p');
+                logLine.innerText = JSON.stringify(jsonPayload);
+                document.getElementById('eventLog').appendChild(logLine);
                 metadataDiv.className = 'metadata-show';
                 setTimeout(() => {
                     metadataDiv.className = 'metadata-hide';

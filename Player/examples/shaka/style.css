@@ -10,6 +10,18 @@ input {
     font-size: 0.75em;
 }
 
+.eventLog{
+    border:2px solid black;
+    width:80vw;
+    background: #000;
+    color:greenyellow;
+    font-weight: 400;
+    font-family: 'Consolas',monospace;
+    height:200px;
+    overflow-y: scroll;
+    padding-left: 10px;
+}
+
 .metadata-show {
     font-size: 1em;
     font-weight: 700;

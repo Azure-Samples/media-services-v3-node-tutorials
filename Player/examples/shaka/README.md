@@ -8,7 +8,7 @@ This sample demonstrates how to use the Shaka player with HLS low latency live s
 * VS Code
 
 ## Required NPM modules
-* Shaka Player 4.2.3 or higher  
+* Shaka Player 4.2.3 or higher
 * Vite - if you want to launch the sample locally
 
 ## Deploying the sample
@@ -25,7 +25,6 @@ Steps:
 2) The sample can be deployed to any web server, or simply launched from VS Code using the Vite server module
 3) npm run dev
 4) Optionally run the sample on StackBlitz with the button below
-
 
 ## Running a fork of the sample on StackBlitz
 Click the following button to launch a fork of this code on StackBlitz.com
