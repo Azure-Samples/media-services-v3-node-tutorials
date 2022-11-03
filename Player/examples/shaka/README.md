@@ -27,7 +27,7 @@ Steps:
 4) Optionally run the sample on StackBlitz with the button below
 
 
-## Running a Fork of the sample on StackBlitz
+## Running a fork of the sample on StackBlitz
 Click the following button to launch a fork of this code on StackBlitz.com
 
 [![Open Fork in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/fork/github/Azure-Samples/media-services-v3-node-tutorials/tree/main/Player/examples/shaka?file=index.html&title=AMS%20Shaka%20Player%20Timed%20Metadata%20Sample)
