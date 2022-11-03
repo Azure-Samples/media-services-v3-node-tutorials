@@ -208,13 +208,13 @@ function onEventMessage(event) {
                 // Now do something with your custom JSON payload
                 let metadataDiv = document.getElementById('metadata');
                 metadataDiv.innerText = message;
-                
+
                 let logLine = document.createElement('p');
-                logLine.innerText = JSON.stringify(jsonPayload);
+                logLine.innerText = 'timestamp:' + (event.detail.startTime - event.detail.presentationTimeDelta).toFixed(3) + ' ' + JSON.stringify(jsonPayload);
                 document.getElementById('eventLog').appendChild(logLine).scrollIntoView(false);
 
                 metadataDiv.className = 'metadata-show';
-                
+
                 setTimeout(() => {
                     metadataDiv.className = 'metadata-hide';
                 }, 5000); // clear the message
