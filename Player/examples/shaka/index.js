@@ -210,7 +210,7 @@ function onEventMessage(event) {
                 metadataDiv.innerText = message;
 
                 let logLine = document.createElement('p');
-                logLine.innerText = 'timestamp:' + (event.detail.startTime - event.detail.presentationTimeDelta).toFixed(3) + ' ' + JSON.stringify(jsonPayload);
+                logLine.innerText = 'timestamp:' + (event.detail.startTime - event.detail.presentationTimeDelta).toFixed(2) + ' ' + JSON.stringify(jsonPayload);
                 document.getElementById('eventLog').appendChild(logLine).scrollIntoView(false);
 
                 metadataDiv.className = 'metadata-show';
