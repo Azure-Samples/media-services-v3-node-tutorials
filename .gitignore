@@ -62,6 +62,7 @@ typings/
 *.js
 *.js.map
 
+
 # package-lock.json
 package-lock.json
 
@@ -74,3 +75,8 @@ spcert.pem
 Temp/
 Output/
 private/
+
+# Keep the Player Project files
+!Player/examples/*/*.js
+!Player/examples/*/*.css
+!Player/examples/*/*.json
