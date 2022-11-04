@@ -51,11 +51,16 @@ a:hover, a:active{
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     font-size: 1.4em;
     font-weight: 500;
+    box-shadow: 0px 3px 8px 0px rgba(0,0,0,0.4);
+    -webkit-box-shadow: 0px 3px 8px 0px rgba(0,0,0,0.4);
+    -moz-box-shadow: 0px 3px 8px 0px rgba(0,0,0,0.4);
+    padding:10px 0px;
 }
 
 
 #videoArea {
     grid-area: video;
+    padding:15px 0px;
 }   
 
 #videoArea * video {
