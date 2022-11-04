@@ -136,14 +136,30 @@ export async function main() {
         // While operating this tutorial, it is recommended to start out using OBS Studio before moving to another encoder. 
 
         // Note: When creating a LiveEvent, you can specify allowed IP addresses in one of the following formats:                 
+        //      To allow all IPv4 addresses and block all IPv6 addresses, set the IP allow list to [ "0.0.0.0/0" ]
         //      IpV4 address with 4 numbers
         //      CIDR address range
 
-        let allowAllInputRange: IPRange = {
-            name: "AllowAll",
+        let allowAllIPv4InputRange: IPRange = {
+            name: "Allow all IPv4 addresses",
             address: "0.0.0.0",
             subnetPrefixLength: 0
         };
+
+        // IpV6 addresses or ranges
+        //  For this example, the following request from the following addresses will be accepted:
+        //      •	IPv6 addresses between 2001:1234:1234:0000:0000:0000:0000:4567 and 2001:1234:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF,
+        //      •	IPv6 address 2001:1235:0000:0000:0000:0000:0000:0000
+        //  Additional examples:
+        //      •	To allow requests from any IP address, set the “defaultAction” of the “accessControl” block to “Allow” (and do not specify an “ipAllowList)
+        //      •	To allow all IPv6 addresses and block all IPv6 addresses, set the IP allow list to [ "::/0" ]
+
+        let allowAllIPv6InputRange: IPRange = {
+            name: "Allow all IPv6 addresses",
+            address : "::",
+            subnetPrefixLength: 0
+        };
+
 
         // Create the LiveEvent input IP access control object
         // this will control the IP that the encoder is running on and restrict access to only that encoder IP range.
@@ -153,7 +169,8 @@ export async function main() {
                     // re-use the same range here for the sample, but in production you can lock this
                     // down to the ip range for your on-premises live encoder, laptop, or device that is sending
                     // the live stream
-                    allowAllInputRange
+                    allowAllIPv4InputRange,
+                    allowAllIPv6InputRange
                 ]
             }
         };
@@ -166,7 +183,8 @@ export async function main() {
                     allow: [
                         // re-use the same range here for the sample, but in production you can lock this to the IPs of your 
                         // devices that would be monitoring the live preview. 
-                        allowAllInputRange
+                        allowAllIPv4InputRange,
+                        allowAllIPv6InputRange
                     ]
                 }
             }
