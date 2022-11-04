@@ -1,5 +1,6 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin:0;
 }
 
 label {
@@ -10,10 +11,30 @@ input {
     font-size: 0.75em;
 }
 
+a:visited, a:link{
+    text-decoration: none;
+    color:black
+}
+
+a:hover, a:active{
+    text-decoration: underline;
+    color:black
+}
+
+.microsoft svg{
+    width:32px;
+    height:auto;
+    position: relative;
+    top:6px;
+    padding-right: 10px;
+}
+
+
 .grid-container {
     display: grid;
-    grid-template-columns: [gutter1] 1fr [main] 75vw [gutter2] 1fr[end];
-    grid-template-rows: [header]60px [video] auto [console]100px [manifest] 1fr [footer]1fr [end];
+    grid-template-columns: [gutter1] 1fr [main] 70vw [gutter2] 1fr[end];
+    grid-template-rows: [header]60px [video] auto [console]100px [manifest] auto [footer] auto [end];
+
     grid-template-areas:
         'header header header'
         'gutter1 video gutter2'
@@ -21,14 +42,15 @@ input {
         'gutter1 manifest gutter2'
         'footer footer footer';
     justify-items: stretch;
+    height: 100vh;
 }
 
 #header {
     grid-area: header;
     text-align: center;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    font-size: 1.2em;
-    font-weight: 400;
+    font-size: 1.4em;
+    font-weight: 500;
 }
 
 
@@ -39,6 +61,10 @@ input {
     padding: 8px;
 }
 
+#videoArea * video {
+    border-radius: 8px;
+}
+
 #video-container {
     grid-area: video;
     height: auto;
@@ -46,6 +72,14 @@ input {
     overflow-x:hidden;
 }
 
+#footer {
+    grid-area: footer;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color:gray;
+    position:sticky;
+    text-align: center;
+
+}
 #console {
     grid-area: console;
     background-color: rgb(88, 88, 88);
