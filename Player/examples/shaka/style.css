@@ -56,9 +56,6 @@ a:hover, a:active{
 
 #videoArea {
     grid-area: video;
-    background-color: rgb(32, 32, 32);
-    border-radius: 8px;
-    padding: 8px;
 }
 
 #videoArea * video {
@@ -70,6 +67,7 @@ a:hover, a:active{
     height: auto;
     width: 100%;
     overflow-x:hidden;
+    border-radius: 8px;
 }
 
 #footer {
