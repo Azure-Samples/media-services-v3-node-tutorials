@@ -167,7 +167,7 @@ function onMetadata(metadata) {
     console.log('!!!!!!!!!!!!!!Metadata Event Message');
     console.log(metadata);
 }
-
+//<EmgHandling>
 function onEventMessage(event) {
     console.log('Timed Metadata Event Message');
     //console.log('emsg:', event)
@@ -226,7 +226,7 @@ function onEventMessage(event) {
         console.error(err.stack);
     }
 }
-
+//</EmgHandling>
 function onPlayerErrorEvent(errorEvent) {
     // Extract the shaka.util.Error object from the event.
     onPlayerError(errorEvent.detail);
