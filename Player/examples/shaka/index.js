@@ -80,7 +80,7 @@ async function initApp() {
     player.addEventListener('onstatechange', onStateChange);
     player.addEventListener('emsg', onEventMessage); // fires when a timed metadata event is sent
     player.addEventListener('adaptation', onAdaptation); //fires when an automatic ABR event happens
-    // player.addEventListener('metadata', onMetadata); // This is coming soon in future version of Shaka and will help us parse the ID3 messages
+    player.addEventListener('metadata', onMetadata); // This is coming soon in future version of Shaka and will help us parse the ID3 messages
 
     // Listen for  HTML5 Video Element events
     // Reference : https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement
@@ -93,12 +93,23 @@ async function initApp() {
     videoElement.addEventListener('seeked', onSeeked);
     videoElement.addEventListener('waiting', onWaiting);
 
+
     try {
         await player.load(manifestUrl.value);
         // This runs if the asynchronous load is successful.
         console.log('The video has now been loaded!');
+
+        console.log('Listing Text tracks');
+        for (var track of videoElement.textTracks) {
+            console.log("track kind =" + track.kind);
+            console.log("track label =" + track.label);
+            console.log("track lang =" + track.language);
+            track.addEventListener('cuechange', onCueChange);
+        };
+
         // Enable captions
         player.setTextTrackVisibility(true);
+
     } catch (error) {
         // onError is executed if the asynchronous load fails.
         onPlayerError(error);
@@ -162,12 +173,20 @@ function onWaiting(event) {
     console.log('Video waiting...');
 }
 
-// This is coming soon in future version of Shaka and will help us parse the ID3 messages
-function onMetadata(metadata) {
-    console.log('!!!!!!!!!!!!!!Metadata Event Message');
-    console.log(metadata);
+function onCueChange(event) {
+    console.log('Video Cue');
 }
 
+// <MetadataHandling>
+// This is coming soon in future version of Shaka and will help us parse the ID3 messages
+function onMetadata(metadata) {
+    // This should fire on iOS Safari with HLS, might need to set streaming.useNativeHlsOnSafari to false on Safari
+    console.log('***** Metadata Event Message *****');
+    console.log(metadata);
+}
+// </MetadataHandling>
+
+// <EmgHandling>
 function onEventMessage(event) {
     console.log('Timed Metadata Event Message');
     //console.log('emsg:', event)
@@ -211,7 +230,7 @@ function onEventMessage(event) {
 
                 let logLine = document.createElement('p');
                 logLine.innerText = 'timestamp:' + (event.detail.startTime - event.detail.presentationTimeDelta).toFixed(2) + ' ' + JSON.stringify(jsonPayload);
-                document.getElementById('eventLog').appendChild(logLine).scrollIntoView(false);
+                document.getElementById('console').appendChild(logLine).scrollIntoView(false);
 
                 metadataDiv.className = 'metadata-show';
 
@@ -226,6 +245,7 @@ function onEventMessage(event) {
         console.error(err.stack);
     }
 }
+// </EmgHandling>
 
 function onPlayerErrorEvent(errorEvent) {
     // Extract the shaka.util.Error object from the event.
