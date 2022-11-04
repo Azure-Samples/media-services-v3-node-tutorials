@@ -76,6 +76,7 @@ a:hover, a:active{
     color:gray;
     position:sticky;
     text-align: center;
+    margin: 20px 0px
 
 }
 #console {
@@ -94,6 +95,7 @@ a:hover, a:active{
 
 #manifest {
     grid-area: manifest;
+    margin:20px 0px
 }
 
 #manifestUrl {
