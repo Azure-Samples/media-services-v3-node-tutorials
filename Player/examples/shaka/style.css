@@ -12,7 +12,7 @@ input {
 
 .grid-container {
     display: grid;
-    grid-template-columns: [gutter1] 1fr [main] 60vw [gutter2] 1fr[end];
+    grid-template-columns: [gutter1] 1fr [main] 75vw [gutter2] 1fr[end];
     grid-template-rows: [header]60px [video] auto [console]100px [manifest] 1fr [footer]1fr [end];
     grid-template-areas:
         'header header header'
@@ -51,7 +51,7 @@ input {
     background-color: rgb(88, 88, 88);
     border-radius: 5px;
     margin-top: 10px;
-    padding-left: 5px;
+    padding: 5px;
     height: auto;
     overflow-y: scroll;
     color: lightblue;
