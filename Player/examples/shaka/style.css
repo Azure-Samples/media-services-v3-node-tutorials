@@ -33,7 +33,7 @@ a:hover, a:active{
 .grid-container {
     display: grid;
     grid-template-columns: [gutter1] 1fr [main] 70vw [gutter2] 1fr[end];
-    grid-template-rows: [header]60px [video] auto [console]100px [manifest] auto [footer] auto [end];
+    grid-template-rows: [header]60px [video] auto [console]auto [manifest] auto [footer] auto [end];
 
     grid-template-areas:
         'header header header'
@@ -56,7 +56,7 @@ a:hover, a:active{
 
 #videoArea {
     grid-area: video;
-}
+}   
 
 #videoArea * video {
     border-radius: 8px;
