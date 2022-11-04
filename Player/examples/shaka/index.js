@@ -161,13 +161,13 @@ function onSeeked(event) {
 function onWaiting(event) {
     console.log('Video waiting...');
 }
-//<EmgHandling>
+
 // This is coming soon in future version of Shaka and will help us parse the ID3 messages
 function onMetadata(metadata) {
     console.log('!!!!!!!!!!!!!!Metadata Event Message');
     console.log(metadata);
 }
-
+//<EmgHandling>
 function onEventMessage(event) {
     console.log('Timed Metadata Event Message');
     //console.log('emsg:', event)
