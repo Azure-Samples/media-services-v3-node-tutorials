@@ -136,7 +136,7 @@ export async function main() {
         });
 
     let uniqueness = uuidv4();
-
+//<TopBitRate>
     // Use this to select the top bitrate from the live archive asset 
     // The filter property allows you to select tht "Top" bitrate which would be the highest bitrate provided by the live encoder.
     let videoTrackSelection: SelectVideoTrackByAttribute = {
@@ -144,7 +144,7 @@ export async function main() {
         attribute: KnownTrackAttribute.Bitrate,
         filter: KnownAttributeFilter.Top // use this to select the top bitrate in this ABR asset for the job
     }
-
+//</TopBitRate>
     // Create a job input asset that points to the live event archive to be packaged to MP4 format.
     // This is were we set up the track selection
     let input =  factory.createJobInputAsset({
