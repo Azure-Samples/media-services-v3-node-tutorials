@@ -146,9 +146,17 @@ export async function main() {
     }
 //</TopBitRate>
     // Create a job input asset that points to the live event archive to be packaged to MP4 format.
-    // This is were we set up the track selection
+    // This is where we set up the track selection and optionally set a clip trimming on the live event to clip off start and end positions.
     let input =  factory.createJobInputAsset({
         assetName: inputArchiveName,
+        start: {
+            odataType:"#Microsoft.Media.AbsoluteClipTime",
+            time: "PT30S" // Trim the first 30 seconds off the live archive.
+        },
+        end : {
+            odataType:"#Microsoft.Media.AbsoluteClipTime",
+            time: "PT5M30S" // Clip off the end after 5 minutes and 30 seconds.
+        },
         inputDefinitions: [
             factory.createFromAllInputFile({
                 includedTracks: [
