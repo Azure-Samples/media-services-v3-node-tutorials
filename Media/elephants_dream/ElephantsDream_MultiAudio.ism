@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<smil xmlns="http://www.w3.org/2001/SMIL20/Language">
+  <head>
+    <meta name="formats" content="mp4" />
+  </head>
+  <body>
+    <switch>
+      <video src="ElephantsDream_H264_1000kbps_AAC_und_ch2_128kbps.mp4" />
+      <video src="ElephantsDream_H264_650kbps_AAC_und_ch2_128kbps.mp4" />
+      <video src="ElephantsDream_H264_400kbps_AAC_und_ch2_128kbps.mp4" />
+	    <audio src="ElephantsDream_audio_spa.mp4" title="Spanish" SystemLanguage="spa"/>
+	    <audio src="ElephantsDream_audio_eng.mp4" title="English" SystemLanguage="eng"/>
+    </switch>
+  </body>
+</smil>
