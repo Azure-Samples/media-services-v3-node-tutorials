@@ -145,6 +145,7 @@ export async function main() {
         filter: KnownAttributeFilter.Top // use this to select the top bitrate in this ABR asset for the job
     }
 //</TopBitRate>
+//<SubclipJobInput>
     // Create a job input asset that points to the live event archive to be packaged to MP4 format.
     // This is where we set up the track selection and optionally set a clip trimming on the live event to clip off start and end positions.
     let input =  factory.createJobInputAsset({
@@ -165,7 +166,7 @@ export async function main() {
             })
         ]
     })
-
+//</SubclipJobInput>
     let outputAssetName = `${namePrefix}-output-${uniqueness}`;
     let jobName = `${namePrefix}-job-${uniqueness}`;
 
