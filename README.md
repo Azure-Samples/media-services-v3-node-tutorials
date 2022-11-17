@@ -10,6 +10,7 @@ products:
 name: Azure Media Services v3 Node.js TypeScript Samples
 description: "This repository contains samples showing how to use Azure Media Services v3 API using Node.js and TypeScript"
 urlFragment: media-services-v3-node-tutorials
+lastModified: 11/17/2022
 ---
 
 # Azure Media Services v3 Node samples (@azure/arm-mediaservices version 13 or higher)
