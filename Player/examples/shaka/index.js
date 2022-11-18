@@ -78,9 +78,10 @@ async function initApp() {
     // Reference Shaka docs : https://shaka-player-demo.appspot.com/docs/api/index.html
     player.addEventListener('error', onPlayerErrorEvent);
     player.addEventListener('onstatechange', onStateChange);
-    player.addEventListener('emsg', onEventMessage); // fires when a timed metadata event is sent
     player.addEventListener('adaptation', onAdaptation); //fires when an automatic ABR event happens
-    player.addEventListener('metadata', onMetadata); // This is coming soon in future version of Shaka and will help us parse the ID3 messages
+
+    player.addEventListener('emsg', onEventMessage); // fires when a timed metadata event is sent
+    player.addEventListener('metadata', onMetadata); // This is now available in shaka-player 4.3.0+ but has some bugs in the number of times it is firing.
 
     // Listen for  HTML5 Video Element events
     // Reference : https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement
@@ -178,14 +179,69 @@ function onCueChange(event) {
 }
 
 // <MetadataHandling>
-// This is coming soon in future version of Shaka and will help us parse the ID3 messages
+// This is working in shaka-player 4.3.0 and higher
 function onMetadata(metadata) {
     // This should fire on iOS Safari with HLS, might need to set streaming.useNativeHlsOnSafari to false on Safari
     console.log('***** Metadata Event Message *****');
     console.log(metadata);
+
+    if (metadata.metadataType =='org.id3') {
+        console.log('Event: startTime = ' + metadata.startTime);
+        console.log('Event: timeStamp = ' + metadata.timeStamp);
+
+        console.log('Event: ID3 Frame Type = ' + metadata.payload.key);
+        if (metadata.payload.key == "GEOB"){
+            /*
+             * Format:
+             * Text encoding           $xx
+             * MIME type               <text string> $00
+             * Filename                <text string according to encoding> $00 (00)
+             * Content description     $00 (00)
+             * Encapsulated object     <binary data>
+             */
+            console.log("Parsing ID3 'GEOB' object from the payload");
+
+            const view = new Int8Array(metadata.payload.data);
+
+            if (view[0] == 0x0 || view[0] == 0x03) { // Text encoding UTF8
+                const mimeTypeEndIndex = view.subarray(1).indexOf(0x0);
+                const mimeType = new TextDecoder().decode(view.subarray(1, mimeTypeEndIndex+1));
+                console.log("MimeType=" + mimeType);
+                
+                if (mimeType =="application/json"){
+                    console.log("Found a JSON payload in the ID3 - GEOB object");
+
+                    const payload = JSON.parse(new TextDecoder().decode(view.subarray(view.lastIndexOf(0x0)+1)));
+                    console.log("JSON payload: " + JSON.stringify(payload));
+
+                    let message = payload.message;
+                    console.log('message=' + message);
+    
+                    // Now do something with your custom JSON payload
+                    let metadataDiv = document.getElementById('metadata');
+                    metadataDiv.innerText = message;
+    
+                    let logLine = document.createElement('p');
+                    logLine.innerText = 'onMetadata - timestamp:' + (metadata.startTime.toFixed(2) + ' ' + JSON.stringify(payload));
+                    document.getElementById('console').appendChild(logLine).scrollIntoView(false);
+    
+                    metadataDiv.className = 'metadata-show';
+    
+                    setTimeout(() => {
+                        metadataDiv.className = 'metadata-hide';
+                    }, 5000); // clear the message
+                }
+            }
+
+        }
+       
+    
+    }
 }
+//</MetadataHandling>
+
 //<EmgHandling>
-function onEventMessage(event) {
+function onEventMessage(event) {              
     console.log('Timed Metadata Event Message');
     //console.log('emsg:', event)
     // emsg box information are in emsg.details
@@ -227,7 +283,7 @@ function onEventMessage(event) {
                 metadataDiv.innerText = message;
 
                 let logLine = document.createElement('p');
-                logLine.innerText = 'timestamp:' + (event.detail.startTime - event.detail.presentationTimeDelta).toFixed(2) + ' ' + JSON.stringify(jsonPayload);
+                logLine.innerText = 'onEmsg - timestamp:' + (event.detail.startTime - event.detail.presentationTimeDelta).toFixed(2) + ' ' + JSON.stringify(jsonPayload);
                 document.getElementById('console').appendChild(logLine).scrollIntoView(false);
 
                 metadataDiv.className = 'metadata-show';
