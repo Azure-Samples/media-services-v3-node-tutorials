@@ -1,0 +1,157 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin:0;
+}
+
+label {
+    font-size: 1em;
+}
+
+input {
+    font-size: 0.75em;
+}
+
+a:visited, a:link{
+    text-decoration: none;
+    color:black
+}
+
+a:hover, a:active{
+    text-decoration: underline;
+    color:black
+}
+
+.microsoft svg{
+    width:32px;
+    height:auto;
+    position: relative;
+    top:6px;
+    padding-right: 10px;
+}
+
+
+.grid-container {
+    display: grid;
+    grid-template-columns: [gutter1] 1fr [main] 70vw [gutter2] 1fr[end];
+    grid-template-rows: [header]60px [video] auto [console]auto [manifest] auto [footer] auto [end];
+
+    grid-template-areas:
+        'header header header'
+        'gutter1 video gutter2'
+        'gutter1 console gutter2'
+        'gutter1 manifest gutter2'
+        'footer footer footer';
+    justify-items: stretch;
+    height: 100vh;
+}
+
+#header {
+    grid-area: header;
+    text-align: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 1.4em;
+    font-weight: 500;
+    box-shadow: 0px 3px 8px 0px rgba(0,0,0,0.4);
+    -webkit-box-shadow: 0px 3px 8px 0px rgba(0,0,0,0.4);
+    -moz-box-shadow: 0px 3px 8px 0px rgba(0,0,0,0.4);
+    padding:10px 0px;
+}
+
+
+#videoArea {
+    grid-area: video;
+    padding:20px 0px;
+}   
+
+#videoArea * video {
+    border-radius: 8px;
+}
+
+#video-container {
+    grid-area: video;
+    overflow-x:hidden;
+    border-radius: 8px;
+}
+
+#footer {
+    grid-area: footer;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color:gray;
+    position:sticky;
+    text-align: center;
+    margin: 20px 0px
+
+}
+#console {
+    grid-area: console;
+    background-color: rgb(88, 88, 88);
+    border-radius: 5px;
+    margin-top: 10px;
+    padding: 5px;
+    height: auto;
+    overflow-y: scroll;
+    color: lightblue;
+    font-weight: 400;
+    font-size: 0.75em;
+    font-family: 'Consolas', monospace;
+}
+
+#manifest {
+    grid-area: manifest;
+    margin:20px 0px
+}
+
+#manifestUrl {
+    inline-size: 95%;
+}
+
+.metadata-show {
+    font-size: 1em;
+    font-weight: 700;
+    position: absolute;
+    padding-left: 10px;
+    background-color: rgba(255, 255, 255, 1);
+    width: 80%;
+    height: 1.2em;
+    top: 30px;
+    left: 20px;
+    animation: 1.2s slidein ease-in;
+}
+
+@keyframes slidein {
+    from {
+        left: -300px;
+        opacity: 0;
+    }
+
+    to {
+        left: 20px;
+        opacity: 1;
+        background-color: rgba(255, 255, 255, 1);
+    }
+}
+
+.metadata-hide {
+    font-size: 1em;
+    font-weight: 700;
+    position: absolute;
+    padding-left: 10px;
+    width: 80%;
+    opacity: 0;
+    height: 1.2em;
+    top: 30px;
+    left: 20px;
+    animation: 1.2s fadeout ease-out;
+}
+
+@keyframes fadeout {
+    from {
+        opacity: 1;
+        background-color: rgba(255, 255, 255, 1);
+    }
+
+    to {
+        opacity: 0;
+        background-color: rgba(255, 255, 255, 0);
+    }
+}

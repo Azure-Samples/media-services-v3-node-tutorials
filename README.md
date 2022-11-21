@@ -90,6 +90,7 @@ The projects in this repository were created using Visual Studio Code with Node.
 | [Audio Analytics basic with per-job language override](/AudioAnalytics/index.ts)|This sample illustrates how to create a audio analyzer transform using the basic mode.  It also shows how you can override the preset language on a per-job basis to avoid creating a transform for every language.  It also shows how to upload a media file to an input asset, submit a job with the transform and download the results for verification.|
 | **Player** ||
 | [Shaka player with Timed Metadata for live event interactivity](/Player/examples/shaka)| This sample shows how to use the Google Shaka player with Low latency HLS streams to receive timed metadata events and display interactive information overlayed on the video element. This can be used to build interactive ads, quiz shows, polling, and other solutions that require events to be triggered in your web page or application during a live stream.|
+| [HLS.js player with Low latency HLS (LL-HLS) and Timed Metadata for live event interactivity](/Player/examples/shaka)| This sample shows how to use the HLS.js player with Low latency HLS streams to receive timed metadata events and display interactive information overlayed on the video element. This can be used to build interactive ads, quiz shows, polling, and other solutions that require events to be triggered in your web page or application during a live stream.|
 
 ## Prerequisites
 

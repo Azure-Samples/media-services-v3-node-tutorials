@@ -1,0 +1,15 @@
+{
+  "name": "hls-js-demo",
+  "version": "1.0.0",
+  "description": "HLS-js demo for Azure Media Services low latency HLS support",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite"
+  },
+  "author": "johndeu",
+  "license": "MIT",
+  "dependencies": {
+    "hls.js": "^1.2.7",
+    "vite": "^3.2.4"
+  }
+}

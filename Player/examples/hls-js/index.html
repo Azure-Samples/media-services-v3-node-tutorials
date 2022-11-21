@@ -1,0 +1,37 @@
+<script type="module" src="./index.js"></script>
+<link href="./style.css" type="text/css" rel="stylesheet">
+
+<div class="grid-container">
+
+  <div id="header">
+    <a href="https://github.com/Azure-Samples/media-services-v3-node-tutorials/tree/main/Player/examples/shaka">
+      <span class="microsoft"><svg aria-hidden="true" role="presentation" viewBox="0 0 26 25"
+          xmlns="http://www.w3.org/2000/svg">
+          <path d="M12.5708 0.981934H0.907471V12.3682H12.5708V0.981934Z" fill="#F25022"></path>
+          <path d="M25.4625 0.981934H13.7992V12.3682H25.4625V0.981934Z" fill="#7FBA00"></path>
+          <path d="M12.5708 13.5649H0.907471V24.9512H12.5708V13.5649Z" fill="#00A4EF"></path>
+          <path d="M25.4629 13.5649H13.7996V24.9512H25.4629V13.5649Z" fill="#FFB900"></path>
+        </svg></span>
+      <span class="title">HLS.js LL-HLS sample with Timed Metadata Sample</span>
+    </a>
+  </div>
+  <div id="videoArea">
+
+
+    <div id="video-container">
+      <div id="metadata" class="metadata-hide"></div>
+      <video autoplay muted playsinline controls id="video" style="width: 100%; height: auto"></video>
+    </div>
+  </div>
+
+  <div id="console">Waiting for timed metadata signals to arrive...</div>
+  <div id="manifest">
+    <label>Your Manifest (paste and hit enter):</label>
+    <input id="manifestUrl" type="url" placeholder="place manifest URL here" size="80"
+      value="//aka.ms/lowlatencydemo.m3u8" />
+  </div>
+
+  <div id="footer">
+  <a href="http://media.azure">Azure Media Services</a>
+  </div>
+</div>
