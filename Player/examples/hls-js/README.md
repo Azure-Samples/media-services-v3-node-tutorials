@@ -95,7 +95,3 @@ curl https://<<LIVEEVENTNAME>>.channel.media.azure.net/<<LIVE_INGEST_ID>>/ingest
 **Requests per second:** Max 2 requests per second. Server will return a throttling error response if exceeded.
 
 
-## Known Issues
-
-1. ID3 Timed Metadata event messages are not currently firing on the live edge in LL-HLS mode.  They are only triggering when offset back into the DVR window. This is under investigation.
-1. 
