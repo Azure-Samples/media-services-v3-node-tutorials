@@ -98,3 +98,4 @@ curl https://<<LIVEEVENTNAME>>.channel.media.azure.net/<<LIVE_INGEST_ID>>/ingest
 ## Known Issues
 
 1. ID3 Timed Metadata event messages are not currently firing on the live edge in LL-HLS mode.  They are only triggering when offset back into the DVR window. This is under investigation.
+1. 
