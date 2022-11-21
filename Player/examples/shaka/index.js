@@ -11,6 +11,7 @@ async function initApp() {
     console.log('initApp');
 
     const manifestUrl = document.getElementById('manifestUrl');
+    // Apple also hosts a live LL-HLS CMAF sample here //ll-hls-test.apple.com/cmaf/master.m3u8
 
     // Create a Player instance.
     const videoElement = document.getElementById('video');
@@ -188,21 +189,20 @@ function onMetadata(metadata) {
     if (metadata.metadataType =='org.id3') {
         console.log('Event: startTime = ' + metadata.startTime);
         console.log('Event: timeStamp = ' + metadata.timeStamp);
-
+        console.log('Event: video.currentTime =' + document.getElementById('video').currentTime);
         console.log('Event: ID3 Frame Type = ' + metadata.payload.key);
+
         if (metadata.payload.key == "GEOB"){
-            /*
-             * Format:
-             * Text encoding           $xx
-             * MIME type               <text string> $00
-             * Filename                <text string according to encoding> $00 (00)
-             * Content description     $00 (00)
-             * Encapsulated object     <binary data>
-             */
+            // GEOB (Generic Object) ID3 frame format:
+            // Text encoding           $0x0 (00) | UTF8 = $0x03
+            // MIME type               'application/json'     $0x0 (00)
+            // Filename                <text string - which will be empty from AMS>     $0x0 (00)
+            // Content description     <text string - which will be empty from AMS>     $0x0 (00)
+            // Encapsulated object     <binary JSON data> 
+
             console.log("Parsing ID3 'GEOB' object from the payload");
 
             const view = new Int8Array(metadata.payload.data);
-
             if (view[0] == 0x0 || view[0] == 0x03) { // Text encoding UTF8
                 const mimeTypeEndIndex = view.subarray(1).indexOf(0x0);
                 const mimeType = new TextDecoder().decode(view.subarray(1, mimeTypeEndIndex+1));
@@ -210,7 +210,6 @@ function onMetadata(metadata) {
                 
                 if (mimeType =="application/json"){
                     console.log("Found a JSON payload in the ID3 - GEOB object");
-
                     const payload = JSON.parse(new TextDecoder().decode(view.subarray(view.lastIndexOf(0x0)+1)));
                     console.log("JSON payload: " + JSON.stringify(payload));
 
@@ -232,16 +231,16 @@ function onMetadata(metadata) {
                     }, 5000); // clear the message
                 }
             }
-
         }
-       
-    
     }
 }
 //</MetadataHandling>
 
 //<EmgHandling>
-function onEventMessage(event) {              
+function onEventMessage(event) {         
+    // In version 4.2.x of Shaka player, the event message from AMS will fire here.
+    // In version 4.3.0 and higher of Shaka player, the message will only fire in the "metadata' event, since the Shaka player is looking for ID3 messages and filtering them out to that event.
+
     console.log('Timed Metadata Event Message');
     //console.log('emsg:', event)
     // emsg box information are in emsg.details

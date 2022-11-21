@@ -10,12 +10,16 @@ Timed metadata is custom data that is inserted into a live stream. Both the data
 In addition, the Shaka player supports timed metadata through the use of the Event Message payload format as defined in the Alliance for Open Media [Carriage of ID3 Timed Metadata in the Common Media Application Format](https://aomediacodec.github.io/id3-emsg/) specification.  This industry standard allows the used of ID3 timed metadata messages to be signaled in the HLS or DASH streaming format and signal a player to fire an event when received.
 
 Media Services always wraps the message into an ID3 'GEOB' - generic object which has the following layout:
-  * Format:
-* Text encoding           $xx
-* MIME type               <text string> $00
-* Filename                <text string according to encoding> $00 (00)
-* Content description     $00 (00)
-* Encapsulated object     <binary data>
+
+Format:
+
+``` javascript
+// Text encoding           $0x0 (00) | UTF8 = $0x03
+// MIME type               'application/json'     $0x0 (00)
+// Filename                <text string - which will be empty from AMS>     $0x0 (00)
+// Content description     <text string - which will be empty from AMS>     $0x0 (00)
+// Encapsulated object     <binary data> 
+```
 
 Both the Apple HTTP Live Streaming (HLS) specification and the MPEG DASH streaming specifications support the inclusion of timed metadata in ID3 format using event message payloads.
 
