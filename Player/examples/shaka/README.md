@@ -60,7 +60,7 @@ Timed metadata is sent to a live event via a POST to the endpoint for timed meta
 
 The format of the timed metadata endpoint is also deterministic based on the RTMP ingest URL for the live event. The metadata endpoint uses the following format:
 
-https://<<<LIVEEVENTNAME>>>.channel.media.azure.net/<<<LIVE_INGEST_ID>>>/ingest.isml/eventdata
+https://LIVEEVENTNAME.channel.media.azure.net/<<LIVE_INGEST_ID>>/ingest.isml/eventdata
 
 ### Example POST using Curl
 
