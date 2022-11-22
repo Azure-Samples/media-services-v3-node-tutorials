@@ -1,7 +1,7 @@
 # Player sample using HLS.js and timed-metadata insertion
 
 This sample demonstrates how to use the HLS.js player with HLS low latency live streaming (LL-HLS) and timed metadata insertion.
-Azure Media Services supports playback in any Javascript Media Source Extension based player that can support the streaming of HLS, Low latency HLS (LL-HLS) and MPEG DASH formats.  The Google Shaka player is a good choice for an open source player solution that works well with AMS streaming.
+Azure Media Services supports playback in any Javascript Media Source Extension based player that can support the streaming of HLS, Low latency HLS (LL-HLS) and MPEG DASH formats.  The HLS.js player is an open source player solution that works well with AMS streaming.
 
 
 ## Where do I learn more about HLS.js
@@ -20,7 +20,7 @@ Full developer documentation and samples are available at [https://hls-js.netlif
 
 Timed metadata is custom data that is inserted into a live stream. Both the data and its insertion timestamp are preserved in the media stream itself so that all the clients playing back the video stream can get the same custom metadata at the exact same time in relation to the video stream.
 
-In addition, the Shaka player supports timed metadata through the use of the Event Message payload format as defined in the Alliance for Open Media [Carriage of ID3 Timed Metadata in the Common Media Application Format](https://aomediacodec.github.io/id3-emsg/) specification.  This industry standard allows the used of ID3 timed metadata messages to be signaled in the HLS or DASH streaming format and signal a player to fire an event when received.
+In addition, the HLS.js player supports timed metadata through the use of the Event Message payload format as defined in the Alliance for Open Media [Carriage of ID3 Timed Metadata in the Common Media Application Format](https://aomediacodec.github.io/id3-emsg/) specification.  This industry standard allows the used of ID3 timed metadata messages to be signaled in the HLS or DASH streaming format and signal a player to fire an event when received.
 
 Media Services always wraps the message into an ID3 'GEOB' - generic object which has the following layout:
 
@@ -73,7 +73,7 @@ Timed metadata is sent to a live event via a POST to the endpoint for timed meta
 
 The format of the timed metadata endpoint is also deterministic based on the RTMP ingest URL for the live event. The metadata endpoint uses the following format:
 
-https://LIVEEVENTNAME.channel.media.azure.net/<<LIVE_INGEST_ID>>/ingest.isml/eventdata
+https:// <<LIVEEVENTNAME>> .channel.media.azure.net/<<LIVE_INGEST_ID>>/ingest.isml/eventdata
 
 ### Example POST using Curl
 
