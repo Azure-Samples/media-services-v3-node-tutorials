@@ -28,11 +28,12 @@ async function initApp() {
             autoStartLoad: true,
             lowLatencyMode: true,
             enableIMSC1: true,
+            renderTextTracksNatively: true,
             enableEmsgMetadataCues: true,
             enableID3MetadataCues: true,
             debug: false,
+            streaming:true,
             enableWorker: true,
-            backBufferLength: 90,
             widevineLicenseUrl: undefined,
             drmSystemOptions: {},
         }
