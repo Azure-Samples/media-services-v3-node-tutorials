@@ -1,6 +1,6 @@
-// Import stylesheets
 import './style.css';
 import Hls from 'hls.js';
+import Id3Utils from './id3_utils';
 
 console.log('loading script...');
 
@@ -26,13 +26,13 @@ async function initApp() {
         var config = Hls.DefaultConfig;
         config = {
             autoStartLoad: true,
-            lowLatencyMode:true,
+            lowLatencyMode: true,
             enableIMSC1: true,
             enableEmsgMetadataCues: true,
             enableID3MetadataCues: true,
-            debug:false,
-            enableWorker:true,
-            backBufferLength:90,
+            debug: false,
+            enableWorker: true,
+            backBufferLength: 90,
             widevineLicenseUrl: undefined,
             drmSystemOptions: {},
         }
@@ -74,7 +74,7 @@ function onManifestParsed(event, data) {
     console.log('manifest loaded, found ' + data.levels.length + ' quality level');
 }
 
-function onMetadata(event,data) {
+function onMetadata(event, data) {
     console.log("************ On Metadata Event ****************");
     /*
     data: payload,
@@ -86,15 +86,20 @@ function onMetadata(event,data) {
     let id3Frame = data.samples[0];
     let schemeIdUri = id3Frame.type;
     let timeStamp = id3Frame.pts
-    let view = new Int8Array(id3Frame.data);
-    console.log("EVENT: " + JSON.stringify(id3Frame));
+    let view = new Uint8Array(id3Frame.data);
+
     console.log("EVENT: schemeIdUri: " + schemeIdUri);
     console.log("EVENT: timeStamp: " + timeStamp);
 
     //view now contains a full ID3 frame and GEOB object that needs to be parsed now... 
     // <TODO> parse the GEOB ID3 payload now...
 
-    let message = JSON.stringify(id3Frame);
+    let offset = 0;
+    let frames = Id3Utils.getID3Frames(view, offset);
+
+    console.log(JSON.stringify(JSON.parse(frames[0].data)));
+
+    let message = JSON.parse(frames[0].data).message;;
 
     // Now do something with your custom JSON payload
     let metadataDiv = document.getElementById('metadata');
@@ -111,7 +116,8 @@ function onMetadata(event,data) {
     }, 5000); // clear the message
 }
 
-function onSubtitleProcessed(event,data) {
+
+function onSubtitleProcessed(event, data) {
     //console.log("Subtitle processed: " + JSON.stringify(data.frag));
 }
 
@@ -122,21 +128,21 @@ function onPlayerErrorEvent(event, data) {
 
     if (data.fatal) {
         switch (data.type) {
-          case Hls.ErrorTypes.NETWORK_ERROR:
-            // try to recover network error
-            console.log('fatal network error encountered, try to recover');
-            hls.startLoad();
-            break;
-          case Hls.ErrorTypes.MEDIA_ERROR:
-            console.log('fatal media error encountered, try to recover');
-            hls.recoverMediaError();
-            break;
-          default:
-            // cannot recover
-            hls.destroy();
-            break;
+            case Hls.ErrorTypes.NETWORK_ERROR:
+                // try to recover network error
+                console.log('fatal network error encountered, try to recover');
+                hls.startLoad();
+                break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+                console.log('fatal media error encountered, try to recover');
+                hls.recoverMediaError();
+                break;
+            default:
+                // cannot recover
+                hls.destroy();
+                break;
         }
-      }
+    }
 
     switch (data.details) {
         case Hls.ErrorDetails.FRAG_LOAD_ERROR:
@@ -147,7 +153,7 @@ function onPlayerErrorEvent(event, data) {
             break;
     }
 
-    
+
 }
 
 document.addEventListener('DOMContentLoaded', initApp);
