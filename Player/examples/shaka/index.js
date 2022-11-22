@@ -319,3 +319,9 @@ function initFailed(error) {
 // Listen to the custom shaka-ui-loaded event, to wait until the UI is loaded.
 document.addEventListener('shaka-ui-loaded', initApp);
 document.addEventListener('shaka-ui-load-failed', initFailed);
+
+// Start the system clock
+setInterval(() => {
+    const date = new Date();
+    document.getElementById('clock').innerHTML = `${String(date.getUTCHours()).padStart(2,"0")}:${String(date.getUTCMinutes()).padStart(2,"0")}:${String(date.getSeconds()).padStart(2,"0")}.${String(date.getMilliseconds()).padStart(3,"0")}`;
+}, 100);

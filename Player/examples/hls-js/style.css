@@ -33,11 +33,12 @@ a:hover, a:active{
 .grid-container {
     display: grid;
     grid-template-columns: [gutter1] 1fr [main] 70vw [gutter2] 1fr[end];
-    grid-template-rows: [header]60px [video] auto [console]auto [manifest] auto [footer] auto [end];
+    grid-template-rows: [header]60px [video] auto [clock]auto [console]auto [manifest] auto [footer] auto [end];
 
     grid-template-areas:
         'header header header'
         'gutter1 video gutter2'
+        'gutter1 clock gutter2'
         'gutter1 console gutter2'
         'gutter1 manifest gutter2'
         'footer footer footer';
@@ -82,6 +83,19 @@ a:hover, a:active{
     margin: 20px 0px
 
 }
+
+#clock {
+    grid-area: clock;
+    text-align: center;
+    font: 1.5em 'Consolas', monospace;
+    font-weight: 800;
+    background-color: black;;
+    border-radius: 5px;
+    color:white;
+    max-height: 32px;
+}
+
+
 #console {
     grid-area: console;
     background-color: rgb(88, 88, 88);

@@ -157,3 +157,9 @@ function onPlayerErrorEvent(event, data) {
 }
 
 document.addEventListener('DOMContentLoaded', initApp);
+
+// Start the system clock
+setInterval(() => {
+    const date = new Date();
+    document.getElementById('clock').innerHTML = `${String(date.getUTCHours()).padStart(2,"0")}:${String(date.getUTCMinutes()).padStart(2,"0")}:${String(date.getSeconds()).padStart(2,"0")}.${String(date.getMilliseconds()).padStart(3,"0")}`;
+}, 100);
