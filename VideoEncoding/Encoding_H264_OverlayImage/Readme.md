@@ -18,6 +18,11 @@ This sample shows how to overlay an image onto video using a custom encoding Tra
 
 See the article [Create an overlay Transform](https://docs.microsoft.com/azure/media-services/latest/transform-create-overlay-how-to) for details.
 
+## Limitations on overlays
+
+Azure Media Services only supports a single image overlay at a time. Meaning you cannot pass in multiple image overlays to the "Overlays" property on the Transform's Filter or you will get an error message. 
+It's best to pre-create the image overlay that fits your video aspect ratio in an external application or drawing library and pass that into the Job's input to use as the single overlay image. 
+
 ### .env
 
 Use [sample.env](../../sample.env) as a template for the .env file to be created. The .env file must be placed at the root of the sample (same location than sample.env).

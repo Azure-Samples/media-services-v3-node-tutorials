@@ -80,6 +80,7 @@ export async function main() {
     // Create a new Transform using a preset name from the list of built in encoding presets. 
     // To use a custom encoding preset, you can change this to be a StandardEncoderPreset, which has support for codecs, formats, and filter definitions.
     // This sample uses the 'ContentAwareEncoding' preset which chooses the best output based on an analysis of the input video.
+    // NOTE that live archives do not currently support late binding audio tracks, so you have to first re-encode those into a new asset to allow you to late bind stuff to them. 
     let adaptiveStreamingTransform: BuiltInStandardEncoderPreset = factory.createBuiltInStandardEncoderPreset({
       presetName: "ContentAwareEncoding"
     });
@@ -134,6 +135,7 @@ export async function main() {
         });
 
       // This is the late bound audio track file we will upload to the asset container
+      // NOTE that live archives do not currently support late binding tracks, so you have to first re-encode those into a new asset to allow you to late bind stuff to them. 
       let filename= "ElephantsDream_audio_spa.mp4";
       let audioLanguageFile = `Media\\elephants_dream\\${filename}`;
 
