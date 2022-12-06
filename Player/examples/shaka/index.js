@@ -60,7 +60,6 @@ async function initApp() {
 
     player.configure({
         manifest: {
-            defaultPresentationDelay: 0.1,
             availabilityWindowOverride: 30,
             dash: {},
             hls: {},
