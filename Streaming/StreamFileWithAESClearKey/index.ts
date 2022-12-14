@@ -26,13 +26,10 @@ import {
 } from "@azure/storage-blob";
 import * as crypto from "crypto";
 import * as jwt from "jsonwebtoken";
-import * as fs from 'fs';
-import { v4 as uuidv4 } from 'uuid';
 import * as util from 'util';
 // Load the .env file if it exists
 import * as dotenv from "dotenv";
 import * as path from "path";
-import * as url from 'whatwg-url';
 import * as factory from "../../Common/Encoding/transformFactory";
 
 dotenv.config();
