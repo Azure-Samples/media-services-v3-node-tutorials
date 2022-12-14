@@ -309,7 +309,6 @@ async function CreateContentKeyPolicyAsync(
 function DeriveKey(password: string) {
     let hash = crypto.createHash('sha256');
     hash.update(new TextEncoder().encode(password));
-
     return hash.digest().subarray(0,16)
 }
 
@@ -325,7 +324,6 @@ function CreateToken(password:string) :string
             issuer: "urn:microsoft:azure:mediaservices",
             audience: "urn:microsoft:azure:mediaservices",
             expiresIn: "4h",
-
         }
     );
 
