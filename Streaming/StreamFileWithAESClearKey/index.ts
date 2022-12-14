@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-import { DefaultAzureCredential} from "@azure/identity";
+import { DefaultAzureCredential } from "@azure/identity";
 import {
     AzureMediaServices,
     Transform,
@@ -17,20 +17,16 @@ import {
     ContentKeyPolicySymmetricTokenKey,
     ContentKeyPolicy,
     KnownContentKeyPolicyRestrictionTokenType,
-    
 } from '@azure/arm-mediaservices';
 import {
     BlobServiceClient,
-    AnonymousCredential,
-    BlockBlobClient
+    AnonymousCredential
 } from "@azure/storage-blob";
 import * as crypto from "crypto";
 import * as jwt from "jsonwebtoken";
-import * as util from 'util';
 // Load the .env file if it exists
 import * as dotenv from "dotenv";
 import * as path from "path";
-import * as factory from "../../Common/Encoding/transformFactory";
 
 dotenv.config();
 
@@ -48,24 +44,10 @@ const accountName: string = process.env.AZURE_MEDIA_SERVICES_ACCOUNT_NAME as str
 // See the following examples for how to authenticate in Azure with managed identity
 // https://github.com/Azure/azure-sdk-for-js/blob/@azure/identity_2.0.1/sdk/identity/identity/samples/AzureIdentityExamples.md#authenticating-in-azure-with-managed-identity 
 // If you have issues with using the Visual Studio Azure identity, see  https://github.com/Azure/azure-sdk-for-js/blob/main/sdk/identity/identity/TROUBLESHOOTING.md#troubleshoot-default-azure-credential-authentication-issues 
-
 const credential = new DefaultAzureCredential();
 
 // "Media\\<<yourfilepath.mp4>>"; // Place your media in the /Media folder at the root of the samples. Code for upload uses relative path to current working directory for Node;
 let inputFile: string = "Media\\ignite.mp4";
-// This is a hosted sample file to use
-let inputUrl: string = "https://amssamples.streaming.mediaservices.windows.net/2e91931e-0d29-482b-a42b-9aadc93eb825/AzurePromo.mp4";
-
-// Timer values
-const timeoutSeconds: number = 60 * 10;
-const sleepInterval: number = 1000 * 2;
-const setTimeoutPromise = util.promisify(setTimeout);
-
-// Args
-const outputFolder: string = "./Output";
-const namePrefix: string = "streamClearKey";
-let inputExtension: string;
-let blobName: string;
 
 ///////////////////////////////////////////
 //   Main entry point for sample script  //
@@ -89,7 +71,7 @@ export async function main() {
 
         let password = "mango apple bananas"; // update this to any value you like
         let contentKeyPolicy = await CreateContentKeyPolicyAsync(mediaServicesClient, password, runIndex);
-        let streamingLocator = await CreateStreamingLocatorAsync(mediaServicesClient, outputAsset,contentKeyPolicy, runIndex);
+        let streamingLocator = await CreateStreamingLocatorAsync(mediaServicesClient, outputAsset, contentKeyPolicy, runIndex);
 
         console.log();
 
@@ -125,16 +107,15 @@ async function CreateTransformAsync(mediaServices: AzureMediaServices): Promise<
             {
                 name: transformName,
                 outputs: [{
-                    preset: factory.createBuiltInStandardEncoderPreset({
+                    preset: {
+                        odataType: "#Microsoft.Media.BuiltInStandardEncoderPreset",
                         presetName: KnownEncoderNamedPreset.ContentAwareEncoding,
-                    })
+                    }
                 }]
             });
         return transform;
 
     }
-
-
 }
 
 // Helper function to add an hour to the current time for use with the blob client uploader
@@ -201,12 +182,14 @@ async function EncodeFileAsync(
         transformName,
         jobName,
         {
-            input: factory.createJobInputAsset({
+            input: {
+                odataType: "#Microsoft.Media.JobInputAsset",
                 assetName: inputAssetName
-            }),
-            outputs: [factory.createJobOutputAsset({
+            },
+            outputs: [{
+                odataType: "#Microsoft.Media.JobOutputAsset",
                 assetName: outputAssetName,
-            })]
+            }]
         }
     );
 
@@ -251,7 +234,7 @@ async function StartStreamingEndpointAsync(
 async function CreateStreamingLocatorAsync(
     mediaServices: AzureMediaServices,
     outputAsset: Asset,
-    contentKeyPolicy:ContentKeyPolicy,
+    contentKeyPolicy: ContentKeyPolicy,
     runIndex: string): Promise<StreamingLocator> {
     console.log("Creating streaming locator");
 
@@ -282,7 +265,7 @@ async function CreateContentKeyPolicyAsync(
         keyValue: DeriveKey(password),
     }
 
-    let restriction: ContentKeyPolicyTokenRestriction= {
+    let restriction: ContentKeyPolicyTokenRestriction = {
         odataType: "#Microsoft.Media.ContentKeyPolicyTokenRestriction",
         issuer: "urn:microsoft:azure:mediaservices",
         audience: "urn:microsoft:azure:mediaservices",
@@ -298,7 +281,7 @@ async function CreateContentKeyPolicyAsync(
             options: [
                 {
                     configuration: configuration,
-                    restriction:restriction,
+                    restriction: restriction,
                     name: "option1"
                 }
             ]
@@ -309,13 +292,12 @@ async function CreateContentKeyPolicyAsync(
 function DeriveKey(password: string) {
     let hash = crypto.createHash('sha256');
     hash.update(new TextEncoder().encode(password));
-    return hash.digest().subarray(0,16)
+    return hash.digest().subarray(0, 16)
 }
 
-function CreateToken(password:string) :string
-{
+function CreateToken(password: string): string {
     var tokenKey = DeriveKey(password)
-    
+
     let jwtToken = jwt.sign(
         {},
         Buffer.from(tokenKey),
