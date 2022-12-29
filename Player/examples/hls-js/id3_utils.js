@@ -168,8 +168,7 @@ export default class Id3Utils{
             return metadataFrame;
         } else if (frame.data) {
             console.log('Unrecognized ID3 frame type:', frame.type);
-            metadataFrame.data = BufferUtils.toArrayBuffer(frame.data);
-            return metadataFrame;
+            return null;
         }
 
         return null;
