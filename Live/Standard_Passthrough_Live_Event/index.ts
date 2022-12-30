@@ -233,7 +233,7 @@ export async function main() {
                 // OPTIONS using live cloud encoding type:
                 // keyFrameInterval: "PT2S", //If this value is not set for an encoding live event, the fragment duration defaults to 2 seconds. The value cannot be set for pass-through live events.
                 // presetName: null, // only used for custom defined presets. 
-                //stretchMode: "None" // can be used to determine stretch on encoder mode
+                //stretchMode: KnownStretchMode.None // can be used to determine stretch on encoder mode
             },
             // 3) Set up the Preview endpoint for monitoring based on the settings above we already set. 
             preview: liveEventPreview,

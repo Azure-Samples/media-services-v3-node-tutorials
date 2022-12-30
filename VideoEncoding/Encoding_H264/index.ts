@@ -9,7 +9,8 @@ import {
     KnownOnErrorType,
     KnownPriority,
     Transform,
-    KnownH264Complexity
+    KnownH264Complexity,
+    KnownStretchMode
 } from '@azure/arm-mediaservices';
 import * as jobHelper from "../../Common/Encoding/encodingJobHelpers";
 import * as factory  from "../../Common/Encoding/transformFactory";
@@ -85,7 +86,7 @@ export async function main() {
                 factory.createH264Video({
                     keyFrameInterval: "PT2S", //ISO 8601 format supported
                     complexity: KnownH264Complexity.Speed, // this is the cheapest setting. Set to Balanced or Quality as needed.
-                    stretchMode: "AutoSize", 
+                    stretchMode: KnownStretchMode.AutoSize,
                     layers: [
                         factory.createH264Layer({
                             bitrate: 3600000, // Units are in bits per second and not kbps or Mbps - 3.6 Mbps or 3,600 kbps

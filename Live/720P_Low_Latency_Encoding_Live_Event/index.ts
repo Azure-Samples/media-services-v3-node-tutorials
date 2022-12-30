@@ -238,7 +238,7 @@ export async function main() {
                 //      {"ElementaryStreams":[{"Type":"Video","BitRate":4500000,"Width":1920,"Height":1080},{"Type":"Video","BitRate":2200000,"Width":1280,"Height":720},{"Type":"Video","BitRate":1000000,"Width":960,"Height":540},{"Type":"Video","BitRate":400000,"Width":640,"Height":360}]}
                 presetName: "720p-3-Layer",  // Encodes to 3 layers as defined above. 
 
-                //stretchMode: "None" // can be used to determine stretch on encoder mode
+                //stretchMode: KnownStretchMode.None, // can be used to determine stretch on encoder mode
             },
             // 3) Set up the Preview endpoint for monitoring based on the settings above we already set. 
             preview: liveEventPreview,
