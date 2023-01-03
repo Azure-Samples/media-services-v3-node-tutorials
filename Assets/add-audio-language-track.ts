@@ -156,6 +156,7 @@ export async function main() {
         {
             name: "Spanish",
             track: {
+              mpeg4TrackId:0, //Optional if there are multiple audio tracks in the source MP4 to choose from.
               odataType: "#Microsoft.Media.AudioTrack",
               displayName:"Spanish",
               languageCode:"es-ES",
@@ -174,6 +175,7 @@ export async function main() {
           updateIntervalInMs: 1000,
         } 
       )
+      
 
 
 
