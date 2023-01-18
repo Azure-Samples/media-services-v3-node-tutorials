@@ -22,7 +22,7 @@
     "@azure/identity": "^2.0.1",
     "@azure/storage-blob": "^12.4.0",
     "fs": "0.0.1-security",
-    "jsonwebtoken": "^8.5.1",
+    "jsonwebtoken": "^9.0.0",
     "moment": "^2.29.4",
     "njwt": "^1.0.0",
     "path": "^0.12.7",
@@ -32,7 +32,7 @@
     "whatwg-url": "^8.4.0"
   },
   "devDependencies": {
-    "@azure/arm-mediaservices": "^13.0.0",
+    "@azure/arm-mediaservices": "^13.1.0",
     "@types/jsonwebtoken": "^8.5.0",
     "@types/readline-sync": "^1.4.3",
     "@types/uuid": "^8.3.0",
