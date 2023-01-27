@@ -44,9 +44,9 @@ const credential = new DefaultAzureCredential();
 // Just set the other one to null to have it select the right JobInput class type
 
 // const inputFile = "Media\\<<yourfilepath.mp4>>"; // Place your media in the /Media folder at the root of the samples. Code for upload uses relative path to current working directory for Node;
-let inputFile: string;
+let inputFile: string = "Media\\ignite.mp4"
 // This is a hosted sample file to use
-let inputUrl: string = "https://amssamples.streaming.mediaservices.windows.net/2e91931e-0d29-482b-a42b-9aadc93eb825/AzurePromo.mp4";
+//let inputUrl: string = "https://amssamples.streaming.mediaservices.windows.net/2e91931e-0d29-482b-a42b-9aadc93eb825/AzurePromo.mp4";
 
 // Args
 const outputFolder: string = "./Output";
@@ -97,7 +97,7 @@ export async function main() {
                 factory.createJpgImage({
                     // Also generate a set of thumbnails in one Jpg file (thumbnail sprite)
                     start: "0%",
-                    step: "5%",
+                    step: "PT1S",
                     range: "100%",
                     spriteColumn: 10,  // Key is to set the column number here, and then set the width and height of the layer.
                     layers: [
@@ -146,7 +146,7 @@ export async function main() {
         });
 
     let uniqueness = uuidv4();
-    let input = await jobHelper.getJobInputType(inputFile, inputUrl, namePrefix, uniqueness);
+    let input = await jobHelper.getJobInputType(inputFile, inputFile, namePrefix, uniqueness);
     let outputAssetName = `${namePrefix}-output-${uniqueness}`;
     let jobName = `${namePrefix}-job-${uniqueness}`;
 

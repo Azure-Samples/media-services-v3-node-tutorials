@@ -85,7 +85,7 @@ ffmpeg  -i /dev/video1 -pix_fmt yuv420p -f ismv -movflags isml+frag_keyframe  -v
 ### Stream Multiple Bitrates from a source file (looping)
 
 ```bash
-ffmpeg -re -stream_loop -1 -i "C:\Video\tears_of_steel_1080p.mov" -movflags isml+frag_keyframe -frag_duration 1600000 -f ismv -threads 0 -c:a aac -ac 2 -b:a 64k -c:v libx264 -preset ultrafast -tune zerolatency -profile:v main -g 48 -keyint_min 48 -sc_threshold 0 -map 0:v -b:v:0 5000k -minrate:v:0 5000k -maxrate:v:0 5000k -s:v:0 1920x1080 -map 0:v -b:v:1 3000k -minrate:v:1 3000k -maxrate:v:1 3000k -s:v:1 1280x720 -map 0:v -b:v:2 1800k -minrate:v:2 1800k -maxrate:v:2 1800k -s:v:2 854x480 -map 0:v -b:v:3 1000k -minrate:v:3 1000k -maxrate:v:3 1000k -s:v:3 640x480 -map 0:v -b:v:4 600k -minrate:v:4 600k -maxrate:v:4 600k -s:v:4 480x360 -map 0:a:0
+ffmpeg -re -stream_loop -1 -i "C:\Video\tears_of_steel_1080p.mov" -movflags isml+frag_keyframe -frag_duration 1600000 -f ismv -threads 0 -c:a aac -ac 2 -b:a 128k -c:v libx264 -preset ultrafast -tune zerolatency -profile:v main -g 48 -keyint_min 48 -sc_threshold 0 -map 0:v -b:v:0 5000k -minrate:v:0 5000k -maxrate:v:0 5000k -s:v:0 1920x1080 -map 0:v -b:v:1 3000k -minrate:v:1 3000k -maxrate:v:1 3000k -s:v:1 1280x720 -map 0:v -b:v:2 1800k -minrate:v:2 1800k -maxrate:v:2 1800k -s:v:2 854x480 -map 0:v -b:v:3 1000k -minrate:v:3 1000k -maxrate:v:3 1000k -s:v:3 640x480 -map 0:v -b:v:4 600k -minrate:v:4 600k -maxrate:v:4 600k -s:v:4 480x360 -map 0:a:0
 "http://<<YOUR_CHANNEL>>.channel.mediaservices.windows.net/<<LIVE EVENT ID>>/ingest.isml/Streams(stream0^)"
 ```
 
@@ -97,11 +97,12 @@ Explanation of the parameters uses for the above command:
 -i C:\Video\tears_of_steel_1080p.mov   **INPUT FILE IS THIS MOV FILE
 -movflags isml+frag_keyframe  **OUTPUT IS SMOOTH STREAMING THIS SETS THE FLAGS
 -frag_duration 1600000  ** SETS THE OUTPUT DURATION OF THE SMOOTH FRAGMENT TO 1.6 seconds
+-avoid_negative_ts 1 ** the AMS live server does not handle negative timestamps. 
 -f ismv  **OUTPUT ISMV SMOOTH
 -threads 0  ** SETS THE THREAD COUNT TO USE FOR ALL STREAMS. YOU CAN USE A STREAM SPECIFIC COUNT AS WELL
 -c:a aac  ** SET TO AAC CODEC
 -ac 2   ** SET THE OUTPUT TO STEREO
--b:a 64k ** SET THE BITRATE FOR THE AUDIO
+-b:a 128k ** SET THE BITRATE FOR THE AUDIO
 -c:v libx264  ** SET THE VIDEO CODEC
 -preset fast ** USE THE FAST PRESET FOR X246
 -profile:v main **USE THE MAIN PROFILE
@@ -130,7 +131,7 @@ To stream audio only from a local microphone, you need to add the DirectShow fil
 In addition, this sample shows how to use the "-metadata" property to set the audio language tag.  FFmpeg uses the 3-letter ISO language code format only. In this case, "eng" for English. 
 
 ```bash
-ffmpeg -y -hide_banner -f dshow -fflags nobuffer -i audio="Microphone Array (Synaptics Audio)" -metadata:s:a language=eng -c:a aac -b:a 192k -ar 48000 -f ismv -movflags isml+frag_keyframe -frag_duration 1600000 "http://<<YOUR_CHANNEL>>.channel.mediaservices.windows.net/<<LIVE EVENT ID>>/ingest.isml/Streams(audio)"
+ffmpeg -y -hide_banner -f dshow -fflags nobuffer -i audio="Microphone Array (Synaptics Audio)" -metadata:s:a language=eng -c:a aac -b:a 128k -ar 48000 -avoid_negative_ts 1 -f ismv -movflags isml+frag_keyframe -frag_duration 1600000 "http://<<YOUR_CHANNEL>>.channel.mediaservices.windows.net/<<LIVE EVENT ID>>/ingest.isml/Streams(audio)"
 ```
 
 ### Stream Multiple Audio sources
@@ -138,7 +139,7 @@ ffmpeg -y -hide_banner -f dshow -fflags nobuffer -i audio="Microphone Array (Syn
 This example builds on the previous, showing how to add a second audio source from another sound device on your system and provide a "Spanish" language alternate track. This example also includes video from a GoPro Webcam. 
 
 ```bash
-ffmpeg -y -hide_banner -f dshow -fflags nobuffer -rtbufsize 15M -i audio="Microphone Array (Synaptics Audio)"  -f dshow -fflags nobuffer -i audio="Headset Microphone (Logitech Stereo H650e)" -itsoffset 1.00 -f dshow -fflags nobuffer -rtbufsize 2000M -i video="GoPro Webcam" -map 0:a:0 -map 1:a:0 -map 2:v:0 -metadata:s:a:0 language=eng -metadata:s:a:1 language=spa -c:a:0 aac -b:a:0 192k -ar:a:0 48000 -c:a:1 aac -b:a:1 192k -ar:a:1 48000 -c:v:2 libx264 -preset ultrafast -tune zerolatency -s:v:0 1280x720 -r 30 -g 48 -keyint_min 48 -sc_threshold 0 -minrate:v:0 3000k -maxrate:v:0 3000k -b:v:0 3000k -f ismv -movflags isml+frag_keyframe -frag_duration 1600000 "http://<<YOUR_CHANNEL>>.channel.mediaservices.windows.net/<<LIVE EVENT ID>>/ingest.isml/Streams(video)"
+ffmpeg -y -hide_banner -f dshow -fflags nobuffer -rtbufsize 15M -i audio="Microphone Array (Synaptics Audio)"  -f dshow -fflags nobuffer -i audio="Headset Microphone (Logitech Stereo H650e)" -itsoffset 1.00 -f dshow -fflags nobuffer -rtbufsize 2000M -i video="GoPro Webcam" -map 0:a:0 -map 1:a:0 -map 2:v:0 -metadata:s:a:0 language=eng -metadata:s:a:1 language=spa -c:a:0 aac -b:a:0 128k -ar:a:0 48000 -c:a:1 aac -b:a:1 128k -ar:a:1 48000 -c:v:2 libx264 -preset ultrafast -tune zerolatency -s:v:0 1280x720 -r 30 -g 48 -keyint_min 48 -sc_threshold 0 -minrate:v:0 3000k -maxrate:v:0 3000k -b:v:0 3000k -avoid_negative_ts 1 -f ismv -movflags isml+frag_keyframe -frag_duration 1600000 "http://<<YOUR_CHANNEL>>.channel.mediaservices.windows.net/<<LIVE EVENT ID>>/ingest.isml/Streams(video)"
 ```
 
 ### Stream video and audio
@@ -146,7 +147,7 @@ ffmpeg -y -hide_banner -f dshow -fflags nobuffer -rtbufsize 15M -i audio="Microp
 Stream a headset microphone along with a GoPro Webcam's video.  Demonstrates resizing and setting the input buffer (-rtbufsize) high enough to avoid dropping any frames.
 
 ```bash
-ffmpeg -y -hide_banner -f dshow -fflags nobuffer -i audio="Headset Microphone (Logitech Stereo H650e)" -f dshow -fflags nobuffer -rtbufsize 2000M -i video="GoPro Webcam" -map 0:0 -map 1:0 -c:a:0 aac -b:a:0 192k -ar:a:0 48000 -c:v:1 libx264 -preset ultrafast -tune zerolatency -s:v:0 1280x720 -r 30 -g 48 -keyint_min 48 -sc_threshold 0 -minrate:v:0 3000k -maxrate:v:0 4000k -b:v:0 3500k -f ismv -movflags isml+frag_keyframe -frag_duration 1600000 "http://<<YOUR_CHANNEL>>.channel.mediaservices.windows.net/<<LIVE EVENT ID>>/ingest.isml/Streams(video)"
+ffmpeg -y -hide_banner -f dshow -fflags nobuffer -i audio="Headset Microphone (Logitech Stereo H650e)" -f dshow -fflags nobuffer -rtbufsize 2000M -i video="GoPro Webcam" -map 0:0 -map 1:0 -c:a:0 aac -b:a:0 128k -ar:a:0 48000 -c:v:1 libx264 -preset ultrafast -tune zerolatency -s:v:0 1280x720 -r 30 -g 48 -keyint_min 48 -sc_threshold 0 -minrate:v:0 3000k -maxrate:v:0 4000k -b:v:0 3500k -avoid_negative_ts 1 -f ismv -movflags isml+frag_keyframe -frag_duration 1600000 "http://<<YOUR_CHANNEL>>.channel.mediaservices.windows.net/<<LIVE EVENT ID>>/ingest.isml/Streams(video)"
 ```
 
 ### Sync issues and offsetting the audio delay on a device
@@ -155,7 +156,7 @@ Some devices may not be in perfect sync with each other due to internal bufferin
 In this example, I offset the headset microphone by 1 second to better sync with the GoPro video device.
 
 ```bash
-ffmpeg -y -hide_banner -f dshow -fflags nobuffer -i audio="Headset Microphone (Logitech Stereo H650e)" -itsoffset 1.00 -f dshow -fflags nobuffer -rtbufsize 2000M -i video="GoPro Webcam" -map 0:0 -map 1:0 -c:a:0 aac -b:a:0 192k -ar:a:0 48000 -c:v:1 libx264 -preset ultrafast -tune zerolatency -s:v:0 1280x720 -r 30 -g 48 -keyint_min 48 -sc_threshold 0 -minrate:v:0 3000k -maxrate:v:0 3000k -b:v:0 3000k -f ismv -movflags isml+frag_keyframe -frag_duration 1600000 "http://<<YOUR_CHANNEL>>.channel.mediaservices.windows.net/<<LIVE EVENT ID>>/ingest.isml/Streams(video)"
+ffmpeg -y -hide_banner -f dshow -fflags nobuffer -i audio="Headset Microphone (Logitech Stereo H650e)" -itsoffset 1.00 -f dshow -fflags nobuffer -rtbufsize 2000M -i video="GoPro Webcam" -map 0:0 -map 1:0 -c:a:0 aac -b:a:0 128k -ar:a:0 48000 -c:v:1 libx264 -preset ultrafast -tune zerolatency -s:v:0 1280x720 -r 30 -g 48 -keyint_min 48 -sc_threshold 0 -minrate:v:0 3000k -maxrate:v:0 3000k -b:v:0 3000k -avoid_negative_ts 1 -f ismv -movflags isml+frag_keyframe -frag_duration 1600000 "http://<<YOUR_CHANNEL>>.channel.mediaservices.windows.net/<<LIVE EVENT ID>>/ingest.isml/Streams(video)"
 ```
 
 ### Using the OBS Studio virtual device
@@ -163,7 +164,7 @@ ffmpeg -y -hide_banner -f dshow -fflags nobuffer -i audio="Headset Microphone (L
 In this example, we use the OBS Studio Virtual device for the video input.  This allows you to use OBS Studio as a switcher and more easily control the compositing and transitions between sources.  However, if you are using OBS Studio, you really don't need FFmpeg any longer... but here it is in case you want to play with that or come up with a reason to use it with FFmpeg running externally.
 
 ```bash
-ffmpeg -y -hide_banner -f dshow -fflags nobuffer -i audio="Headset Microphone (Logitech Stereo H650e)" -itsoffset 1.00 -f dshow -fflags nobuffer -rtbufsize 2000M -i video="OBS Virtual Camera" -map 0:0 -map 1:0 -c:a:0 aac -b:a:0 192k -c:v:1 libx264 -preset ultrafast -tune zerolatency -s:v:0 1280x720 -r 30 -g 48 -keyint_min 48 -sc_threshold 0 -minrate:v:0 3000k -maxrate:v:0 3000k -b:v:0 3000k -f ismv -movflags isml+frag_keyframe -frag_duration 1600000 "http://<<YOUR_CHANNEL>>.channel.mediaservices.windows.net/<<LIVE EVENT ID>>/ingest.isml/Streams(video)"
+ffmpeg -y -hide_banner -f dshow -fflags nobuffer -i audio="Headset Microphone (Logitech Stereo H650e)" -itsoffset 1.00 -f dshow -fflags nobuffer -rtbufsize 2000M -i video="OBS Virtual Camera" -map 0:0 -map 1:0 -c:a:0 aac -b:a:0 128k -c:v:1 libx264 -preset ultrafast -tune zerolatency -s:v:0 1280x720 -r 30 -g 48 -keyint_min 48 -sc_threshold 0 -minrate:v:0 3000k -maxrate:v:0 3000k -b:v:0 3000k -avoid_negative_ts 1 -f ismv -movflags isml+frag_keyframe -frag_duration 1600000 "http://<<YOUR_CHANNEL>>.channel.mediaservices.windows.net/<<LIVE EVENT ID>>/ingest.isml/Streams(video)"
 ```
 
 ### Screen Recording and Desktop Capture
@@ -171,5 +172,5 @@ ffmpeg -y -hide_banner -f dshow -fflags nobuffer -i audio="Headset Microphone (L
 This shows how to use the "gdigrab" device on Windows desktops to capture a section of the desktop and broadcast it along with the audio from a Microphone.  There are more settings available in the documentation for FFmpeg that allow cropping and selecting specific running application windows by name. If running on Linux, you would use the "x11grab" device instead.
 
 ```bash
-ffmpeg -y -hide_banner -f dshow -fflags nobuffer -i audio="Headset Microphone (Logitech Stereo H650e)" -itsoffset 1.00 -f gdigrab -framerate 10 -offset_x 0 -offset_y 0 -video_size 1920x1080 -show_region 1 -i desktop -map 0:0 -map 1:0 -c:a:0 aac -b:a:0 192k -c:v:1 libx264 -preset ultrafast -tune zerolatency -s:v:0 1280x720 -r 30 -g 48 -keyint_min 48 -sc_threshold 0 -minrate:v:0 3000k -maxrate:v:0 3000k -b:v:0 3000k -f ismv -movflags isml+frag_keyframe -frag_duration 1600000 "http://<<YOUR_CHANNEL>>.channel.mediaservices.windows.net/<<LIVE EVENT ID>>/ingest.isml/Streams(video)"
+ffmpeg -y -hide_banner -f dshow -fflags nobuffer -i audio="Headset Microphone (Logitech Stereo H650e)" -itsoffset 1.00 -f gdigrab -framerate 10 -offset_x 0 -offset_y 0 -video_size 1920x1080 -show_region 1 -i desktop -map 0:0 -map 1:0 -c:a:0 aac -b:a:0 128k -c:v:1 libx264 -preset ultrafast -tune zerolatency -s:v:0 1280x720 -r 30 -g 48 -keyint_min 48 -sc_threshold 0 -minrate:v:0 3000k -maxrate:v:0 3000k -b:v:0 3000k -avoid_negative_ts 1 -f ismv -movflags isml+frag_keyframe -frag_duration 1600000 "http://<<YOUR_CHANNEL>>.channel.mediaservices.windows.net/<<LIVE EVENT ID>>/ingest.isml/Streams(video)"
 ```
