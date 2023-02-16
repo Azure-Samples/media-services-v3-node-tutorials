@@ -15,17 +15,20 @@ lastModified: 11/17/2022
 
 # Azure Media Services v3 Node samples (@azure/arm-mediaservices version 13 or higher)
 
-This repository contains samples showing how to use the [Azure Media Services](https://media.microsoft.com) V3 API using the [@azure/arm-mediaservices](https://www.npmjs.com/package/@azure/arm-mediaservices) package for node.js.
+## Overview
 
-These tutorials work with the new [JavaScript next generation Azure SDK](https://github.com/Azure/azure-sdk-for-js/blob/main/documentation/next-generation-quickstart.md).
-The new SDKs for JavaScript supports Azure Identity, HTTP pipeline, error-handling.,etc, and they also follow the new Azure SDK guidelines which create easy-to-use APIs that are idiomatic, compatible, and dependable.
-See [TypeScript Design Guidelines](https://azure.github.io/azure-sdk/typescript_design.html) for more information.
+This repository contains code samples that demonstrate how to use the [Azure Media Services](https://media.microsoft.com) V3 API with the [@azure/arm-mediaservices](https://www.npmjs.com/package/@azure/arm-mediaservices) package in Node.js. The samples use the new [Azure SDK for JavaScript](https://github.com/Azure/azure-sdk-for-js/blob/main/documentation/next-generation-quickstart.md), which provides improved support for Azure Identity, HTTP pipeline, and error handling. The new SDK also follows updated Azure SDK guidelines, resulting in easier-to-use APIs that are more compatible and reliable.
+
+## Useful Information
+
+To make sure you're using the latest version of the package, be sure to check the `@azure/arm-mediaservices` package. Currently, version 12.1.0 of the package supports the Media Services ARM API version 2021-11-01 and the 2022-08-01 API updates for streaming and live events.
+
+For more information about TypeScript design guidelines, check out the [Azure SDK TypeScript Design Guidelines](https://azure.github.io/azure-sdk/typescript_design.html).
 
 > [!NOTE]
 > To make sure you are using the latest package, check [@azure/arm-mediaservices](https://www.npmjs.com/package/@azure/arm-mediaservices).
 > Version 12.1.0 of *@azure/arm-mediaservices* supports the [Media Services ARM API version 2021-11-01](https://github.com/Azure/azure-rest-api-specs/tree/main/specification/mediaservices/resource-manager/Microsoft.Media/stable/2021-11-01) and the 2022-08-01 API updates for streaming and live events.
 
-## Overview
 
 ### Requirements
 
