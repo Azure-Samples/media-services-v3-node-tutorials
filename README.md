@@ -46,11 +46,11 @@ The projects in this repository were created using Visual Studio Code with Node.
 |Project name|Description|
 |---|---|
 | **Account** ||
-|[Create an account](/Account/CreateAccount/create-account.ts)|The sample shows how to create a Media Services account and set the primary storage account, in addition to advanced configuration settings including Key Delivery IP allowlist, storage auth, and bring your own encryption key.|
-|[Create an account with user assigned managed identity code](/Account/CreateAccount/create-account_with_managed_identity.ts)|The sample shows how to create a Media Services account and set the primary storage account, in addition to advanced configuration settings including Key Delivery IP allowlist, user or system assigned Managed Identity, storage auth, and bring your own encryption key.|
+|[Create an account](/Account/CreateAccount/create-account.ts)|This sample demonstrates how to create a Media Services account and configure the primary storage account. It also includes advanced configuration settings such as Key Delivery IP allowlist, storage authentication, and the ability to use your own encryption key.|
+|[Create an account with user assigned managed identity code](/Account/CreateAccount/create-account_with_managed_identity.ts)|This code sample provides step-by-step instructions for creating a Media Services account, configuring the primary storage account, and exploring advanced configuration options. The sample covers several topics, including setting Key Delivery IP allowlist, configuring user or system assigned Managed Identity, storage authentication, and bring your own encryption key.|
 | **Assets** ||
-|[Hello World - list assets](/HelloWorld-ListAssets/list-assets.ts)|Basic example on how to connect and list assets |
-|[Get the storage container from an asset](/Assets/get-container-from-assets.ts)|Demonstrates how to find the Azure storage account container used to store the contents of this asset. This can be used to then edit sources, modify, or copy contents using the Azure storage SDK library |
+|[Hello World - list assets](/HelloWorld-ListAssets/list-assets.ts)|This sample demonstrates connecting to and listing assets using Azure Media Services |
+|[Get the storage container from an asset](/Assets/get-container-from-assets.ts)|This code sample illustrates how to locate the Azure storage account container where an asset's contents are stored. This information can be used to edit sources, modify the asset, or copy its contents using the Azure storage SDK library.|
 |[List assets using filters](/Assets/list-assets-filtered.ts)| Use filters in your list assets calls to find assets by date and order them.|
 |[List the streaming locators on an asset using filters](/Assets/list-assets-filtered.ts)| Use filters to list the streaming locators attached to your assets.|
 |[List tracks in an asset](/Assets/list-tracks-in-assets.ts)| Use the tracks collection to list all of the track names and track types (audio, video, or text) available on an asset|
