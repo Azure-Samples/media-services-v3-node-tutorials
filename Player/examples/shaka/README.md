@@ -7,7 +7,7 @@ Azure Media Services supports playback in any Javascript Media Source Extension 
 
 Timed metadata is custom data that is inserted into a live stream. Both the data and its insertion timestamp are preserved in the media stream itself so that all the clients playing back the video stream can get the same custom metadata at the exact same time in relation to the video stream.
 
-In addition, the Shaka player supports timed metadata through the use of the Event Message payload format as defined in the Alliance for Open Media [Carriage of ID3 Timed Metadata in the Common Media Application Format](https://aomediacodec.github.io/id3-emsg/) specification.  This industry standard allows the used of ID3 timed metadata messages to be signaled in the HLS or DASH streaming format and signal a player to fire an event when received.
+In addition, the Shaka player supports timed metadata through the use of the Event Message payload format as defined in the Alliance for Open Media [Carriage of ID3 Timed Metadata in the Common Media Application Format](https://aomediacodec.github.io/id3-emsg/) specification.  This industry standard allows the use of ID3 timed metadata messages to be signaled in the HLS or DASH streaming format and signal a player to fire an event when received.
 
 Media Services always wraps the message into an ID3 'GEOB' - generic object which has the following layout:
 
