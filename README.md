@@ -15,6 +15,10 @@ lastModified: 11/17/2022
 
 # Azure Media Services v3 Node samples (@azure/arm-mediaservices version 13 or higher)
 
+## NOTE
+
+**IMPORTANT NOTE : Azure Media Service has been retired on June 30, 2024. Please see the [retirement guide](https://learn.microsoft.com/en-us/azure/media-services/latest/azure-media-services-retirement).**
+
 ## Overview
 
 This repository contains code samples that demonstrate how to use the [Azure Media Services](https://media.microsoft.com) V3 API with the [@azure/arm-mediaservices](https://www.npmjs.com/package/@azure/arm-mediaservices) package in Node.js. The samples use the new [Azure SDK for JavaScript](https://github.com/Azure/azure-sdk-for-js/blob/main/documentation/next-generation-quickstart.md), which provides improved support for Azure Identity, HTTP pipeline, and error handling. The new SDK also follows updated Azure SDK guidelines, resulting in easier-to-use APIs that are more compatible and reliable.
