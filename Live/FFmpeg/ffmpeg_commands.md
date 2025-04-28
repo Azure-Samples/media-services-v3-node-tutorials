@@ -60,7 +60,7 @@ A basic live stream using the front camera and built in microphone on a laptop.
 Note that for RTMP streaming you have to add a unique "Stream Key" to the end of the RTMP ingest URL provided by Azure Media Services. This can be any custom value, or match the access token value provided to the API on creation of the live event.
 
 ```bash
-fmpeg -f dshow -fflags nobuffer -rtbufsize 2000M -i video="Microsoft Camera Front":audio="Microphone Array (Realtek High Definition Audio(SST))" -f flv "rtmp://<<YOUR_CHANNEL>>.channel.media.azure.net:1935/live/<<LIVE EVENT ID>>/<<STREAM KEY>>"`
+ffmpeg -f dshow -fflags nobuffer -rtbufsize 2000M -i video="Microsoft Camera Front":audio="Microphone Array (Realtek High Definition Audio(SST))" -f flv "rtmp://<<YOUR_CHANNEL>>.channel.media.azure.net:1935/live/<<LIVE EVENT ID>>/<<STREAM KEY>>"`
 ```
 
 ### Multiple Bitrate RTMP broadcast to a pass-through live event
